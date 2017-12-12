@@ -42,6 +42,20 @@ class CounterGenerator extends Generator{
     }
 }
 
+class GaussGenerator extends Generator{
+    constructor(generator, count, step){
+        super(generator);
+        this.count = count || 0;
+        this.step = step || 1;
+        this.count -= this.step;
+    }
+
+    generate(){
+        let value = super.generate();
+        let v = randgen.rnorm();
+        return v + value;
+    }
+}
 
 
 ///--------------------------  Gerenciador de Colunas e Geração da base total. ----------------------------------------
@@ -53,7 +67,7 @@ class DataGen {
         this.columns = [{
             name: "Index",
             type: "Numeric",
-            generator: new CounterGenerator()
+            generator: new GaussGenerator()
         }];
     }
 
@@ -70,6 +84,13 @@ class DataGen {
 
 }
 let datagen = new DataGen();
+console.log(datagen.columns[0].generator.generate());
+console.log(datagen.columns[0].generator.generate());
+console.log(datagen.columns[0].generator.generate());
+console.log(datagen.columns[0].generator.generate());
+console.log(datagen.columns[0].generator.generate());
+console.log(datagen.columns[0].generator.generate());
+console.log(datagen.columns[0].generator.generate());
 console.log(datagen.columns[0].generator.generate());
 console.log(datagen.columns[0].generator.generate());
 console.log(datagen.columns[0].generator.generate());
