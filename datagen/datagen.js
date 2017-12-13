@@ -13,50 +13,87 @@ let randgen = require("randgen");
 // console.log(hist);
 
 class Generator{
-    constructor(generator){
+    constructor(generator, operator){
         this.generator = generator;
+        this.operator = operator;
     }
-    generate(){
+    generate(sub_value){
         let value = 0;
         if(this.generator){
             value  = this.generator.generate();
 
+            if(this.operator)
+                return this.operator(sub_value, value);
         }
-        return value;
+
+        return sub_value + value;
     }
 }
 
 class CounterGenerator extends Generator{
 
-    constructor(generator, count, step){
-        super(generator);
+    constructor(generator, operator, count, step){
+        super(generator, operator);
         this.count = count || 0;
         this.step = step || 1;
         this.count -= this.step;
     }
 
     generate(){
-        let value = super.generate();
         this.count+=this.step;
-        return this.count+value;
+        return super.generate(this.count);
     }
 }
 
-class GaussGenerator extends Generator{
-    constructor(generator, count, step){
-        super(generator);
-        this.count = count || 0;
-        this.step = step || 1;
-        this.count -= this.step;
+class RandomGaussianGenerator extends Generator{
+    constructor(generator, operator, mean, std){
+        super(generator, operator);
+        this.mean = mean || 0;
+        this.std = std || 1;
     }
 
     generate(){
-        let value = super.generate();
-        let v = randgen.rnorm();
-        return v + value;
+        let v = randgen.rnorm(this.mean, this.std);
+        return super.generate(v);
     }
 }
 
+class RandomPoissonGenerator extends Generator{
+    constructor(generator, operator, lambda){
+        super(generator, operator);
+        this.lambda = lambda || 1;
+    }
+
+    generate(){
+        let v = randgen.rpoisson(this.lambda);
+        return super.generate(v);
+    }
+}
+
+class RandomBernoulliGenerator extends Generator{
+    constructor(generator, operator, p){
+        super(generator, operator);
+        this.p = p || 1;
+    }
+
+    generate(){
+        let v = randgen.rbernoulli(this.p);
+        return super.generate(v);
+    }
+}
+
+class RandomCauchyGenerator extends Generator{
+    constructor(generator, operator, loc, scale){
+        super(generator, operator);
+        this.loc = loc || 0;
+        this.scale = scale || 1;
+    }
+
+    generate(){
+        let v = randgen.rcauchy(this.loc, this.scale);
+        return super.generate(v);
+    }
+}
 
 class Intervalos {
     constructor(array, tamanho, intervaloIni, intervaloFim) {
@@ -119,7 +156,7 @@ class DataGen {
         this.columns = [{
             name: "Index",
             type: "Numeric",
-            generator: new GaussGenerator()
+            generator: new RandomPoissonGenerator()
         }];
     }
 
@@ -146,14 +183,10 @@ console.log(datagen.columns[0].generator.generate());
 console.log(datagen.columns[0].generator.generate());
 console.log(datagen.columns[0].generator.generate());
 console.log(datagen.columns[0].generator.generate());
-console.log(datagen.columns[0].generator.generate());
-console.log(datagen.columns[0].generator.generate());
-console.log(datagen.columns[0].generator.generate());
-
-
 
 
 module.exports.Generator = Generator;
 module.exports.CounterGenerator = CounterGenerator;
+module.exports.CounterGenerator = RandomGaussianGenerator;
 // module.exports.Generator = Generator;
 // module.exports.Generator = Generator;
