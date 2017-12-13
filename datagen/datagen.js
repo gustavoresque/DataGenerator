@@ -95,6 +95,24 @@ class RandomCauchyGenerator extends Generator{
     }
 }
 
+class RandomNoiseGenerator extends Generator{
+    constructor(generator, operator, generator2, probability, intensity){
+        super(generator, operator);
+        this.generator2 = generator2 || new RandomGaussianGenerator();
+        this.probability = probability || 0.3;
+        this.intensity = intensity || 1;
+    }
+
+    generate(){
+        var value = 0;
+        if (Math.random() < this.probability){
+            return super.generate(this.generator2.generate());
+        }else{
+            return super.generate(0);
+        }
+    }
+}
+
 class Intervalos {
     constructor(array, tamanho, intervaloIni, intervaloFim) {
     }
@@ -156,7 +174,7 @@ class DataGen {
         this.columns = [{
             name: "Index",
             type: "Numeric",
-            generator: new RandomPoissonGenerator()
+            generator: new RandomNoiseGenerator(null, null, null, 0.4, 2)
         }];
     }
 
@@ -169,20 +187,21 @@ class DataGen {
     }
 
     generate (){
+        let data = [];
+        for (let i = 0; i < this.n_lines; i++){
+            data.push([]);
+            for (let j = 0; j < this.columns.length; j++){
+                data[i].push(this.colums[j].generator.generate());
+            }
+        }
+        return data;
     }
 
 }
+
 let datagen = new DataGen();
-console.log(datagen.columns[0].generator.generate());
-console.log(datagen.columns[0].generator.generate());
-console.log(datagen.columns[0].generator.generate());
-console.log(datagen.columns[0].generator.generate());
-console.log(datagen.columns[0].generator.generate());
-console.log(datagen.columns[0].generator.generate());
-console.log(datagen.columns[0].generator.generate());
-console.log(datagen.columns[0].generator.generate());
-console.log(datagen.columns[0].generator.generate());
-console.log(datagen.columns[0].generator.generate());
+datagen.addCollumn("Gaussian", "Numeric", new RandomGaussianGenerator());
+console.log(datagen.generate());
 
 
 module.exports.Generator = Generator;
