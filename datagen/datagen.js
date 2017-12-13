@@ -95,54 +95,41 @@ class RandomCauchyGenerator extends Generator{
     }
 }
 
-class Intervalos {
-    constructor(array, tamanho, intervaloIni, intervaloFim) {
+class RangeFilter extends Generator {
+    constructor(generator,operator, array,begin,end) {
+        super(generator,operator);
+        this.array = array;
+        this.begin = begin;
+        this.end = end;
+
     }
 
     generate() {
-        if (intervaloIni > intervaloFim || intervaloIni > tamanho) {
-            return "error";
+        let value =  super.generate(0);
+        while (value > this.begin && value < this.end) {
+            value = super.generate(0);
         }
-        else {
-            for (let i = 0; i < 2; i++) {
-                x = Math.floor(Math.random() * 1000) + 1;
-                while (x > intervaloIni && x < intervaloFim) {
-                    x = Math.floor(Math.random() * tamanho) + 1;
-                }
-                array.push(x);
-            }
-            return array;
+        return value;
+    }
+}
+
+class RandomCategorical extends  Generator {
+    constructor(generator,operator,array,number) {
+            super(generator,operator)
+            this.array = array.slice(0,number);
+    }
+    generate() {
+        let result =  super.generate(this.array.length);
+        if(result === this.array.length){
+            return this.array[Math.floor(Math.random() * this.array.length)];
+        } else{
+            return this.array[result];
         }
     }
 }
 
-class Categorical {
-    constructor(string, qtd, items) {
-    }
-
-    generate() {
-        var frutas = ["banana", "maça", "laranjas", "limão", "uva", "carambola", "marcuja"];
 
 
-        //var nome =  [];
-        var data = [];
-        if (string == "frutas") {
-            if (items && items < frutas.length) {
-                for (let i = 0; i < qtd; i++) {
-                    x = frutas[Math.floor(Math.random() * items)];
-                    data.push(x);
-
-                }
-            }
-            for (let i = 0; i < qtd; i++) {
-                x = frutas[Math.floor(Math.random() * frutas.length)];
-                data.push(x);
-
-            }
-        }
-        return data;
-    }
-}
 ///--------------------------  Gerenciador de Colunas e Geração da base total. ----------------------------------------
 
 
