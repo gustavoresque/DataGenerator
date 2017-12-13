@@ -12,7 +12,6 @@ let randgen = require("randgen");
 //
 // console.log(hist);
 
-
 class Generator{
     constructor(generator){
         this.generator = generator;
@@ -21,6 +20,7 @@ class Generator{
         let value = 0;
         if(this.generator){
             value  = this.generator.generate();
+
         }
         return value;
     }
@@ -58,7 +58,59 @@ class GaussGenerator extends Generator{
 }
 
 
+class Intervalos {
+    constructor(array, tamanho, intervaloIni, intervaloFim) {
+    }
+
+    generate() {
+        if (intervaloIni > intervaloFim || intervaloIni > tamanho) {
+            return "error";
+        }
+        else {
+            for (let i = 0; i < 2; i++) {
+                x = Math.floor(Math.random() * 1000) + 1;
+                while (x > intervaloIni && x < intervaloFim) {
+                    x = Math.floor(Math.random() * tamanho) + 1;
+                }
+                array.push(x);
+            }
+            return array;
+        }
+    }
+}
+
+class Categorical {
+    constructor(string, qtd, items) {
+    }
+
+    generate() {
+        var frutas = ["banana", "maça", "laranjas", "limão", "uva", "carambola", "marcuja"];
+
+
+        //var nome =  [];
+        var data = [];
+        if (string == "frutas") {
+            if (items && items < frutas.length) {
+                for (let i = 0; i < qtd; i++) {
+                    x = frutas[Math.floor(Math.random() * items)];
+                    data.push(x);
+
+                }
+            }
+            for (let i = 0; i < qtd; i++) {
+                x = frutas[Math.floor(Math.random() * frutas.length)];
+                data.push(x);
+
+            }
+        }
+        return data;
+    }
+}
 ///--------------------------  Gerenciador de Colunas e Geração da base total. ----------------------------------------
+
+
+
+
 
 class DataGen {
 
