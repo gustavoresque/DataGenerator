@@ -100,13 +100,13 @@ class RandomNoiseGenerator extends Generator{
         super(generator, operator);
         this.generator2 = generator2 || new RandomGaussianGenerator();
         this.probability = probability || 0.3;
-        this.intensity = intensity || 1;
+        this.intensity = intensity || 0;
     }
 
     generate(){
         var value = 0;
         if (Math.random() < this.probability){
-            return super.generate(this.generator2.generate());
+            return super.generate(this.generator2.generate()) + this.intensity;
         }else{
             return super.generate(0);
         }
@@ -170,7 +170,7 @@ class Categorical {
 class DataGen {
 
     constructor () {
-        this.n_lines = 1;
+        this.n_lines = 20; // Quantidade de linhas na geração
         this.columns = [{
             name: "Index",
             type: "Numeric",
@@ -191,7 +191,7 @@ class DataGen {
         for (let i = 0; i < this.n_lines; i++){
             data.push([]);
             for (let j = 0; j < this.columns.length; j++){
-                data[i].push(this.colums[j].generator.generate());
+                data[i].push(this.columns[j].generator.generate());
             }
         }
         return data;
@@ -201,11 +201,19 @@ class DataGen {
 
 let datagen = new DataGen();
 datagen.addCollumn("Gaussian", "Numeric", new RandomGaussianGenerator());
+datagen.addCollumn("Gaussian", "Numeric", new RandomNoiseGenerator(null, null, null, 0.7, 2));
+datagen.addCollumn("Gaussian", "Numeric", new RandomGaussianGenerator());
+datagen.addCollumn("Gaussian", "Numeric", new RandomNoiseGenerator(null, null, null, 0.7, 5));
+datagen.addCollumn("Gaussian", "Numeric", new RandomGaussianGenerator());
+datagen.addCollumn("Gaussian", "Numeric", new RandomNoiseGenerator(null, null, null, 0.7, 7));
+datagen.addCollumn("Gaussian", "Numeric", new RandomBernoulliGenerator(null, null, 0.3));
 console.log(datagen.generate());
 
 
-module.exports.Generator = Generator;
-module.exports.CounterGenerator = CounterGenerator;
-module.exports.CounterGenerator = RandomGaussianGenerator;
-// module.exports.Generator = Generator;
-// module.exports.Generator = Generator;
+module.exports.Generator =                Generator;
+module.exports.CounterGenerator =         CounterGenerator;
+module.exports.RandomGaussGenerator =     RandomGaussianGenerator;
+module.exports.RandomPoissonGenerator =   RandomPoissonGenerator;
+module.exports.RandomBernoulliGenerator = RandomBernoulliGenerator;
+module.exports.RandomCauchyGenerator =    RandomCauchyGenerator;
+module.exports.RandomNoiseGenerator =     RandomNoiseGenerator;
