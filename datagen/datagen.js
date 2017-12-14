@@ -113,8 +113,6 @@ class RandomNoiseGenerator extends Generator{
     }
 }
 
-class Intervalos {
-    constructor(array, tamanho, intervaloIni, intervaloFim) {
 class RangeFilter extends Generator {
     constructor(generator,operator, array,begin,end) {
         super(generator,operator);
@@ -187,18 +185,50 @@ class DataGen {
         }
         return data;
     }
-
 }
-let datagen = new DataGen();
-datagen.addCollumn("Gaussian", "Numeric", new RandomGaussianGenerator());
-datagen.addCollumn("Gaussian", "Numeric", new RandomNoiseGenerator(null, null, null, 0.7, 2));
-datagen.addCollumn("Gaussian", "Numeric", new RandomGaussianGenerator());
-datagen.addCollumn("Gaussian", "Numeric", new RandomNoiseGenerator(null, null, null, 0.7, 5));
-datagen.addCollumn("Gaussian", "Numeric", new RandomGaussianGenerator());
-datagen.addCollumn("Gaussian", "Numeric", new RandomNoiseGenerator(null, null, null, 0.7, 7));
-datagen.addCollumn("Gaussian", "Numeric", new RandomBernoulliGenerator(null, null, 0.3));
-console.log(datagen.generate());
 
+var datagen = new DataGen();
+//console.log(datagen.generate());
+
+var generatorToAdd;
+
+function addGenerator(){
+    let name = document.getElementById("fname").value;
+    let type = document.getElementById("ftype").value;
+    let gen = document.getElementById("gen").value;
+
+    if (gen === "Gaussian"){
+        generatorToAdd = new RandomGaussianGenerator();
+    }else{
+        generatorToAdd = new RandomNoiseGenerator();
+    }
+
+    datagen.addCollumn(name, type, generatorToAdd);
+    showGenerators();
+}
+
+function showGenerators(){
+    document.getElementById("tbody").innerHTML = "<tr>\n" +
+        "                <td></td>\n" +
+        "                <td><input value=\"Tipo\" type=\"text\" id=\"fname\"></td>\n" +
+        "                <td><input value=\"Numerico\" type=\"text\" id=\"ftype\"></td>\n" +
+        "                <td>\n" +
+        "                  <select id=\"gen\">\n" +
+        "                    <option value=\"Gaussian\">Gaussian</option>\n" +
+        "                    <option value=\"Noise\">Noise</option>\n" +
+        "                  </select>\n" +
+        "                </td>\n" +
+        "              </tr>";
+    
+    for (let i = 0; i < datagen.n_lines; i++){
+        document.getElementById("tbody").innerHTML += "<tr>\n" +
+            "              <td>" + i + "</td>\n" +
+            "              <td>" + datagen.columns[i].name + "</td>\n" +
+            "              <td>" + datagen.columns[i].type + "</td>\n" +
+            "              <td>connors</td>\n" +
+            "            </tr>";
+    }
+}
 
 module.exports.Generator =                Generator;
 module.exports.CounterGenerator =         CounterGenerator;

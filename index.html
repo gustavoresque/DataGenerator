@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="UTF-8">
-    <title>Data Generator</title>
-    <link rel="stylesheet" href="photon-0.1.2-dist/css/photon.min.css">
-    <style>
-
-    </style>
-    <script src="photon-0.1.2-dist/template-app/js/menu.js" charset="utf-8"></script>
+      <meta charset="UTF-8">
+      <title>Data Generator</title>
+      <link rel="stylesheet" href="photon-0.1.2-dist/css/photon.min.css">
+      <style></style>
+      <script src="photon-0.1.2-dist/template-app/js/menu.js" charset="utf-8"></script>
   </head>
   <body>
+  <script src="datagen/datagen.js"></script>
   <div class="window">
 
     <!-- .toolbar-header sits at the top of your app -->
@@ -56,13 +55,23 @@
             <thead>
             <tr>
               <th>Order</th>
-              <th>Column Title</th>
+              <th>Title</th>
               <th>Data Type</th>
-              <th>Author</th>
+              <th>Generator</th>
             </tr>
             </thead>
             <tbody id="tbody">
-
+              <tr>
+                <td></td>
+                <td><input value="Tipo" type="text" id="fname"></td>
+                <td><input value="Numerico" type="text" id="ftype"></td>
+                <td>
+                  <select id="gen">
+                    <option value="Gaussian">Gaussian</option>
+                    <option value="Noise">Noise</option>
+                  </select>
+                </td>
+              </tr>
             </tbody>
             <!--<tbody>
             <tr>
@@ -240,21 +249,17 @@
         <button class="btn btn-primary pull-right">
           Generate
         </button>
+        <button onclick="addGenerator()" class="btn btn-primary pull-right">
+          Add new Generator
+        </button>
       </div>
     </footer>
   </div>
 
-
     <script>
       // You can also require other files to run in this process
       require('./renderer.js');
-      require('./datagen/datagen.js');
-      /*document.getElementById("tbody").innerHTML = "<tr>\n" +
-          "              <td>bars.scss</td>\n" +
-          "              <td>Document</td>\n" +
-          "              <td>Oct 13, 2015</td>\n" +
-          "              <td>connors</td>\n" +
-          "            </tr>";*/
+      //require('./datagen/datagen.js');
     </script>
   </body>
 </html>
