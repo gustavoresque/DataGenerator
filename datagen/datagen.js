@@ -26,7 +26,8 @@ class Generator{
                 return this.operator(sub_value, value);
         }
 
-        return sub_value + value;
+        this.lastGenerated = sub_value + value;
+        return this.lastGenerated;
     }
 }
 
@@ -133,7 +134,7 @@ class RangeFilter extends Generator {
 
 class RandomCategorical extends  Generator {
     constructor(generator,operator,array,number) {
-            super(generator,operator)
+            super(generator,operator);
             this.array = array.slice(0,number);
     }
 
@@ -149,7 +150,98 @@ class RandomCategorical extends  Generator {
 }
 
 
+class Function extends Generator{
 
+    constructor(generator, operator, inputGenerator){
+        super(generator, operator);
+        this.inputGenerator = inputGenerator;
+    }
+
+    generate(){
+        let value = this.transform(this.inputGenerator.lastGenerated);
+        return super.generate(value);
+    }
+
+    transform(x){
+        return x;
+    }
+}
+
+class LinearFunction extends Function{
+    constructor(generator, operator, inputGenerator, a, b){
+        super(generator, operator, inputGenerator);
+        this.a = a;
+        this.b = b;
+    }
+
+    transform(x){
+        return this.a*x + this.b;
+    }
+}
+
+class QuadraticFunction extends Function{
+    constructor(generator, operator, inputGenerator, a, b, c){
+        super(generator, operator, inputGenerator);
+        this.a = a;
+        this.b = b;
+        this.c = c;
+    }
+
+    transform(x){
+        return this.a*Math.pow(x,2) + this.b*x + this.c;
+    }
+}
+
+class PolynomialFunction extends Function{
+    constructor(generator, operator, inputGenerator, constants){
+        super(generator, operator, inputGenerator);
+        this.constants = constants;
+    }
+
+    transform(x){
+        let value = 0;
+        for(let i=0; i<this.constants.length; i++){
+            value += Math.pow(x,this.constants.length-i-1)*this.constants[i];
+        }
+        return value;
+    }
+}
+
+class ExponentialFunction extends Function{
+    constructor(generator, operator, inputGenerator,  a, b){
+        super(generator, operator, inputGenerator);
+        this.a = a;
+        this.b = b || 1;
+    }
+
+    transform(x){
+        return Math.pow(this.a, x)*this.b;
+    }
+}
+
+class LogarithmFunction extends Function{
+    constructor(generator, operator, inputGenerator, base){
+        super(generator, operator, inputGenerator);
+        this.base = base || Math.E;
+    }
+
+    transform(x){
+        return Math.log(x)/Math.log(this.base);
+    }
+}
+
+class SinusoidalFunction extends Function{
+    constructor(generator, operator, inputGenerator, a, b, c){
+        super(generator, operator, inputGenerator);
+        this.a = a || 1;
+        this.b = b || 1;
+        this.c = c || 0;
+    }
+
+    transform(x){
+        return this.a*Math.sin(this.b*x + this.c);
+    }
+}
 ///--------------------------  Gerenciador de Colunas e Geração da base total. ----------------------------------------
 
 
