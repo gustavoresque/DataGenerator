@@ -20,6 +20,7 @@
     "electron": "~1.7.8"
   },
   "dependencies": {
+    "jquery": "^3.2.1",
     "randgen": "^0.1.0"
   }
 }

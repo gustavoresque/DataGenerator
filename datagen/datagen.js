@@ -13,7 +13,8 @@ let randgen = require("randgen");
 // console.log(hist);
 
 class Generator{
-    constructor(generator, operator){
+    constructor(name, generator, operator){
+        this.name = name;
         this.generator = generator;
         this.operator = operator;
     }
@@ -34,7 +35,7 @@ class Generator{
 class CounterGenerator extends Generator{
 
     constructor(generator, operator, count, step){
-        super(generator, operator);
+        super("Counter Generator", generator, operator);
         this.count = count || 0;
         this.step = step || 1;
         this.count -= this.step;
@@ -48,7 +49,7 @@ class CounterGenerator extends Generator{
 
 class RandomGaussianGenerator extends Generator{
     constructor(generator, operator, mean, std){
-        super(generator, operator);
+        super("Gaussian Generator", generator, operator);
         this.mean = mean || 0;
         this.std = std || 1;
     }
@@ -61,7 +62,7 @@ class RandomGaussianGenerator extends Generator{
 
 class RandomPoissonGenerator extends Generator{
     constructor(generator, operator, lambda){
-        super(generator, operator);
+        super("Poisson Generator", generator, operator);
         this.lambda = lambda || 1;
     }
 
@@ -73,7 +74,7 @@ class RandomPoissonGenerator extends Generator{
 
 class RandomBernoulliGenerator extends Generator{
     constructor(generator, operator, p){
-        super(generator, operator);
+        super("Bernoulli Generator", generator, operator);
         this.p = p || 1;
     }
 
@@ -85,7 +86,7 @@ class RandomBernoulliGenerator extends Generator{
 
 class RandomCauchyGenerator extends Generator{
     constructor(generator, operator, loc, scale){
-        super(generator, operator);
+        super("Cauchy Generator", generator, operator);
         this.loc = loc || 0;
         this.scale = scale || 1;
     }
@@ -98,7 +99,7 @@ class RandomCauchyGenerator extends Generator{
 
 class RandomNoiseGenerator extends Generator{
     constructor(generator, operator, generator2, probability, intensity){
-        super(generator, operator);
+        super("Noise Generator", generator, operator);
         this.generator2 = generator2 || new RandomGaussianGenerator();
         this.probability = probability || 0.3;
         this.intensity = intensity || 0;
@@ -116,7 +117,7 @@ class RandomNoiseGenerator extends Generator{
 
 class RangeFilter extends Generator {
     constructor(generator,operator, array,begin,end) {
-        super(generator,operator);
+        super("Range Filter", generator,operator);
         this.array = array;
         this.begin = begin;
         this.end = end;
@@ -132,10 +133,16 @@ class RangeFilter extends Generator {
     }
 }
 
-class RandomCategorical extends  Generator {
+class RandomCategorical extends Generator {
     constructor(generator,operator,array,number) {
-            super(generator,operator);
-            this.array = array.slice(0,number);
+            super("Categorical",generator,operator);
+            if (!array)
+                array = [0,1,2,3,4,5];
+
+            if (number)
+                this.array = array.slice(0,number);
+            else
+                this.array = array.slice(0,1);
     }
 
     generate() {
@@ -152,8 +159,8 @@ class RandomCategorical extends  Generator {
 
 class Function extends Generator{
 
-    constructor(generator, operator, inputGenerator){
-        super(generator, operator);
+    constructor(name, generator, operator, inputGenerator){
+        super(name, generator, operator);
         this.inputGenerator = inputGenerator;
     }
 
@@ -169,7 +176,7 @@ class Function extends Generator{
 
 class LinearFunction extends Function{
     constructor(generator, operator, inputGenerator, a, b){
-        super(generator, operator, inputGenerator);
+        super("Linear Function", generator, operator, inputGenerator);
         this.a = a;
         this.b = b;
     }
@@ -181,7 +188,7 @@ class LinearFunction extends Function{
 
 class QuadraticFunction extends Function{
     constructor(generator, operator, inputGenerator, a, b, c){
-        super(generator, operator, inputGenerator);
+        super("Quadratic Function", generator, operator, inputGenerator);
         this.a = a;
         this.b = b;
         this.c = c;
@@ -194,7 +201,7 @@ class QuadraticFunction extends Function{
 
 class PolynomialFunction extends Function{
     constructor(generator, operator, inputGenerator, constants){
-        super(generator, operator, inputGenerator);
+        super("Polynomial Function", generator, operator, inputGenerator);
         this.constants = constants;
     }
 
@@ -209,7 +216,7 @@ class PolynomialFunction extends Function{
 
 class ExponentialFunction extends Function{
     constructor(generator, operator, inputGenerator,  a, b){
-        super(generator, operator, inputGenerator);
+        super("Exponential Function", generator, operator, inputGenerator);
         this.a = a;
         this.b = b || 1;
     }
@@ -221,7 +228,7 @@ class ExponentialFunction extends Function{
 
 class LogarithmFunction extends Function{
     constructor(generator, operator, inputGenerator, base){
-        super(generator, operator, inputGenerator);
+        super("Logarithm Function", generator, operator, inputGenerator);
         this.base = base || Math.E;
     }
 
@@ -232,7 +239,7 @@ class LogarithmFunction extends Function{
 
 class SinusoidalFunction extends Function{
     constructor(generator, operator, inputGenerator, a, b, c){
-        super(generator, operator, inputGenerator);
+        super("Sinusoidal Function", generator, operator, inputGenerator);
         this.a = a || 1;
         this.b = b || 1;
         this.c = c || 0;
@@ -284,30 +291,112 @@ var datagen = new DataGen();
 
 var generatorToAdd;
 
+function generateDatas(){
+    document.getElementById("theadResult").innerHTML = "<tr>";
+    var t = "";
+    datagen.columns.forEach(function(item){
+        t += "<th>" + item.generator.name + "</th>";
+    });
+    document.getElementById("theadResult").innerHTML += t;
+    document.getElementById("theadResult").innerHTML += "</tr>";
+
+
+    document.getElementById("tbodyResult").innerHTML = "<tr>\n";
+    t = "";
+    datagen.columns.forEach(function(item){
+        t += "<td>" + item.generator.generate() + "</td>\n";
+    });
+    document.getElementById("theadResult").innerHTML += t;
+    document.getElementById("tbodyResult").innerHTML += "</tr>";
+}
+
 function addGenerator(){
     let name = document.getElementById("fname").value;
     let type = document.getElementById("ftype").value;
     let gen = document.getElementById("gen").value;
 
-    if (gen === "Gaussian"){
-        generatorToAdd = new RandomGaussianGenerator();
-    }else{
-        generatorToAdd = new RandomNoiseGenerator();
+    switch (gen){
+        case "Counter Generator":
+            generatorToAdd = new CounterGenerator();
+            break;
+        case "Gaussian Generator":
+            generatorToAdd = new RandomGaussianGenerator();
+            break;
+        case "Poisson Generator":
+            generatorToAdd = new RandomPoissonGenerator();
+            break;
+        case "Bernoulli Generator":
+            generatorToAdd = new RandomBernoulliGenerator();
+            break;
+        case "Cauchy Generator":
+            generatorToAdd = new RandomCauchyGenerator();
+            break;
+        case "Noise Generator":
+            generatorToAdd = new RandomNoiseGenerator();
+            break;
+        case "Range Filter":
+            generatorToAdd = new RangeFilter();
+            break;
+        case "Categorical":
+            generatorToAdd = new RandomCategorical();
+            break;
+        case "Linear Function":
+            generatorToAdd = new LinearFunction();
+            break;
+        case "Quadratic Function":
+            generatorToAdd = new QuadraticFunction();
+            break;
+        case "Polynomial Function":
+            generatorToAdd = new PolynomialFunction();
+            break;
+        case "Exponential Function":
+            generatorToAdd = new ExponentialFunction();
+            break;
+        case "Logarithm Function":
+            generatorToAdd = new LogarithmFunction();
+            break;
+        default:
+            generatorToAdd = new SinusoidalFunction();
     }
 
     datagen.addCollumn(name, type, generatorToAdd);
     showGenerators();
 }
 
+function listGenerators(){
+    let list = ['Counter Generator',
+                'Gaussian Generator',
+                'Poisson Generator',
+                'Bernoulli Generator',
+                'Cauchy Generator',
+                'Noise Generator',
+                'Range Filter',
+                'Categorical',
+                'Linear Function',
+                'Quadratic Function',
+                'Polynomial Function',
+                'Exponential Function',
+                'Logarithm Function',
+                'Sinusoidal Function'];
+
+    let optionsGenerators = "";
+    list.forEach(function(item){
+        optionsGenerators += '<option value="' + item + '">' + item + '</option>\n';
+    });
+
+    return optionsGenerators;
+}
+
 function showGenerators(){
+    let options = listGenerators();
+
     document.getElementById("tbody").innerHTML = "<tr>\n" +
         "                <td></td>\n" +
-        "                <td><input value=\"Tipo\" type=\"text\" id=\"fname\"></td>\n" +
-        "                <td><input value=\"Numerico\" type=\"text\" id=\"ftype\"></td>\n" +
+        "                <td><input value='Title' type=\"text\" id=\"fname\"></td>\n" +
+        "                <td><input value='Numeric' type=\"text\" id=\"ftype\"></td>\n" +
         "                <td>\n" +
         "                  <select id=\"gen\">\n" +
-        "                    <option value=\"Gaussian\">Gaussian</option>\n" +
-        "                    <option value=\"Noise\">Noise</option>\n" +
+                            options +
         "                  </select>\n" +
         "                </td>\n" +
         "              </tr>";
@@ -317,7 +406,7 @@ function showGenerators(){
             "              <td>" + i + "</td>\n" +
             "              <td>" + datagen.columns[i].name + "</td>\n" +
             "              <td>" + datagen.columns[i].type + "</td>\n" +
-            "              <td>connors</td>\n" +
+            "              <td>" + datagen.columns[i].generator.name + "</td>\n" +
             "            </tr>";
     }
 }

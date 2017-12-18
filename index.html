@@ -4,11 +4,32 @@
       <meta charset="UTF-8">
       <title>Data Generator</title>
       <link rel="stylesheet" href="photon-0.1.2-dist/css/photon.min.css">
-      <style></style>
+      <style>
+        button.floatButton{
+          background-color: limegreen;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          position: fixed;
+          bottom: 50px;
+          right: 15px;
+        }
+      </style>
       <script src="photon-0.1.2-dist/template-app/js/menu.js" charset="utf-8"></script>
   </head>
   <body>
+  <!-- Insert this line above script imports -->
+  <script>
+      if (typeof module === 'object') {
+          window.module = module;
+          module = undefined;
+      }
+  </script>
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+  <script>if (window.module) module = window.module;</script>
+
   <script src="datagen/datagen.js"></script>
+  <script src="UI/uiLogic.js"></script>
   <div class="window">
 
     <!-- .toolbar-header sits at the top of your app -->
@@ -19,40 +40,21 @@
         <div class="pane pane-sm sidebar">
           <nav class="nav-group">
             <h5 class="nav-group-title">Favorites</h5>
-            <span class="nav-group-item">
+            <span id="homeBtnNavBar" class="nav-group-item active">
                 <span class="icon icon-home"></span>
-                connors
-              </span>
-            <span class="nav-group-item active">
-                <span class="icon icon-light-up"></span>
-                Photon
-              </span>
-            <span class="nav-group-item">
-                <span class="icon icon-download"></span>
-                Downloads
-              </span>
-            <span class="nav-group-item">
-                <span class="icon icon-folder"></span>
-                Documents
-              </span>
-            <span class="nav-group-item">
-                <span class="icon icon-window"></span>
-                Applications
-              </span>
-            <span class="nav-group-item">
-                <span class="icon icon-signal"></span>
-                AirDrop
-              </span>
-            <span class="nav-group-item">
-                <span class="icon icon-monitor"></span>
-                Desktop
-              </span>
+                Generate
+            </span>
+            <span id="resultBtnNavBar" class="nav-group-item">
+            <span class="icon icon-light-up"></span>
+                Result
+            </span>
+
           </nav>
         </div>
 
         <div id="summaryTablePane" class="pane">
           <table class="table-striped">
-            <thead>
+            <thead id="thead">
             <tr>
               <th>Order</th>
               <th>Title</th>
@@ -61,17 +63,182 @@
             </tr>
             </thead>
             <tbody id="tbody">
-              <tr>
-                <td></td>
-                <td><input value="Tipo" type="text" id="fname"></td>
-                <td><input value="Numerico" type="text" id="ftype"></td>
-                <td>
-                  <select id="gen">
-                    <option value="Gaussian">Gaussian</option>
-                    <option value="Noise">Noise</option>
-                  </select>
-                </td>
-              </tr>
+            </tbody>
+            <!--<tbody>
+            <tr>
+              <td>bars.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>base.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>button-groups.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>buttons.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>buttons.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>buttons.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>buttons.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>buttons.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>buttons.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>buttons.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>buttons.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>buttons.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>buttons.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>docs.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>forms.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>grid.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>icons.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>images.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>lists.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>mixins.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>navs.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>normalize.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>photon.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>tables.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>tabs.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>utilities.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            <tr>
+              <td>variables.scss</td>
+              <td>Document</td>
+              <td>Oct 13, 2015</td>
+              <td>connors</td>
+            </tr>
+            </tbody>-->
+          </table>
+          <button onclick="addGenerator()" class="floatButton">
+            <span  style="font-size: 230%; color: white" class="icon icon-plus"></span>
+          </button>
+        </div>
+
+        <div style="display: none" id="resultTablePane" class="pane">
+          <table class="table-striped">
+            <thead id="theadResult">
+            </thead>
+            <tbody id="tbodyResult">
             </tbody>
             <!--<tbody>
             <tr>
@@ -246,11 +413,8 @@
 
     <footer class="toolbar toolbar-footer">
       <div class="toolbar-actions">
-        <button class="btn btn-primary pull-right">
+        <button id="generateButton" onclick="generateDatas()" class="btn btn-primary pull-right">
           Generate
-        </button>
-        <button onclick="addGenerator()" class="btn btn-primary pull-right">
-          Add new Generator
         </button>
       </div>
     </footer>
@@ -259,6 +423,8 @@
     <script>
       // You can also require other files to run in this process
       require('./renderer.js');
+
+      showGenerators();
       //require('./datagen/datagen.js');
     </script>
   </body>
