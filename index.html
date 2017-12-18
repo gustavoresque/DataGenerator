@@ -8,8 +8,8 @@
         button.floatButton{
           background-color: limegreen;
           border-radius: 50%;
-          width: 50px;
-          height: 50px;
+          width: 45px;
+          height: 45px;
           position: fixed;
           bottom: 50px;
           right: 15px;
@@ -230,7 +230,7 @@
             </tbody>-->
           </table>
           <button onclick="addGenerator()" class="floatButton">
-            <span  style="font-size: 230%; color: white" class="icon icon-plus"></span>
+            <span  style="font-size: 200%; color: white" class="icon icon-plus"></span>
           </button>
         </div>
 
@@ -413,9 +413,14 @@
 
     <footer class="toolbar toolbar-footer">
       <div class="toolbar-actions">
-        <button id="generateButton" onclick="generateDatas()" class="btn btn-primary pull-right">
-          Generate
-        </button>
+        <div class="btn-group pull-right">
+          <button id="generateButton" onclick="generateDatas()" class="btn btn-primary">
+            Generate
+          </button>
+          <button class="btn btn-primary">
+            <span style="color: white" class="icon icon-cog"></span>
+          </button>
+        </div>
       </div>
     </footer>
   </div>
