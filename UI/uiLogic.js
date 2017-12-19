@@ -23,6 +23,8 @@ $("html").ready(function(){
         $(this).empty();
         $(this).append($("<input/>").attr("type", "text").attr("value", title).blur(function(){
             var cor = $(this).val();
+            //addGenerator($(this).parent().parent().find(".tdIndex").text());
+            $(this).parent().parent().get(0).__node__.name = cor;
             $(this).parent().text(cor);
         }));
     });
@@ -32,6 +34,8 @@ $("html").ready(function(){
         $(this).empty();
         $(this).append($("<input/>").attr("type", "text").attr("value", typeData).blur(function(){
             var cor = $(this).val();
+            //addGenerator($(this).parent().parent().find(".tdIndex").text());
+            $(this).parent().parent().get(0).__node__.type = cor;
             $(this).parent().text(cor);
         }));
     });
@@ -40,13 +44,15 @@ $("html").ready(function(){
         $(this).empty();
         $(this).append($("<select/>").attr("id", "selectGens").blur(function(){
             var cor = $(this).val();
+            //addGenerator($(this).parent().parent().find(".tdIndex").text());
+            //$(this).parent().parent().get(0).__node__.name = cor;
             $(this).parent().text(cor);
         }));
         var listGens = listGenerators();
         for (var i = 0; i < listGens.length; i++){
             $(this).find("#selectGens").append($("<option/>").attr("value", listGens[i]).text(listGens[i]));
         }
-        console.log($(this).parent().find("#tdIndex").text());
+
     });
 });
 
@@ -72,10 +78,6 @@ function generateDatas(){
 }
 
 function addGenerator(){
-    let name = "Title";
-    let type = "Numeric";
-    let gen = "Counter Generator";
-
     switch (gen){
         case "Counter Generator":
             generatorToAdd = new CounterGenerator();
@@ -120,8 +122,9 @@ function addGenerator(){
             generatorToAdd = new SinusoidalFunction();
     }
 
-    datagen.addCollumn(name, type, generatorToAdd);
-    writeLastGenerator();
+    datagen.addCollumn("Title", "Numeric", new CounterGenerator());
+
+    showGenerators();
 }
 
 function listGenerators(){
@@ -148,14 +151,16 @@ function listGenerators(){
     return list;
 }
 
-function writeLastGenerator(){
+function showGenerators(){
     $("#tbody").empty();
     for(var i = 0; i < datagen.columns.length; i++){
-        $("#tbody").append($("<tr/>")
-            .append($("<td/>").text(i).attr('id', 'tdIndex'))
+        var $tr = $("<tr/>");
+        $("#tbody").append($tr
+            .append($("<td/>").text(i).addClass("tdIndex"))
             .append($("<td/>").text(datagen.columns[i].name).addClass("columnName"))
             .append($("<td/>").text(datagen.columns[i].type).addClass("columnType"))
             .append($("<td/>").text(datagen.columns[i].generator.name).addClass("columnGen"))
         );
+        $tr.get(0).__node__ = datagen.columns[i];
     }
 }
