@@ -258,10 +258,6 @@ class SinusoidalFunction extends Function{
 }
 ///--------------------------  Gerenciador de Colunas e Geração da base total. ----------------------------------------
 
-
-
-
-
 class DataGen {
 
     constructor () {
@@ -295,10 +291,10 @@ class DataGen {
 
 var datagen = new DataGen();
 //console.log(datagen.generate());
-let gen = new CounterGenerator(new RandomGaussianGenerator(new CounterGenerator()));
-let generators = [];
-gen.getFullGenerator(generators);
-console.log(generators);
+//let gen = new CounterGenerator(new RandomGaussianGenerator(new CounterGenerator()));
+//let generators = [];
+//gen.getFullGenerator(generators);
+//console.log(generators);
 
 
 module.exports.CounterGenerator =         CounterGenerator;
