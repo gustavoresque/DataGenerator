@@ -18,6 +18,13 @@ class Generator{
         this.generator = generator;
         this.operator = operator;
     }
+
+    getFullGenerator(generators){
+        generators.push(this);
+        if(this.generator)
+            this.generator.getFullGenerator(generators)
+    }
+
     generate(sub_value){
         let value = 0;
         if(this.generator){
@@ -288,6 +295,10 @@ class DataGen {
 
 var datagen = new DataGen();
 //console.log(datagen.generate());
+let gen = new CounterGenerator(new RandomGaussianGenerator(new CounterGenerator()));
+let generators = [];
+gen.getFullGenerator(generators);
+console.log(generators);
 
 
 module.exports.CounterGenerator =         CounterGenerator;
