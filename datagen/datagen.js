@@ -260,9 +260,9 @@ class DataGen {
     constructor () {
         this.n_lines = 20; // Quantidade de linhas na geração
         this.columns = [{
-            name: "Index",
+            name: "Title",
             type: "Numeric",
-            generator: new RandomNoiseGenerator(null, null, null, 0.4, 2)
+            generator: new CounterGenerator()
         }];
     }
 
@@ -289,129 +289,7 @@ class DataGen {
 var datagen = new DataGen();
 //console.log(datagen.generate());
 
-var generatorToAdd;
 
-function generateDatas(){
-    document.getElementById("theadResult").innerHTML = "<tr>";
-    var t = "";
-    datagen.columns.forEach(function(item){
-        t += "<th>" + item.generator.name + "</th>";
-    });
-    document.getElementById("theadResult").innerHTML += t;
-    document.getElementById("theadResult").innerHTML += "</tr>";
-
-
-    document.getElementById("tbodyResult").innerHTML = "<tr>\n";
-    t = "";
-    datagen.columns.forEach(function(item){
-        t += "<td>" + item.generator.generate() + "</td>\n";
-    });
-    document.getElementById("theadResult").innerHTML += t;
-    document.getElementById("tbodyResult").innerHTML += "</tr>";
-}
-
-function addGenerator(){
-    let name = document.getElementById("fname").value;
-    let type = document.getElementById("ftype").value;
-    let gen = document.getElementById("gen").value;
-
-    switch (gen){
-        case "Counter Generator":
-            generatorToAdd = new CounterGenerator();
-            break;
-        case "Gaussian Generator":
-            generatorToAdd = new RandomGaussianGenerator();
-            break;
-        case "Poisson Generator":
-            generatorToAdd = new RandomPoissonGenerator();
-            break;
-        case "Bernoulli Generator":
-            generatorToAdd = new RandomBernoulliGenerator();
-            break;
-        case "Cauchy Generator":
-            generatorToAdd = new RandomCauchyGenerator();
-            break;
-        case "Noise Generator":
-            generatorToAdd = new RandomNoiseGenerator();
-            break;
-        case "Range Filter":
-            generatorToAdd = new RangeFilter();
-            break;
-        case "Categorical":
-            generatorToAdd = new RandomCategorical();
-            break;
-        case "Linear Function":
-            generatorToAdd = new LinearFunction();
-            break;
-        case "Quadratic Function":
-            generatorToAdd = new QuadraticFunction();
-            break;
-        case "Polynomial Function":
-            generatorToAdd = new PolynomialFunction();
-            break;
-        case "Exponential Function":
-            generatorToAdd = new ExponentialFunction();
-            break;
-        case "Logarithm Function":
-            generatorToAdd = new LogarithmFunction();
-            break;
-        default:
-            generatorToAdd = new SinusoidalFunction();
-    }
-
-    datagen.addCollumn(name, type, generatorToAdd);
-    showGenerators();
-}
-
-function listGenerators(){
-    let list = ['Counter Generator',
-                'Gaussian Generator',
-                'Poisson Generator',
-                'Bernoulli Generator',
-                'Cauchy Generator',
-                'Noise Generator',
-                'Range Filter',
-                'Categorical',
-                'Linear Function',
-                'Quadratic Function',
-                'Polynomial Function',
-                'Exponential Function',
-                'Logarithm Function',
-                'Sinusoidal Function'];
-
-    let optionsGenerators = "";
-    list.forEach(function(item){
-        optionsGenerators += '<option value="' + item + '">' + item + '</option>\n';
-    });
-
-    return optionsGenerators;
-}
-
-function showGenerators(){
-    let options = listGenerators();
-
-    document.getElementById("tbody").innerHTML = "<tr>\n" +
-        "                <td></td>\n" +
-        "                <td><input value='Title' type=\"text\" id=\"fname\"></td>\n" +
-        "                <td><input value='Numeric' type=\"text\" id=\"ftype\"></td>\n" +
-        "                <td>\n" +
-        "                  <select id=\"gen\">\n" +
-                            options +
-        "                  </select>\n" +
-        "                </td>\n" +
-        "              </tr>";
-    
-    for (let i = 0; i < datagen.n_lines; i++){
-        document.getElementById("tbody").innerHTML += "<tr>\n" +
-            "              <td>" + i + "</td>\n" +
-            "              <td>" + datagen.columns[i].name + "</td>\n" +
-            "              <td>" + datagen.columns[i].type + "</td>\n" +
-            "              <td>" + datagen.columns[i].generator.name + "</td>\n" +
-            "            </tr>";
-    }
-}
-
-module.exports.Generator =                Generator;
 module.exports.CounterGenerator =         CounterGenerator;
 module.exports.RandomGaussGenerator =     RandomGaussianGenerator;
 module.exports.RandomPoissonGenerator =   RandomPoissonGenerator;

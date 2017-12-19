@@ -4,32 +4,10 @@
       <meta charset="UTF-8">
       <title>Data Generator</title>
       <link rel="stylesheet" href="photon-0.1.2-dist/css/photon.min.css">
-      <style>
-        button.floatButton{
-          background-color: limegreen;
-          border-radius: 50%;
-          width: 45px;
-          height: 45px;
-          position: fixed;
-          bottom: 50px;
-          right: 15px;
-        }
-      </style>
+      <link rel="stylesheet" href="UI/uiStyle.css">
       <script src="photon-0.1.2-dist/template-app/js/menu.js" charset="utf-8"></script>
   </head>
   <body>
-  <!-- Insert this line above script imports -->
-  <script>
-      if (typeof module === 'object') {
-          window.module = module;
-          module = undefined;
-      }
-  </script>
-  <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-  <script>if (window.module) module = window.module;</script>
-
-  <script src="datagen/datagen.js"></script>
-  <script src="UI/uiLogic.js"></script>
   <div class="window">
 
     <!-- .toolbar-header sits at the top of your app -->
@@ -53,7 +31,13 @@
         </div>
 
         <div id="summaryTablePane" class="pane">
-          <table class="table-striped">
+          <table style="width: 100%" id="tableCollumn" class="table-striped">
+              <colgroup>
+                  <col span="1" style="width: 5%;">
+                  <col span="1" style="width: 20%;">
+                  <col span="1" style="width: 10%;">
+                  <col span="1" style="width: 40%;">
+              </colgroup>
             <thead id="thead">
             <tr>
               <th>Order</th>
@@ -425,11 +409,23 @@
     </footer>
   </div>
 
+  <!-- Insert this line above script imports -->
+  <script>
+      if (typeof module === 'object') {
+          window.module = module;
+          module = undefined;
+      }
+  </script>
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+  <script>if (window.module) module = window.module;</script>
+
+  <script src="datagen/datagen.js"></script>
+  <script src="UI/uiLogic.js"></script>
     <script>
       // You can also require other files to run in this process
       require('./renderer.js');
 
-      showGenerators();
+      writeLastGenerator();
       //require('./datagen/datagen.js');
     </script>
   </body>

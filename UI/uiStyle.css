@@ -1,0 +1,9 @@
+button.floatButton{
+    background-color: limegreen;
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    position: fixed;
+    bottom: 50px;
+    right: 25px;
+}
