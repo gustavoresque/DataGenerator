@@ -213,7 +213,7 @@
             </tr>
             </tbody>-->
           </table>
-          <button onclick="addGenerator()" class="floatButton">
+          <button onclick="addGenerator('-1')" class="floatButton">
             <span  style="font-size: 200%; color: white" class="icon icon-plus"></span>
           </button>
         </div>
@@ -425,7 +425,7 @@
       // You can also require other files to run in this process
       require('./renderer.js');
 
-      writeLastGenerator();
+      showGenerators();
       //require('./datagen/datagen.js');
     </script>
   </body>
