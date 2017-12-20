@@ -23,7 +23,6 @@ $("html").ready(function(){
         $(this).empty();
         $(this).append($("<input/>").attr("type", "text").attr("value", title).blur(function(){
             var cor = $(this).val();
-            //addGenerator($(this).parent().parent().find(".tdIndex").text());
             $(this).parent().parent().get(0).__node__.name = cor;
             $(this).parent().text(cor);
         }));
@@ -34,7 +33,6 @@ $("html").ready(function(){
         $(this).empty();
         $(this).append($("<input/>").attr("type", "text").attr("value", typeData).blur(function(){
             var cor = $(this).val();
-            //addGenerator($(this).parent().parent().find(".tdIndex").text());
             $(this).parent().parent().get(0).__node__.type = cor;
             $(this).parent().text(cor);
         }));
@@ -44,8 +42,7 @@ $("html").ready(function(){
         $(this).empty();
         $(this).append($("<select/>").attr("id", "selectGens").blur(function(){
             var cor = $(this).val();
-            //addGenerator($(this).parent().parent().find(".tdIndex").text());
-            //$(this).parent().parent().get(0).__node__.name = cor;
+            $(this).parent().parent().get(0).__node__.generator = chooseGenerator(cor);
             $(this).parent().text(cor);
         }));
         var listGens = listGenerators();
@@ -55,8 +52,6 @@ $("html").ready(function(){
 
     });
 });
-
-var generatorToAdd;
 
 function generateDatas(){
     document.getElementById("theadResult").innerHTML = "<tr>";
@@ -77,7 +72,8 @@ function generateDatas(){
     document.getElementById("tbodyResult").innerHTML += "</tr>";
 }
 
-function addGenerator(){
+var generatorToAdd;
+function chooseGenerator(gen){
     switch (gen){
         case "Counter Generator":
             generatorToAdd = new CounterGenerator();
@@ -122,6 +118,10 @@ function addGenerator(){
             generatorToAdd = new SinusoidalFunction();
     }
 
+    return generatorToAdd;
+}
+
+function addGenerator(){
     datagen.addCollumn("Title", "Numeric", new CounterGenerator());
 
     showGenerators();
