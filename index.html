@@ -17,13 +17,13 @@
       <div class="pane-group">
         <div class="pane pane-sm sidebar">
           <nav class="nav-group">
-            <h5 class="nav-group-title">Favorites</h5>
+            <h5 class="nav-group-title">Menu</h5>
             <span id="homeBtnNavBar" class="nav-group-item active">
-                <span class="icon icon-home"></span>
+                <span class="icon icon-tools"></span>
                 Generate
             </span>
             <span id="resultBtnNavBar" class="nav-group-item">
-            <span class="icon icon-light-up"></span>
+            <span class="icon icon-doc-text-inv"></span>
                 Result
             </span>
 
@@ -401,9 +401,14 @@
           <button id="generateButton" onclick="generateDatas()" class="btn btn-primary">
             Generate
           </button>
-          <button class="btn btn-primary">
+          <button class="btn btn-primary tooltip">
             <span style="color: white" class="icon icon-cog"></span>
           </button>
+          <span class="tooltiptext">
+            Generate &nbsp;
+            <input id="rowsQtInput" style="color: black; width: 20%;" type="number" value=100>
+            &nbsp; Rows
+          </span>
         </div>
       </div>
     </footer>

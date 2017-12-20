@@ -49,27 +49,38 @@ $("html").ready(function(){
         for (var i = 0; i < listGens.length; i++){
             $(this).find("#selectGens").append($("<option/>").attr("value", listGens[i]).text(listGens[i]));
         }
+    });
 
+    $(".tooltip").click(function(){
+        if($(".tooltiptext").css("visibility") === "hidden")
+            $(".tooltiptext").css("visibility", "visible").css("opacity", 1);
+        else
+            $(".tooltiptext").css("visibility", "hidden").css("opacity", 0);
     });
 });
 
 function generateDatas(){
     document.getElementById("theadResult").innerHTML = "<tr>";
     var t = "";
+    t += "<th>" + "Order" + "</th>";
     datagen.columns.forEach(function(item){
         t += "<th>" + item.generator.name + "</th>";
     });
     document.getElementById("theadResult").innerHTML += t;
     document.getElementById("theadResult").innerHTML += "</tr>";
 
-
-    document.getElementById("tbodyResult").innerHTML = "<tr>\n";
     t = "";
-    datagen.columns.forEach(function(item){
-        t += "<td>" + item.generator.generate() + "</td>\n";
-    });
+    var number = $("#rowsQtInput").val();
+    for (var i = 0; i < number; i++){
+        document.getElementById("tbodyResult").innerHTML = "<tr>\n";
+        t += "<td>" + i + "</td>\n";
+        datagen.columns.forEach(function(item){
+            t += "<td>" + item.generator.generate() + "</td>\n";
+        });
+        t += "</tr>";
+    }
     document.getElementById("theadResult").innerHTML += t;
-    document.getElementById("tbodyResult").innerHTML += "</tr>";
+    //document.getElementById("tbodyResult").innerHTML += "</tr>";
 }
 
 var generatorToAdd;
