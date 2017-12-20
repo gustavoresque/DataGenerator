@@ -43,10 +43,7 @@ $("html").ready(function(){
         $(this).append($("<select/>").attr("id", "selectGens").blur(function(){
             var cor = $(this).val();
             $(this).parent().parent().get(0).__node__.generator = chooseGenerator(cor);
-            $(this).parent().append($("<div/>").addClass("vS").append(
-                $("<span/>").addClass("vN").append($("<span/>").innerHTML = cor + '<button class="icon icon-plus pull-right hoverCardButton"></button>')
-            )).addClass("columnGen");
-            $(this).remove();
+            $(this).parent().addClass("columnGen").text(cor);
         }));
         var listGens = listGenerators();
         for (var i = 0; i < listGens.length; i++){
@@ -171,13 +168,7 @@ function showGenerators(){
             .append($("<td/>").text(i+1).addClass("tdIndex"))
             .append($("<td/>").text(datagen.columns[i].name).addClass("columnName"))
             .append($("<td/>").text(datagen.columns[i].type).addClass("columnType"))
-            .append($("<td/>").append(
-                $("<div/>").addClass("vS").append(
-                    $("<span/>").addClass("vN").append(
-                        $("<span/>").innerHTML = datagen.columns[i].generator.name + '<button class="icon icon-plus pull-right hoverCardButton"></button>'
-                    )
-                )
-            ).addClass("columnGen"))
+            .append($("<td/>").addClass("columnGen").text(datagen.columns[i].generator.name))
             .append($("<td/>").append($("<button/>").attr("style", "background: none; border: none").addClass("icon").addClass("icon-cancel-circled").click(function(){
                 console.log("Deletado");
             })))
