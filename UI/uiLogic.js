@@ -43,12 +43,19 @@ $("html").ready(function(){
         $(this).append($("<select/>").attr("id", "selectGens").blur(function(){
             var cor = $(this).val();
             $(this).parent().parent().get(0).__node__.generator = chooseGenerator(cor);
-            $(this).parent().text(cor);
+            $(this).parent().append($("<div/>").addClass("vS").append(
+                $("<span/>").addClass("vN").append($("<span/>").innerHTML = cor + '<button class="icon icon-plus pull-right hoverCardButton"></button>')
+            )).addClass("columnGen");
+            $(this).remove();
         }));
         var listGens = listGenerators();
         for (var i = 0; i < listGens.length; i++){
             $(this).find("#selectGens").append($("<option/>").attr("value", listGens[i]).text(listGens[i]));
         }
+    });
+
+    $("#rowsQtInput").blur(function(){
+        $(".tooltiptext").css("visibility", "hidden").css("opacity", 0);
     });
 
     $(".tooltip").click(function(){
@@ -64,23 +71,21 @@ function generateDatas(){
     var t = "";
     t += "<th>" + "Order" + "</th>";
     datagen.columns.forEach(function(item){
-        t += "<th>" + item.generator.name + "</th>";
+        t += "<th>" + item.name + " (" + item.generator.name + ")" + "</th>";
     });
-    document.getElementById("theadResult").innerHTML += t;
-    document.getElementById("theadResult").innerHTML += "</tr>";
+    document.getElementById("theadResult").innerHTML += t + "</tr>";
 
     t = "";
     var number = $("#rowsQtInput").val();
     for (var i = 0; i < number; i++){
         document.getElementById("tbodyResult").innerHTML = "<tr>\n";
-        t += "<td>" + i + "</td>\n";
+        t += "<td>" + (i+1) + "</td>\n";
         datagen.columns.forEach(function(item){
             t += "<td>" + item.generator.generate() + "</td>\n";
         });
         t += "</tr>";
     }
     document.getElementById("theadResult").innerHTML += t;
-    //document.getElementById("tbodyResult").innerHTML += "</tr>";
 }
 
 var generatorToAdd;
@@ -154,11 +159,6 @@ function listGenerators(){
         'Logarithm Function',
         'Sinusoidal Function'];
 
-    let optionsGenerators = "";
-    list.forEach(function(item){
-        optionsGenerators += '<option value="' + item + '">' + item + '</option>\n';
-    });
-
     return list;
 }
 
@@ -167,10 +167,20 @@ function showGenerators(){
     for(var i = 0; i < datagen.columns.length; i++){
         var $tr = $("<tr/>");
         $("#tbody").append($tr
-            .append($("<td/>").text(i).addClass("tdIndex"))
+            .append($("<td/>").append($("<input/>").attr("type", "checkbox")))
+            .append($("<td/>").text(i+1).addClass("tdIndex"))
             .append($("<td/>").text(datagen.columns[i].name).addClass("columnName"))
             .append($("<td/>").text(datagen.columns[i].type).addClass("columnType"))
-            .append($("<td/>").text(datagen.columns[i].generator.name).addClass("columnGen"))
+            .append($("<td/>").append(
+                $("<div/>").addClass("vS").append(
+                    $("<span/>").addClass("vN").append(
+                        $("<span/>").innerHTML = datagen.columns[i].generator.name + '<button class="icon icon-plus pull-right hoverCardButton"></button>'
+                    )
+                )
+            ).addClass("columnGen"))
+            .append($("<td/>").append($("<button/>").attr("style", "background: none; border: none").addClass("icon").addClass("icon-cancel-circled").click(function(){
+                console.log("Deletado");
+            })))
         );
         $tr.get(0).__node__ = datagen.columns[i];
     }
