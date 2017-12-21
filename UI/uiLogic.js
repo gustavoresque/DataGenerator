@@ -23,7 +23,6 @@ $("html").ready(function(){
         $(this).empty();
         $(this).append($("<input/>").attr("type", "text").attr("value", title).blur(function(){
             var cor = $(this).val();
-            //addGenerator($(this).parent().parent().find(".tdIndex").text());
             $(this).parent().parent().get(0).__node__.name = cor;
             $(this).parent().text(cor);
         }));
@@ -34,7 +33,6 @@ $("html").ready(function(){
         $(this).empty();
         $(this).append($("<input/>").attr("type", "text").attr("value", typeData).blur(function(){
             var cor = $(this).val();
-            //addGenerator($(this).parent().parent().find(".tdIndex").text());
             $(this).parent().parent().get(0).__node__.type = cor;
             $(this).parent().text(cor);
         }));
@@ -44,84 +42,100 @@ $("html").ready(function(){
         $(this).empty();
         $(this).append($("<select/>").attr("id", "selectGens").blur(function(){
             var cor = $(this).val();
-            //addGenerator($(this).parent().parent().find(".tdIndex").text());
-            //$(this).parent().parent().get(0).__node__.name = cor;
-            $(this).parent().text(cor);
+            $(this).parent().parent().get(0).__node__.generator = chooseGenerator(cor);
+            $(this).parent().addClass("columnGen").text(cor);
         }));
         var listGens = listGenerators();
         for (var i = 0; i < listGens.length; i++){
             $(this).find("#selectGens").append($("<option/>").attr("value", listGens[i]).text(listGens[i]));
         }
+    });
 
+    $("#rowsQtInput").blur(function(){
+        $(".tooltiptext").css("visibility", "hidden").css("opacity", 0);
+    });
+
+    $(".tooltip").click(function(){
+        if($(".tooltiptext").css("visibility") === "hidden")
+            $(".tooltiptext").css("visibility", "visible").css("opacity", 1);
+        else
+            $(".tooltiptext").css("visibility", "hidden").css("opacity", 0);
     });
 });
-
-var generatorToAdd;
 
 function generateDatas(){
     document.getElementById("theadResult").innerHTML = "<tr>";
     var t = "";
+    t += "<th>" + "Order" + "</th>";
     datagen.columns.forEach(function(item){
-        t += "<th>" + item.generator.name + "</th>";
+        t += "<th>" + item.name + " (" + item.generator.name + ")" + "</th>";
     });
-    document.getElementById("theadResult").innerHTML += t;
-    document.getElementById("theadResult").innerHTML += "</tr>";
+    document.getElementById("theadResult").innerHTML += t + "</tr>";
 
-
-    document.getElementById("tbodyResult").innerHTML = "<tr>\n";
     t = "";
-    datagen.columns.forEach(function(item){
-        t += "<td>" + item.generator.generate() + "</td>\n";
-    });
+    var number = $("#rowsQtInput").val();
+    for (var i = 0; i < number; i++){
+        document.getElementById("tbodyResult").innerHTML = "<tr>\n";
+        t += "<td>" + (i+1) + "</td>\n";
+        datagen.columns.forEach(function(item){
+            t += "<td>" + item.generator.generate() + "</td>\n";
+        });
+        t += "</tr>";
+    }
     document.getElementById("theadResult").innerHTML += t;
     document.getElementById("tbodyResult").innerHTML += "</tr>";
 }
 
-function addGenerator(){
-    // switch (gen){
-    //     case "Counter Generator":
-    //         generatorToAdd = new CounterGenerator();
-    //         break;
-    //     case "Gaussian Generator":
-    //         generatorToAdd = new RandomGaussianGenerator();
-    //         break;
-    //     case "Poisson Generator":
-    //         generatorToAdd = new RandomPoissonGenerator();
-    //         break;
-    //     case "Bernoulli Generator":
-    //         generatorToAdd = new RandomBernoulliGenerator();
-    //         break;
-    //     case "Cauchy Generator":
-    //         generatorToAdd = new RandomCauchyGenerator();
-    //         break;
-    //     case "Noise Generator":
-    //         generatorToAdd = new RandomNoiseGenerator();
-    //         break;
-    //     case "Range Filter":
-    //         generatorToAdd = new RangeFilter();
-    //         break;
-    //     case "Categorical":
-    //         generatorToAdd = new RandomCategorical();
-    //         break;
-    //     case "Linear Function":
-    //         generatorToAdd = new LinearFunction();
-    //         break;
-    //     case "Quadratic Function":
-    //         generatorToAdd = new QuadraticFunction();
-    //         break;
-    //     case "Polynomial Function":
-    //         generatorToAdd = new PolynomialFunction();
-    //         break;
-    //     case "Exponential Function":
-    //         generatorToAdd = new ExponentialFunction();
-    //         break;
-    //     case "Logarithm Function":
-    //         generatorToAdd = new LogarithmFunction();
-    //         break;
-    //     default:
-    //         generatorToAdd = new SinusoidalFunction();
-    // }
+var generatorToAdd;
+function chooseGenerator(gen){
+    switch (gen){
+        case "Counter Generator":
+            generatorToAdd = new CounterGenerator();
+            break;
+        case "Gaussian Generator":
+            generatorToAdd = new RandomGaussianGenerator();
+            break;
+        case "Poisson Generator":
+            generatorToAdd = new RandomPoissonGenerator();
+            break;
+        case "Bernoulli Generator":
+            generatorToAdd = new RandomBernoulliGenerator();
+            break;
+        case "Cauchy Generator":
+            generatorToAdd = new RandomCauchyGenerator();
+            break;
+        case "Noise Generator":
+            generatorToAdd = new RandomNoiseGenerator();
+            break;
+        case "Range Filter":
+            generatorToAdd = new RangeFilter();
+            break;
+        case "Categorical":
+            generatorToAdd = new RandomCategorical();
+            break;
+        case "Linear Function":
+            generatorToAdd = new LinearFunction();
+            break;
+        case "Quadratic Function":
+            generatorToAdd = new QuadraticFunction();
+            break;
+        case "Polynomial Function":
+            generatorToAdd = new PolynomialFunction();
+            break;
+        case "Exponential Function":
+            generatorToAdd = new ExponentialFunction();
+            break;
+        case "Logarithm Function":
+            generatorToAdd = new LogarithmFunction();
+            break;
+        default:
+            generatorToAdd = new SinusoidalFunction();
+    }
 
+    return generatorToAdd;
+}
+
+function addGenerator(){
     datagen.addCollumn("Title", "Numeric", new CounterGenerator());
 
     showGenerators();
@@ -143,11 +157,6 @@ function listGenerators(){
         'Logarithm Function',
         'Sinusoidal Function'];
 
-    let optionsGenerators = "";
-    list.forEach(function(item){
-        optionsGenerators += '<option value="' + item + '">' + item + '</option>\n';
-    });
-
     return list;
 }
 
@@ -156,7 +165,8 @@ function showGenerators(){
     for(var i = 0; i < datagen.columns.length; i++){
         var $tr = $("<tr/>");
         $("#tbody").append($tr
-            .append($("<td/>").text(i).addClass("tdIndex"))
+            .append($("<td/>").append($("<input/>").attr("type", "checkbox")))
+            .append($("<td/>").text(i+1).addClass("tdIndex"))
             .append($("<td/>").text(datagen.columns[i].name).addClass("columnName"))
             .append($("<td/>").text(datagen.columns[i].type).addClass("columnType"))
             // .append($("<td/>").text(datagen.columns[i].generator.name).addClass("columnGen"))
