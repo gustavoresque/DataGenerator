@@ -78,49 +78,49 @@ function generateDatas(){
 }
 
 function addGenerator(){
-    switch (gen){
-        case "Counter Generator":
-            generatorToAdd = new CounterGenerator();
-            break;
-        case "Gaussian Generator":
-            generatorToAdd = new RandomGaussianGenerator();
-            break;
-        case "Poisson Generator":
-            generatorToAdd = new RandomPoissonGenerator();
-            break;
-        case "Bernoulli Generator":
-            generatorToAdd = new RandomBernoulliGenerator();
-            break;
-        case "Cauchy Generator":
-            generatorToAdd = new RandomCauchyGenerator();
-            break;
-        case "Noise Generator":
-            generatorToAdd = new RandomNoiseGenerator();
-            break;
-        case "Range Filter":
-            generatorToAdd = new RangeFilter();
-            break;
-        case "Categorical":
-            generatorToAdd = new RandomCategorical();
-            break;
-        case "Linear Function":
-            generatorToAdd = new LinearFunction();
-            break;
-        case "Quadratic Function":
-            generatorToAdd = new QuadraticFunction();
-            break;
-        case "Polynomial Function":
-            generatorToAdd = new PolynomialFunction();
-            break;
-        case "Exponential Function":
-            generatorToAdd = new ExponentialFunction();
-            break;
-        case "Logarithm Function":
-            generatorToAdd = new LogarithmFunction();
-            break;
-        default:
-            generatorToAdd = new SinusoidalFunction();
-    }
+    // switch (gen){
+    //     case "Counter Generator":
+    //         generatorToAdd = new CounterGenerator();
+    //         break;
+    //     case "Gaussian Generator":
+    //         generatorToAdd = new RandomGaussianGenerator();
+    //         break;
+    //     case "Poisson Generator":
+    //         generatorToAdd = new RandomPoissonGenerator();
+    //         break;
+    //     case "Bernoulli Generator":
+    //         generatorToAdd = new RandomBernoulliGenerator();
+    //         break;
+    //     case "Cauchy Generator":
+    //         generatorToAdd = new RandomCauchyGenerator();
+    //         break;
+    //     case "Noise Generator":
+    //         generatorToAdd = new RandomNoiseGenerator();
+    //         break;
+    //     case "Range Filter":
+    //         generatorToAdd = new RangeFilter();
+    //         break;
+    //     case "Categorical":
+    //         generatorToAdd = new RandomCategorical();
+    //         break;
+    //     case "Linear Function":
+    //         generatorToAdd = new LinearFunction();
+    //         break;
+    //     case "Quadratic Function":
+    //         generatorToAdd = new QuadraticFunction();
+    //         break;
+    //     case "Polynomial Function":
+    //         generatorToAdd = new PolynomialFunction();
+    //         break;
+    //     case "Exponential Function":
+    //         generatorToAdd = new ExponentialFunction();
+    //         break;
+    //     case "Logarithm Function":
+    //         generatorToAdd = new LogarithmFunction();
+    //         break;
+    //     default:
+    //         generatorToAdd = new SinusoidalFunction();
+    // }
 
     datagen.addCollumn("Title", "Numeric", new CounterGenerator());
 
@@ -159,8 +159,26 @@ function showGenerators(){
             .append($("<td/>").text(i).addClass("tdIndex"))
             .append($("<td/>").text(datagen.columns[i].name).addClass("columnName"))
             .append($("<td/>").text(datagen.columns[i].type).addClass("columnType"))
-            .append($("<td/>").text(datagen.columns[i].generator.name).addClass("columnGen"))
+            // .append($("<td/>").text(datagen.columns[i].generator.name).addClass("columnGen"))
         );
+        let generators = [];
+        let $tdGen = $("<td/>").addClass("columnGen");
+        datagen.columns[i].generator.getFullGenerator(generators);
+        for(let gen of generators){
+            let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.name);
+            $tdGen.append($chip);
+            $chip.get(0).__node__ = gen;
+        }
+        $tdGen.append($("<span/>")
+            .addClass("btnAddGenerator icon icon-plus-circled")
+            .css({
+                "font-size": "17px",
+                "line-height": "0px",
+                "margin-left": "7px",
+                "vertical-align": "middle"
+            }));
+        $tr.append($tdGen);
+
         $tr.get(0).__node__ = datagen.columns[i];
     }
 }
