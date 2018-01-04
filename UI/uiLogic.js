@@ -43,7 +43,17 @@ $("html").ready(function(){
         $(this).append($("<select/>").attr("id", "selectGens").blur(function(){
             var cor = $(this).val();
             $(this).parent().parent().get(0).__node__.generator = chooseGenerator(cor);
-            $(this).parent().addClass("columnGen").text(cor);
+            $(this).parent().addClass("columnGen").text("")
+                .append($("<div/>").addClass("md-chip md-chip-hover").text(cor))
+                .append($("<span/>")
+                    .addClass("btnAddGenerator icon icon-plus-circled")
+                    .css({
+                        "font-size": "17px",
+                        "line-height": "0px",
+                        "margin-left": "7px",
+                        "vertical-align": "middle"
+                    })
+                );
         }));
         var listGens = listGenerators();
         for (var i = 0; i < listGens.length; i++){
