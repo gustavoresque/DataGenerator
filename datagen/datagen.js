@@ -19,6 +19,16 @@ class Generator{
         this.operator = operator;
     }
 
+    removeLastGenerator(){
+        if (this.generator == null)
+            return;
+
+        if (this.generator.generator == null)
+            this.generator = null;
+        else
+            this.generator.removeLastGenerator();
+    }
+
     getFullGenerator(generators){
         generators.push(this);
         if(this.generator)
@@ -277,6 +287,15 @@ class DataGen {
         });
     }
 
+    removeLastGenerator(index){
+        this.columns[index].generator.removeLastGenerator();
+    }
+
+    removeCollumn(index){
+        if (index > -1)
+            this.columns.splice(index, 1);
+    }
+
     generate (){
         let data = [];
         for (let i = 0; i < this.n_lines; i++){
@@ -290,11 +309,10 @@ class DataGen {
 }
 
 var datagen = new DataGen();
-//console.log(datagen.generate());
-//let gen = new CounterGenerator(new RandomGaussianGenerator(new CounterGenerator()));
-//let generators = [];
-//gen.getFullGenerator(generators);
-//console.log(generators);
+let gen = new CounterGenerator(new RandomPoissonGenerator(new RandomGaussianGenerator(new CounterGenerator(new RandomCategorical()))));
+datagen.addCollumn("nunu", "Numeric", gen)
+console.log(datagen.generate());
+
 
 
 module.exports.CounterGenerator =         CounterGenerator;

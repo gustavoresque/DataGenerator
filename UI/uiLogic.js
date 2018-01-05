@@ -46,14 +46,10 @@ $("html").ready(function(){
             $(this).parent().addClass("columnGen").text("")
                 .append($("<div/>").addClass("md-chip md-chip-hover").text(cor))
                 .append($("<span/>")
-                    .addClass("btnAddGenerator icon icon-plus-circled")
-                    .css({
-                        "font-size": "17px",
-                        "line-height": "0px",
-                        "margin-left": "7px",
-                        "vertical-align": "middle"
-                    })
-                );
+                    .addClass("btnGenerator btnAdd icon icon-plus-circled")
+                ).append($("<span/>")
+                .addClass("btnGenerator btnRemove icon icon-cancel-circled")
+            );
         }));
         var listGens = listGenerators();
         for (var i = 0; i < listGens.length; i++){
@@ -70,6 +66,12 @@ $("html").ready(function(){
             $(".tooltiptext").css("visibility", "visible").css("opacity", 1);
         else
             $(".tooltiptext").css("visibility", "hidden").css("opacity", 0);
+    });
+
+    $("#tableCollumn").on("click", "span.btnRemove", function(){
+        console.log($(this).parent().parent().find(".tdIndex").text());
+        datagen.removeLastGenerator(parseInt($(this).parent().parent().find(".tdIndex").text()) - 1);
+        showGenerators();
     });
 });
 
@@ -179,7 +181,6 @@ function showGenerators(){
             .append($("<td/>").text(i+1).addClass("tdIndex"))
             .append($("<td/>").text(datagen.columns[i].name).addClass("columnName"))
             .append($("<td/>").text(datagen.columns[i].type).addClass("columnType"))
-            // .append($("<td/>").text(datagen.columns[i].generator.name).addClass("columnGen"))
         );
         let generators = [];
         let $tdGen = $("<td/>").addClass("columnGen");
@@ -190,13 +191,10 @@ function showGenerators(){
             $chip.get(0).__node__ = gen;
         }
         $tdGen.append($("<span/>")
-            .addClass("btnAddGenerator icon icon-plus-circled")
-            .css({
-                "font-size": "17px",
-                "line-height": "0px",
-                "margin-left": "7px",
-                "vertical-align": "middle"
-            }));
+                .addClass("btnGenerator btnAdd icon icon-plus-circled")
+            ).append($("<span/>")
+            .addClass("btnGenerator btnRemove icon icon-cancel-circled")
+        );
         $tr.append($tdGen);
 
         $tr.get(0).__node__ = datagen.columns[i];
