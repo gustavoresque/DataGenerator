@@ -19,6 +19,13 @@ class Generator{
         this.operator = operator;
     }
 
+    addGenerator(gen){
+        if (this.generator == null)
+            this.generator = gen;
+        else
+            this.generator.addGenerator(gen);
+    }
+
     removeLastGenerator(){
         if (this.generator == null)
             return;
@@ -271,7 +278,7 @@ class SinusoidalFunction extends Function{
 class DataGen {
 
     constructor () {
-        this.n_lines = 20; // Quantidade de linhas na geração
+        this.n_lines = 0; // Quantidade de linhas na geração
         this.columns = [{
             name: "Title",
             type: "Numeric",
@@ -285,6 +292,10 @@ class DataGen {
             type: type,
             generator: generator
         });
+    }
+
+    addGeneratorToIndex(index, gen){
+        this.columns[index].generator.addGenerator(gen);
     }
 
     removeLastGenerator(index){
@@ -309,9 +320,9 @@ class DataGen {
 }
 
 var datagen = new DataGen();
-let gen = new CounterGenerator(new RandomPoissonGenerator(new RandomGaussianGenerator(new CounterGenerator(new RandomCategorical()))));
+/*let gen = new CounterGenerator(new RandomPoissonGenerator(new RandomGaussianGenerator(new CounterGenerator(new RandomCategorical()))));
 datagen.addCollumn("nunu", "Numeric", gen)
-console.log(datagen.generate());
+console.log(datagen.generate());*/
 
 
 

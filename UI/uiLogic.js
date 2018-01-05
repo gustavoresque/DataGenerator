@@ -6,14 +6,14 @@ $("html").ready(function(){
         $("#resultTablePane").show();
     });
     $("#resultBtnNavBar").click(function(){
-        $(this).toggleClass("active");
-        $("#homeBtnNavBar").toggleClass("active");
+        $(this).toggleClass("active", true);
+        $("#homeBtnNavBar").toggleClass("active", false);
         $("#summaryTablePane").hide();
         $("#resultTablePane").show();
     });
     $("#homeBtnNavBar").click(function(){
-        $(this).toggleClass("active");
-        $("#resultBtnNavBar").toggleClass("active");
+        $(this).toggleClass("active", true);
+        $("#resultBtnNavBar").toggleClass("active", false);
         $("#summaryTablePane").show();
         $("#resultTablePane").hide();
     });
@@ -38,18 +38,13 @@ $("html").ready(function(){
         }));
     });
 
-    $("#tableCollumn").on("dblclick", "td.columnGen", function(){
+    $("#tableCollumn").on("dblclick", "div.md-chip", function(){
         $(this).empty();
         $(this).append($("<select/>").attr("id", "selectGens").blur(function(){
             var cor = $(this).val();
-            $(this).parent().parent().get(0).__node__.generator = chooseGenerator(cor);
-            $(this).parent().addClass("columnGen").text("")
-                .append($("<div/>").addClass("md-chip md-chip-hover").text(cor))
-                .append($("<span/>")
-                    .addClass("btnGenerator btnAdd icon icon-plus-circled")
-                ).append($("<span/>")
-                .addClass("btnGenerator btnRemove icon icon-cancel-circled")
-            );
+            $(this).empty();
+            $(this).parent().get(0).__node__.generator = chooseGenerator(cor);
+            $(this).parent().text(cor);
         }));
         var listGens = listGenerators();
         for (var i = 0; i < listGens.length; i++){
@@ -68,9 +63,19 @@ $("html").ready(function(){
             $(".tooltiptext").css("visibility", "hidden").css("opacity", 0);
     });
 
-    $("#tableCollumn").on("click", "span.btnRemove", function(){
-        console.log($(this).parent().parent().find(".tdIndex").text());
+    $("#tableCollumn").on("click", "span.btnRemoveGen", function(){
         datagen.removeLastGenerator(parseInt($(this).parent().parent().find(".tdIndex").text()) - 1);
+        showGenerators();
+    });
+
+    $("#tableCollumn").on("click", "span.btnAddGen", function(){
+        console.log("Adicinoar Generator no index: " + $(this).parent().parent().find(".tdIndex").text());
+        datagen.addGeneratorToIndex(parseInt($(this).parent().parent().find(".tdIndex").text())-1, new CounterGenerator())
+        showGenerators();
+    });
+
+    $("#tableCollumn").on("click", "td.btnRemoveColumn", function(){
+        datagen.removeCollumn(parseInt($(this).parent().find(".tdIndex").text()) - 1);
         showGenerators();
     });
 });
@@ -80,7 +85,7 @@ function generateDatas(){
     var t = "";
     t += "<th>" + "Order" + "</th>";
     datagen.columns.forEach(function(item){
-        t += "<th>" + item.name + " (" + item.generator.name + ")" + "</th>";
+        t += "<th>" + item.name + "</th>";
     });
     document.getElementById("theadResult").innerHTML += t + "</tr>";
 
@@ -191,12 +196,13 @@ function showGenerators(){
             $chip.get(0).__node__ = gen;
         }
         $tdGen.append($("<span/>")
-                .addClass("btnGenerator btnAdd icon icon-plus-circled")
+                .addClass("btnGenerator btnAddGen icon icon-plus-circled")
             ).append($("<span/>")
-            .addClass("btnGenerator btnRemove icon icon-cancel-circled")
+            .addClass("btnGenerator btnRemoveGen icon icon-cancel-circled")
         );
         $tr.append($tdGen);
 
         $tr.get(0).__node__ = datagen.columns[i];
+        $tr.append($("<td/>").addClass("btnGenerator btnRemoveColumn icon icon-cancel-circled"))
     }
 }
