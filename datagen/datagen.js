@@ -17,13 +17,29 @@ class Generator{
         this.name = name;
         this.generator = generator;
         this.operator = operator;
+        this.order = 0;
     }
 
-    addGenerator(gen){
-        if (this.generator == null)
+    changeGenerator(gen, order){
+        if (order === 0)
+            return false;
+
+        if (this.order == (order-1)){
             this.generator = gen;
-        else
-            this.generator.addGenerator(gen);
+        }else{
+            this.generator.changeGenerator(gen, order);
+        }
+        return true;
+    }
+
+    addGenerator(gen, order){
+        if (this.generator == null){
+            gen.order = order;
+            this.generator = gen;
+        }
+        else{
+            this.generator.addGenerator(gen, order+1);
+        }
     }
 
     removeLastGenerator(){
@@ -294,8 +310,15 @@ class DataGen {
         });
     }
 
+    changeGeneratorToIndex(index, gen, order){
+        if (order === 0)
+            this.columns[index].generator = gen;
+        else
+            this.columns[index].generator.changeGenerator(gen,order);
+    }
+
     addGeneratorToIndex(index, gen){
-        this.columns[index].generator.addGenerator(gen);
+        this.columns[index].generator.addGenerator(gen,1);
     }
 
     removeLastGenerator(index){

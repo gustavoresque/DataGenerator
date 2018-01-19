@@ -39,12 +39,16 @@ $("html").ready(function(){
     });
 
     $("#tableCollumn").on("dblclick", "div.md-chip", function(){
+        var orderGen = $(this).text().split("-")[0];
+        console.log(orderGen);
         $(this).empty();
         $(this).append($("<select/>").attr("id", "selectGens").blur(function(){
             var cor = $(this).val();
             $(this).empty();
-            $(this).parent().get(0).__node__.generator = chooseGenerator(cor);
-            $(this).parent().text(cor);
+            if(!$(this).parent().get(0).__node__.changeGenerator(chooseGenerator(cor), parseInt(orderGen))){
+                $(this).parent().get(0).__node__ = chooseGenerator(cor);
+            }
+            $(this).parent().text(orderGen + "-" + cor);
         }));
         var listGens = listGenerators();
         for (var i = 0; i < listGens.length; i++){
@@ -69,7 +73,7 @@ $("html").ready(function(){
     });
 
     $("#tableCollumn").on("click", "span.btnAddGen", function(){
-        console.log("Adicinoar Generator no index: " + $(this).parent().parent().find(".tdIndex").text());
+        console.log("Adicionar Generator no index: " + $(this).parent().parent().find(".tdIndex").text());
         datagen.addGeneratorToIndex(parseInt($(this).parent().parent().find(".tdIndex").text())-1, new CounterGenerator())
         showGenerators();
     });
@@ -159,7 +163,8 @@ function addGenerator(){
 }
 
 function listGenerators(){
-    let list = ['Counter Generator',
+    let list = [
+        'Counter Generator',
         'Gaussian Generator',
         'Poisson Generator',
         'Bernoulli Generator',
@@ -172,7 +177,8 @@ function listGenerators(){
         'Polynomial Function',
         'Exponential Function',
         'Logarithm Function',
-        'Sinusoidal Function'];
+        'Sinusoidal Function'
+    ];
 
     return list;
 }
@@ -190,10 +196,12 @@ function showGenerators(){
         let generators = [];
         let $tdGen = $("<td/>").addClass("columnGen");
         datagen.columns[i].generator.getFullGenerator(generators);
+        var counter = 0;
         for(let gen of generators){
-            let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.name);
+            let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
             $tdGen.append($chip);
             $chip.get(0).__node__ = gen;
+            counter++;
         }
         $tdGen.append($("<span/>")
                 .addClass("btnGenerator btnAddGen icon icon-plus-circled")
