@@ -20,15 +20,14 @@ class Generator{
         this.order = 0;
     }
 
-    changeGenerator(gen, order){
-        if (order === 0)
+    changeGenerator(gen){
+        if (this.generator == null)
             return false;
 
-        if (this.order == (order-1)){
-            this.generator = gen;
-        }else{
-            this.generator.changeGenerator(gen, order);
-        }
+        var genSub = this.generator.generator;
+        this.generator = gen;
+        this.generator.generator = genSub;
+
         return true;
     }
 

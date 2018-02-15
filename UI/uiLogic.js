@@ -40,15 +40,16 @@ $("html").ready(function(){
 
     $("#tableCollumn").on("dblclick", "div.md-chip", function(){
         var orderGen = $(this).text().split("-")[0];
-        console.log(orderGen);
         $(this).empty();
         $(this).append($("<select/>").attr("id", "selectGens").blur(function(){
-            var cor = $(this).val();
+            var nameNewGenerator = $(this).val();
             $(this).empty();
-            if(!$(this).parent().get(0).__node__.changeGenerator(chooseGenerator(cor), parseInt(orderGen))){
-                $(this).parent().get(0).__node__ = chooseGenerator(cor);
-            }
-            $(this).parent().text(orderGen + "-" + cor);
+            var newGen = chooseGenerator(nameNewGenerator);
+            console.log("Embalo: " + $(this).parent().parent().parent().get(0).__node__.name);
+            //if(!$(this).parent().get(0).__node__.changeGenerator(newGen, parseInt(orderGen))){
+                $(this).parent().get(0).__node__ = newGen;
+            //}
+            $(this).parent().text(orderGen + "-" + nameNewGenerator);
         }));
         var listGens = listGenerators();
         for (var i = 0; i < listGens.length; i++){
@@ -199,8 +200,8 @@ function showGenerators(){
         var counter = 0;
         for(let gen of generators){
             let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
-            $tdGen.append($chip);
             $chip.get(0).__node__ = gen;
+            $tdGen.append($chip);
             counter++;
         }
         $tdGen.append($("<span/>")
