@@ -39,17 +39,30 @@ $("html").ready(function(){
     });
 
     $("#tableCollumn").on("dblclick", "div.md-chip", function(){
-        var orderGen = $(this).text().split("-")[0];
+        let orderGen = parseInt($(this).text().split("-")[0]);
         $(this).empty();
-        $(this).append($("<select/>").attr("id", "selectGens").blur(function(){
-            var nameNewGenerator = $(this).val();
-            $(this).empty();
-            var newGen = chooseGenerator(nameNewGenerator);
-            console.log("Embalo: " + $(this).parent().parent().parent().get(0).__node__.type);
+        $(this).append($("<select/>").attr("id", "selectGens").on("change",function(){
+            let nameNewGenerator = $(this).val();
+            // $(this).empty();
+            let newGen = chooseGenerator(nameNewGenerator);
+            console.log("Embalo: " + $(this).parent().parent().parent().get(0).__node__.name);
             //if(!$(this).parent().get(0).__node__.changeGenerator(newGen, parseInt(orderGen))){
-                $(this).parent().get(0).__node__ = newGen;
+            //substitui o gerador na estrutura.
+
+
+            let objColuna = $(this).parent().parent().parent().get(0).__node__;
+
+            $(this).parent().get(0).__node__.changeGenerator(newGen);
+            //substitui o gerador na interface gráfica.
+            $(this).parent().get(0).__node__ = newGen;
             //}
             $(this).parent().text(orderGen + "-" + nameNewGenerator);
+
+            //se o gerador é o zero ele não tem pai,
+            // por isso é necessário alterar a respectiva coluna no datagen.
+            if(orderGen === 0){
+                objColuna.generator = newGen;
+            }
         }));
         var listGens = listGenerators();
         for (var i = 0; i < listGens.length; i++){
@@ -110,6 +123,14 @@ function generateDatas(){
 
 var generatorToAdd;
 function chooseGenerator(gen){
+
+    // let geradores = {
+    //     "Counter Generator": CounterGenerator,
+    //     "Gaussian Generator":RandomGaussianGenerator
+    // };
+    //
+    // return new geradores[gen]();
+
     switch (gen){
         case "Counter Generator":
             generatorToAdd = new CounterGenerator();
