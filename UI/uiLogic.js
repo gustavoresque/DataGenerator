@@ -40,8 +40,7 @@ $("html").ready(function(){
 
     $("#tableCollumn").on("dblclick", "div.md-chip", function(){
         let orderGen = parseInt($(this).text().split("-")[0]);
-
-        datagen.exportModel();
+        
         $(this).empty();
         $(this).append($("<select/>").attr("id", "selectGens").on("change",function(){
             let nameNewGenerator = $(this).val();
