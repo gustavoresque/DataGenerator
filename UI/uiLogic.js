@@ -1,9 +1,9 @@
 $("html").ready(function(){
     $("#generateButton").click(function(){
-        $("#homeBtnNavBar").toggleClass("active", false);
+        /*$("#homeBtnNavBar").toggleClass("active", false);
         $("#resultBtnNavBar").toggleClass("active", true);
         $("#summaryTablePane").hide();
-        $("#resultTablePane").show();
+        $("#resultTablePane").show();*/
     });
     $("#resultBtnNavBar").click(function(){
         $(this).toggleClass("active", true);
