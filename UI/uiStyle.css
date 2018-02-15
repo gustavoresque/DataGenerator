@@ -55,3 +55,7 @@ tr:hover {
     background-color: inherit;
     color: black;
 }
+
+.rightSidebar{
+    float: right;
+}

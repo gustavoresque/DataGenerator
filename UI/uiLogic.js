@@ -45,7 +45,7 @@ $("html").ready(function(){
             var nameNewGenerator = $(this).val();
             $(this).empty();
             var newGen = chooseGenerator(nameNewGenerator);
-            console.log("Embalo: " + $(this).parent().parent().parent().get(0).__node__.name);
+            console.log("Embalo: " + $(this).parent().parent().parent().get(0).__node__.type);
             //if(!$(this).parent().get(0).__node__.changeGenerator(newGen, parseInt(orderGen))){
                 $(this).parent().get(0).__node__ = newGen;
             //}
