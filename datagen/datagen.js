@@ -91,6 +91,14 @@ class Generator{
     }
 
     getGenParams(){}
+
+    getModel(){
+        let self = this;
+        return {
+            name: self.name,
+            order: self.order
+        }
+    }
 }
 
 class CounterGenerator extends Generator{
@@ -119,6 +127,13 @@ class CounterGenerator extends Generator{
             }
         ];
     }
+
+    getModel(){
+        let model = super.getModel();
+        model.count = this.count;
+        model.step = this.step;
+        return model;
+    }
 }
 
 class RandomGaussianGenerator extends Generator{
@@ -145,6 +160,13 @@ class RandomGaussianGenerator extends Generator{
             }
         ];
     }
+
+    getModel(){
+        let model = super.getModel();
+        model.mean = this.mean;
+        model.std = this.std;
+        return model;
+    }
 }
 
 class RandomPoissonGenerator extends Generator{
@@ -165,6 +187,12 @@ class RandomPoissonGenerator extends Generator{
                 type: "number"
             }
         ];
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.lambda = this.lambda;
+        return model;
     }
 }
 
@@ -188,6 +216,11 @@ class RandomBernoulliGenerator extends Generator{
         ];
     }
 
+    getModel(){
+        let model = super.getModel();
+        model.p = this.p;
+        return model;
+    }
 }
 
 class RandomCauchyGenerator extends Generator{
@@ -213,6 +246,13 @@ class RandomCauchyGenerator extends Generator{
                 type: "number"
             }
         ];
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.loc = this.loc;
+        model.scale = this.scale;
+        return model;
     }
 }
 
@@ -248,6 +288,14 @@ class RandomNoiseGenerator extends Generator{
             }
         ];
     }
+
+    getModel(){
+        let model = super.getModel();
+        model.generator2 = this.generator2.getModel();
+        model.probability = this.probability;
+        model.intensity = this.intensity;
+        return model;
+    }
 }
 
 class RangeFilter extends Generator {
@@ -277,6 +325,13 @@ class RangeFilter extends Generator {
                 type: "number"
             }
         ];
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.begin = this.begin;
+        model.end = this.end;
+        return model;
     }
 }
 
@@ -314,14 +369,21 @@ class RandomCategorical extends Generator {
             }
         ];
     }
+
+    getModel(){
+        let model = super.getModel();
+        model.array = this.array;
+        return model;
+    }
 }
 
 
 class Function extends Generator{
 
-    constructor(name, generator, operator, inputGenerator){
+    constructor(name, generator, operator, inputGenerator, inputGenIndex){
         super(name, generator, operator);
         this.inputGenerator = inputGenerator;
+        this.inputGenIndex = inputGenIndex;
     }
 
     generate(){
@@ -340,6 +402,12 @@ class Function extends Generator{
                 type: "Generator"
             }
         ];
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.inputGenIndex = this.inputGenIndex;
+        return model;
     }
 }
 
@@ -367,6 +435,12 @@ class LinearFunction extends Function{
         return params;
     }
 
+    getModel(){
+        let model = super.getModel();
+        model.a = this.a;
+        model.b = this.b;
+        return model;
+    }
 }
 
 class QuadraticFunction extends Function{
@@ -397,6 +471,14 @@ class QuadraticFunction extends Function{
             });
         return params;
     }
+
+    getModel(){
+        let model = super.getModel();
+        model.a = this.a;
+        model.b = this.b;
+        model.c = this.c;
+        return model;
+    }
 }
 
 class PolynomialFunction extends Function{
@@ -419,6 +501,12 @@ class PolynomialFunction extends Function{
             type: "array"
         });
         return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.constants = this.constants;
+        return model;
     }
 }
 
@@ -444,6 +532,13 @@ class ExponentialFunction extends Function{
             });
         return params;
     }
+
+    getModel(){
+        let model = super.getModel();
+        model.a = this.a;
+        model.b = this.b;
+        return model;
+    }
 }
 
 class LogarithmFunction extends Function{
@@ -463,6 +558,13 @@ class LogarithmFunction extends Function{
             });
         return params;
     }
+
+    getModel(){
+        let model = super.getModel();
+        model.base = this.base;
+        return model;
+    }
+
 }
 
 class SinusoidalFunction extends Function{
@@ -492,6 +594,14 @@ class SinusoidalFunction extends Function{
             type: "number"
         });
         return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.a = this.a;
+        model.b = this.b;
+        model.c = this.c;
+        return model;
     }
 }
 ///--------------------------  Gerenciador de Colunas e Geração da base total. ----------------------------------------
@@ -544,6 +654,24 @@ class DataGen {
             }
         }
         return data;
+    }
+    
+    exportModel(){
+        let model = [];
+        for(let i=0; i<this.columns.length; i++){
+            model.push({
+                name: this.columns[i].name,
+                type: this.columns[i].type,
+            });
+            let fullGenerator = [];
+            let fullGenNames = [];
+            this.columns[i].generator.getFullGenerator(fullGenerator);
+            for(let gen of fullGenerator){
+                fullGenNames.push(gen.getModel());
+            }
+            model[i].generator = fullGenNames;
+        }
+        console.log(JSON.stringify(model));
     }
 }
 
