@@ -49,12 +49,12 @@ class Generator{
 
     addGenerator(gen, order){
         if (!this.generator){
-            gen.order = order;
+            gen.order = order || 1;
             this.generator = gen;
             gen.parent = this;
         }
         else{
-            this.generator.addGenerator(gen, order+1);
+            this.generator.addGenerator(gen, (order || 1) + 1);
         }
     }
 
@@ -615,6 +615,23 @@ class DataGen {
             type: "Numeric",
             generator: new CounterGenerator()
         }];
+
+        this.listOfGens = {
+            'Counter Generator': CounterGenerator,
+            'Gaussian Generator': RandomGaussianGenerator,
+            'Poisson Generator': RandomPoissonGenerator,
+            'Bernoulli Generator': RandomBernoulliGenerator,
+            'Cauchy Generator': RandomCauchyGenerator,
+            'Noise Generator': RandomNoiseGenerator,
+            'Range Filter': RangeFilter,
+            'Categorical': RandomCategorical,
+            'Linear Function': LinearFunction,
+            'Quadratic Function': QuadraticFunction,
+            'Polynomial Function': PolynomialFunction,
+            'Exponential Function': ExponentialFunction,
+            'Logarithm Function': LogarithmFunction,
+            'Sinusoidal Function': SinusoidalFunction
+        };
     }
 
     addCollumn(name, type, generator){
@@ -633,7 +650,7 @@ class DataGen {
     }
 
     addGeneratorToIndex(index, gen){
-        this.columns[index].generator.addGenerator(gen,1);
+        this.columns[index].generator.addGenerator(gen);
     }
 
     removeLastGenerator(index){
@@ -672,6 +689,51 @@ class DataGen {
             model[i].generator = fullGenNames;
         }
         console.log(JSON.stringify(model));
+    }
+
+    //TODO: resolver funções e ruido.
+    importModel(model_str){
+        let model = JSON.parse(model_str);
+        let datagen = new DataGen();
+        datagen.columns = [];
+        for(let i=0; i<model.length; i++){
+
+
+
+            let generator;
+
+            for(let j=0; j<model[i].generator.length; j++){
+                let selectedGenerator = this.listOfGens[model[i].generator[j].name];
+                if(generator){
+                    let newgen = new selectedGenerator();
+                    generator.addGenerator(newgen);
+                    copyAttrs(model[i].generator, newgen);
+
+                }else{
+                    generator = new selectedGenerator();
+                    copyAttrs(model[i].generator, generator);
+                }
+
+            }
+
+            datagen.columns.push({
+                name: model[i].name,
+                type: model[i].type,
+                generator: generator
+            })
+
+        }
+        console.log(datagen);
+    }
+
+
+}
+
+function copyAttrs(source, target){
+    for(let attr in source){
+        if(source.hasOwnProperty(attr) && attr !== "name"){
+            target[attr] = source[attr];
+        }
     }
 }
 
