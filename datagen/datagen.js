@@ -20,17 +20,17 @@ class Generator{
         this.order = 0;
     }
 
-    changeGenerator(gen, order){
-        if (order === 0)
-            return false;
-
-        if (this.order == (order-1)){
-            this.generator = gen;
-        }else{
-            this.generator.changeGenerator(gen, order);
-        }
-        return true;
-    }
+    // changeGenerator(gen, order){
+    //     if (order === 0)
+    //         return false;
+    //
+    //     if (this.order == (order-1)){
+    //         this.generator = gen;
+    //     }else{
+    //         this.generator.changeGenerator(gen, order);
+    //     }
+    //     return true;
+    // }
 
     addGenerator(gen, order){
         if (this.generator == null){
@@ -43,13 +43,16 @@ class Generator{
     }
 
     removeLastGenerator(){
-        if (this.generator == null)
+        if (!this.generator)
             return;
 
-        if (this.generator.generator == null)
-            this.generator = null;
-        else
-            this.generator.removeLastGenerator();
+        if (!this.generator.generator) {
+            let removed = this.generator;
+            this.generator = undefined;
+            return removed;
+        }else {
+            return this.generator.removeLastGenerator();
+        }
     }
 
     getFullGenerator(generators){
