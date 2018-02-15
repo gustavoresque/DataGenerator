@@ -31,6 +31,16 @@ class Generator{
     //     }
     //     return true;
     // }
+    changeGenerator(gen){
+        if (this.generator == null)
+            return false;
+
+        var genSub = this.generator.generator;
+        this.generator = gen;
+        this.generator.generator = genSub;
+
+        return true;
+    }
 
     addGenerator(gen, order){
         if (this.generator == null){
