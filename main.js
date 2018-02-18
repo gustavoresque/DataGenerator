@@ -26,11 +26,13 @@ function createWindow () {
 
 
     const menu = new electron.Menu();
-    menu.append(new electron.MenuItem({label: 'MenuItem1', submenu: [
-        {label: 'minimize', click (){console.log("Voce clicou em minimize")}},
-        {label: 'close', click (){console.log("Voce clicou em close")}}
+    menu.append(new electron.MenuItem({
+        label: 'File', submenu: [
+            {label: 'New Model', click (){console.log("Voce clicou em New Model")}},
+            {label: 'Import Model', click (){console.log("Voce clicou em Import Model")}},
+            {label: 'Export Model', click (){console.log("Voce clicou em Export Model")}},
+            {role: 'close'}
     ]}));
-    menu.append(new electron.MenuItem({label: 'MenuItem2', type: 'checkbox', checked: true}));
     mainWindow.setMenu(menu);
 
 
