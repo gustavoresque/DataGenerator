@@ -6,7 +6,9 @@
       <link rel="stylesheet" href="photon-0.1.2-dist/css/photon.min.css">
       <link rel="stylesheet" href="UI/uiStyle.css">
       <link rel="stylesheet" href="UI/chips.css">
+
       <script src="photon-0.1.2-dist/template-app/js/menu.js" charset="utf-8"></script>
+      <script src="UI/tippy.all.min.js"></script>
   </head>
   <body>
   <div class="window">
@@ -18,7 +20,7 @@
       <div class="pane-group">
         <div class="pane pane-sm sidebar">
           <nav class="nav-group">
-            <h5 class="nav-group-title">Menu</h5>
+            <h5 class="nav-group-title">Models</h5>
             <span id="homeBtnNavBar" class="nav-group-item active">
                 <span class="icon icon-tools"></span>
                 Generate
@@ -61,6 +63,20 @@
 
         <div class="pane pane-sm sidebar rightSidebar">
           <h5 class="nav-group-title">Generator Properties</h5>
+
+          <form>
+                <label class="inlineForProperties">
+                  Type:
+                  <select id="selectGeneratorType" class="form-control inlineForProperties" disabled>
+                  </select>
+                </label>
+          </form>
+
+          <div id="generatorPropertiesDiv">
+            Properties
+            <form id="generatorPropertiesForm">
+            </form>
+          </div>
         </div>
 
         <div style="display: none" id="resultTablePane" class="pane">

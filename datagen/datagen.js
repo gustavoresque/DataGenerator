@@ -82,8 +82,11 @@ class Generator{
         if(this.generator){
             value  = this.generator.generate();
 
-            if(this.operator)
-                return this.operator(sub_value, value);
+            if(this.operator){
+                this.lastGenerated = this.operator(sub_value, value);
+                return this.lastGenerated;
+            }
+
         }
 
         this.lastGenerated = sub_value + value;
@@ -91,6 +94,8 @@ class Generator{
     }
 
     getGenParams(){}
+
+    reset(){}
 
     getModel(){
         let self = this;
@@ -103,25 +108,35 @@ class Generator{
 
 class CounterGenerator extends Generator{
 
-    constructor(generator, operator, count, step){
+    constructor(generator, operator, begin, step){
         super("Counter Generator", generator, operator);
-        this.count = count || 0;
+        this.begin = begin || 0;
         this.step = step || 1;
-        this.count -= this.step;
+        this.count = this.begin;
+        // this.count -= this.step;
     }
 
     generate(){
+        let value = this.count;
         this.count+=this.step;
-        return super.generate(this.count);
+        return super.generate(value);
+    }
+
+    reset(){
+        this.count = this.begin;
     }
 
     getGenParams(){
         return [
             {
+                shortName: "Begin",
+                variableName: "begin",
                 name: "Begin Number",
                 type: "number"
             },
             {
+                shortName: "Step",
+                variableName: "step",
                 name: "Step",
                 type: "number"
             }
@@ -130,8 +145,53 @@ class CounterGenerator extends Generator{
 
     getModel(){
         let model = super.getModel();
-        model.count = this.count;
+        model.begin = this.begin;
         model.step = this.step;
+        return model;
+    }
+}
+
+class RandomUniformGenerator extends Generator{
+    constructor(generator, operator, min, max, disc){
+        super("Uniform Generator", generator, operator);
+        this.min = min || 0;
+        this.max = max || 1;
+        this.disc = disc || false;
+    }
+
+    generate(){
+        let v = randgen.runif(this.min, this.max, this.disc);
+        return super.generate(v);
+    }
+
+    getGenParams(){
+        return [
+            {
+                shortName: "Min",
+                variableName: "min",
+                name: "Minimum value",
+                type: "number"
+            },
+            {
+                shortName: "Max",
+                variableName: "max",
+                name: "Maximum value",
+                type: "number"
+            },
+            {
+                shortName: "Disc",
+                variableName: "disc",
+                name: "Discrete Values",
+                type: "boolean"
+            }
+        ];
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.min = this.min;
+        model.max = this.max;
+        model.disc = this.disc;
         return model;
     }
 }
@@ -151,10 +211,14 @@ class RandomGaussianGenerator extends Generator{
     getGenParams(){
         return [
             {
+                shortName: "Mean",
+                variableName: "mean",
                 name: "Mean",
                 type: "number"
             },
             {
+                shortName: "StD",
+                variableName: "std",
                 name: "Standard Deviation",
                 type: "number"
             }
@@ -183,6 +247,8 @@ class RandomPoissonGenerator extends Generator{
     getGenParams(){
         return [
             {
+                shortName: "Lambda",
+                variableName: "lambda",
                 name: "Lambda",
                 type: "number"
             }
@@ -199,7 +265,7 @@ class RandomPoissonGenerator extends Generator{
 class RandomBernoulliGenerator extends Generator{
     constructor(generator, operator, p){
         super("Bernoulli Generator", generator, operator);
-        this.p = p || 1;
+        this.p = p || 0.5;
     }
 
     generate(){
@@ -210,7 +276,9 @@ class RandomBernoulliGenerator extends Generator{
     getGenParams(){
         return [
             {
-                name: "P",
+                shortName: "P",
+                variableName: "p",
+                name: "Probability",
                 type: "number"
             }
         ];
@@ -238,10 +306,14 @@ class RandomCauchyGenerator extends Generator{
     getGenParams(){
         return [
             {
-                name: "Loc",
+                shortName: "X0",
+                variableName: "loc",
+                name: "Location",
                 type: "number"
             },
             {
+                shortName: "Scale",
+                variableName: "scale",
                 name: "Scale",
                 type: "number"
             }
@@ -261,13 +333,13 @@ class RandomNoiseGenerator extends Generator{
         super("Noise Generator", generator, operator);
         this.generator2 = generator2 || new RandomGaussianGenerator();
         this.probability = probability || 0.3;
-        this.intensity = intensity || 0;
+        this.intensity = intensity || 1;
     }
 
     generate(){
         var value = 0;
         if (Math.random() < this.probability){
-            return super.generate(this.generator2.generate()) + this.intensity;
+            return super.generate(this.generator2.generate()) * this.intensity;
         }else{
             return super.generate(0);
         }
@@ -275,14 +347,20 @@ class RandomNoiseGenerator extends Generator{
     getGenParams(){
         return [
             {
-                name: "Generator",
+                shortName: "Type",
+                variableName: "generator2",
+                name: "Generator Type",
                 type: "Generator"
             },
             {
-                name: "Probability",
+                shortName: "Prob",
+                variableName: "probability",
+                name: "Occurrence Probability",
                 type: "number"
             },
             {
+                shortName: "Force",
+                variableName: "intensity",
                 name: "Intensity",
                 type: "number"
             }
@@ -317,10 +395,14 @@ class RangeFilter extends Generator {
     getGenParams(){
         return [
             {
+                shortName: "Begin",
+                variableName: "begin",
                 name: "Filter Begin",
                 type: "number"
             },
             {
+                shortName: "End",
+                variableName: "end",
                 name: "Filter End",
                 type: "number"
             }
@@ -338,34 +420,25 @@ class RangeFilter extends Generator {
 class RandomCategorical extends Generator {
     constructor(generator,operator,array,number) {
             super("Categorical",generator,operator);
-            if (!array)
-                array = [0,1,2,3,4,5];
-
-            if (number)
-                this.array = array.slice(0,number);
-            else
-                this.array = array.slice(0,1);
+            this.array = array || ["Banana", "Apple", "Orange"];
     }
 
     generate() {
         let result =  super.generate(this.array.length);
-        if(result === this.array.length){
+        if(result >= this.array.length || result < 0){
             return this.array[Math.floor(Math.random() * this.array.length)];
         } else{
             return this.array[result];
         }
-        return data;
     }
 
     getGenParams() {
         return [
             {
-                name: "Elements",
+                shortName: "List",
+                variableName: "array",
+                name: "List of Categories",
                 type: "array"
-            },
-            {
-                name: "Quantity",
-                type: "number"
             }
         ];
     }
@@ -398,8 +471,10 @@ class Function extends Generator{
     getGenParams() {
         return [
             {
-                name: "Input Generator",
-                type: "Generator"
+                shortName: "Input",
+                variableName: "inputGenerator",
+                name: "Input Column (Previous one)",
+                type: "Column"
             }
         ];
     }
@@ -414,8 +489,8 @@ class Function extends Generator{
 class LinearFunction extends Function{
     constructor(generator, operator, inputGenerator, a, b){
         super("Linear Function", generator, operator, inputGenerator);
-        this.a = a;
-        this.b = b;
+        this.a = a || 2;
+        this.b = b || 0;
     }
 
     transform(x){
@@ -425,13 +500,17 @@ class LinearFunction extends Function{
     getGenParams() {
         let params = super.getGenParams();
         params.push({
-            name: "Slope",
-            type: "number"
-        },
-        {
-            name: "Intercept",
-            type: "number"
-        });
+                shortName: "a",
+                variableName: "a",
+                name: "Slope",
+                type: "number"
+            },
+            {
+                shortName: "b",
+                variableName: "b",
+                name: "Intercept",
+                type: "number"
+            });
         return params;
     }
 
@@ -446,9 +525,9 @@ class LinearFunction extends Function{
 class QuadraticFunction extends Function{
     constructor(generator, operator, inputGenerator, a, b, c){
         super("Quadratic Function", generator, operator, inputGenerator);
-        this.a = a;
-        this.b = b;
-        this.c = c;
+        this.a = a || 1;
+        this.b = b || 1;
+        this.c = c || 0;
     }
 
     transform(x){
@@ -458,14 +537,20 @@ class QuadraticFunction extends Function{
     getGenParams() {
         let params = super.getGenParams();
         params.push({
+                shortName: "a",
+                variableName: "a",
                 name: "Quadratic Term Constant",
                 type: "number"
             },
             {
+                shortName: "b",
+                variableName: "b",
                 name: "Linear Term Constant",
                 type: "number"
             },
             {
+                shortName: "c",
+                variableName: "c",
                 name: "Constant Term",
                 type: "number"
             });
@@ -484,7 +569,7 @@ class QuadraticFunction extends Function{
 class PolynomialFunction extends Function{
     constructor(generator, operator, inputGenerator, constants){
         super("Polynomial Function", generator, operator, inputGenerator);
-        this.constants = constants;
+        this.constants = constants || [1,1,1];
     }
 
     transform(x){
@@ -497,6 +582,8 @@ class PolynomialFunction extends Function{
     getGenParams() {
         let params = super.getGenParams();
         params.push({
+            shortName: "Coeffs",
+            variableName: "constants",
             name: "Coefficients",
             type: "array"
         });
@@ -513,7 +600,7 @@ class PolynomialFunction extends Function{
 class ExponentialFunction extends Function{
     constructor(generator, operator, inputGenerator,  a, b){
         super("Exponential Function", generator, operator, inputGenerator);
-        this.a = a;
+        this.a = a || 2;
         this.b = b || 1;
     }
 
@@ -523,10 +610,14 @@ class ExponentialFunction extends Function{
     getGenParams() {
         let params = super.getGenParams();
         params.push({
+                shortName: "Base",
+                variableName: "a",
                 name: "Base",
                 type: "number"
             },
             {
+                shortName: "Mult",
+                variableName: "b",
                 name: "Multiplier",
                 type: "number"
             });
@@ -553,6 +644,8 @@ class LogarithmFunction extends Function{
     getGenParams() {
         let params = super.getGenParams();
         params.push({
+                shortName: "Base",
+                variableName: "base",
                 name: "Base",
                 type: "number"
             });
@@ -582,17 +675,23 @@ class SinusoidalFunction extends Function{
     getGenParams() {
         let params = super.getGenParams();
         params.push({
-            name: "Amplitude",
-            type: "number"
-        },
-        {
-            name: "Frequency",
-            type: "number"
-        },
-        {
-            name: "Phase",
-            type: "number"
-        });
+                shortName: "a",
+                variableName: "a",
+                name: "Amplitude",
+                type: "number"
+            },
+            {
+                shortName: "b",
+                variableName: "b",
+                name: "Frequency",
+                type: "number"
+            },
+            {
+                shortName: "c",
+                variableName: "c",
+                name: "Phase",
+                type: "number"
+            });
         return params;
     }
 
@@ -609,37 +708,26 @@ class SinusoidalFunction extends Function{
 class DataGen {
 
     constructor () {
-        this.n_lines = 0; // Quantidade de linhas na geração
-        this.columns = [{
-            name: "Title",
+        this.n_lines = 100; // Quantidade de linhas na geração
+        let defaultGenerator = new CounterGenerator();
+        let column = {
+            name: "Column 1",
             type: "Numeric",
-            generator: new CounterGenerator()
-        }];
-
-        this.listOfGens = {
-            'Counter Generator': CounterGenerator,
-            'Gaussian Generator': RandomGaussianGenerator,
-            'Poisson Generator': RandomPoissonGenerator,
-            'Bernoulli Generator': RandomBernoulliGenerator,
-            'Cauchy Generator': RandomCauchyGenerator,
-            'Noise Generator': RandomNoiseGenerator,
-            'Range Filter': RangeFilter,
-            'Categorical': RandomCategorical,
-            'Linear Function': LinearFunction,
-            'Quadratic Function': QuadraticFunction,
-            'Polynomial Function': PolynomialFunction,
-            'Exponential Function': ExponentialFunction,
-            'Logarithm Function': LogarithmFunction,
-            'Sinusoidal Function': SinusoidalFunction
+            generator: defaultGenerator
         };
+        defaultGenerator.parent = column;
+        this.columns = [column];
     }
 
     addCollumn(name, type, generator){
-        this.columns.push({
+        generator = generator || new CounterGenerator();
+        let column = {
             name: name,
             type: type,
             generator: generator
-        });
+        };
+        generator.parent = column;
+        this.columns.push(column);
     }
 
     changeGeneratorToIndex(index, gen, order){
@@ -663,12 +751,17 @@ class DataGen {
     }
 
     generate (){
+        console.log("GENERATE!!!!!!");
         let data = [];
         for (let i = 0; i < this.n_lines; i++){
             data.push([]);
             for (let j = 0; j < this.columns.length; j++){
                 data[i].push(this.columns[j].generator.generate());
             }
+        }
+        for (let j = 0; j < this.columns.length; j++){
+            console.log(this.columns[j].generator);
+            this.columns[j].generator.reset();
         }
         return data;
     }
@@ -698,12 +791,10 @@ class DataGen {
         datagen.columns = [];
         for(let i=0; i<model.length; i++){
 
-
-
             let generator;
 
             for(let j=0; j<model[i].generator.length; j++){
-                let selectedGenerator = this.listOfGens[model[i].generator[j].name];
+                let selectedGenerator = datagen.listOfGens[model[i].generator[j].name];
                 if(generator){
                     let newgen = new selectedGenerator();
                     generator.addGenerator(newgen);
@@ -729,15 +820,46 @@ class DataGen {
 
 }
 
+DataGen.prototype.listOfGens = {
+    'Counter Generator': CounterGenerator,
+    'Uniform Generator': RandomUniformGenerator,
+    'Gaussian Generator': RandomGaussianGenerator,
+    'Poisson Generator': RandomPoissonGenerator,
+    'Bernoulli Generator': RandomBernoulliGenerator,
+    'Cauchy Generator': RandomCauchyGenerator,
+    'Noise Generator': RandomNoiseGenerator,
+    'Range Filter': RangeFilter,
+    'Categorical': RandomCategorical,
+    'Linear Function': LinearFunction,
+    'Quadratic Function': QuadraticFunction,
+    'Polynomial Function': PolynomialFunction,
+    'Exponential Function': ExponentialFunction,
+    'Logarithm Function': LogarithmFunction,
+    'Sinusoidal Function': SinusoidalFunction
+};
+
+DataGen.prototype.listOfGensForNoise = {
+    'Uniform Generator': RandomUniformGenerator,
+    'Gaussian Generator': RandomGaussianGenerator,
+    'Poisson Generator': RandomPoissonGenerator,
+    'Bernoulli Generator': RandomBernoulliGenerator,
+    'Cauchy Generator': RandomCauchyGenerator,
+};
+
 function copyAttrs(source, target){
     for(let attr in source){
         if(source.hasOwnProperty(attr) && attr !== "name"){
-            target[attr] = source[attr];
+            if(attr === "generator2"){
+                target[attr] = new (DataGen.prototype.listOfGens[source[attr]])();
+            }else{
+                target[attr] = source[attr];
+            }
         }
     }
 }
 
 var datagen = new DataGen();
+var DataGenerator = DataGen;
 /*let gen = new CounterGenerator(new RandomPoissonGenerator(new RandomGaussianGenerator(new CounterGenerator(new RandomCategorical()))));
 datagen.addCollumn("nunu", "Numeric", gen)
 console.log(datagen.generate());*/
