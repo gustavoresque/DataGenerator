@@ -24,18 +24,40 @@ function createWindow () {
     slashes: true
   }));
 
-
+    const electron = require('electron');
     const menu = new electron.Menu();
-    menu.append(new electron.MenuItem({
-        label: 'File', submenu: [
-            {label: 'New Model', click (){console.log("Voce clicou em New Model")}},
-            {label: 'Import Model', click (){console.log("Voce clicou em Import Model")}},
-            {label: 'Export Model', click (){console.log("Voce clicou em Export Model")}},
-            {role: 'close'}
-    ]}));
+    menu.append(new electron.MenuItem(
+        {
+            label: 'File',
+            submenu: [
+                {label: 'New Model', click (){
+                        mainWindow.webContents.executeJavaScript('createNewModel();');
+                    }},
+                {label: 'Import Model', click (){
+                        mainWindow.webContents.executeJavaScript('createImportModel();');
+                    }},
+                {label: 'Export Model', click (){
+                        mainWindow.webContents.executeJavaScript('createExportModel();');
+                    }},
+                {role: 'close'}
+            ]
+        }
+    ));
+    menu.append(new electron.MenuItem(
+        {
+            label: 'Debug',
+            submenu: [
+                {
+                    label: 'Toggle Developer Tools',
+                    accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
+                    click (item, focusedWindow) {
+                        if (focusedWindow) focusedWindow.webContents.toggleDevTools()
+                    }
+                }
+            ]
+        }
+    ));
     mainWindow.setMenu(menu);
-
-
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
