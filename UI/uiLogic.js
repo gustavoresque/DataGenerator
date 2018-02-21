@@ -1,7 +1,8 @@
+var datagen = [new DataGen(), new DataGen()];
 let activeGenerator;
 
 $("html").ready(function(){
-    $("#resultBtnNavBar").click(function(){
+    /*$("#resultBtnNavBar").click(function(){
         $(this).toggleClass("active", true);
         $("#homeBtnNavBar").toggleClass("active", false);
         $("#summaryTablePane").hide();
@@ -12,7 +13,7 @@ $("html").ready(function(){
         $("#resultBtnNavBar").toggleClass("active", false);
         $("#summaryTablePane").show();
         $("#resultTablePane").hide();
-    });
+    });*/
 
     $("#tableCollumn").on("dblclick", "td.columnName", function(){
         var title = $(this).text();
@@ -123,18 +124,18 @@ function addGenerator(){
 function showGenerators(){
     let active_gen_chip;
     $("#tbody").empty();
-    for(var i = 0; i < datagen.columns.length; i++){
+    for(var i = 0; i < datagen[0].columns.length; i++){
         var $tr = $("<tr/>");
         $("#tbody").append($tr
             .append($("<td/>").append($("<input/>").attr("type", "checkbox")))
             .append($("<td/>").text(i+1).addClass("tdIndex"))
-            .append($("<td/>").text(datagen.columns[i].name).addClass("columnName"))
-            .append($("<td/>").text(datagen.columns[i].type).addClass("columnType"))
+            .append($("<td/>").text(datagen[0].columns[i].name).addClass("columnName"))
+            .append($("<td/>").text(datagen[0].columns[i].type).addClass("columnType"))
         );
         let generators = [];
         let $tdGen = $("<td/>").addClass("columnGen");
 
-        datagen.columns[i].generator.getFullGenerator(generators);
+        datagen[0].columns[i].generator.getFullGenerator(generators);
         var counter = 0;
 
         for(let gen of generators){
@@ -275,8 +276,8 @@ function configGenProps(){
 
 }
 
-function createNewModel () {
-    alert('Create new model');
+function createNewModel (msg) {
+    alert('File opened: ' + msg);
 }
 
 function createImportModel () {

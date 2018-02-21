@@ -32,14 +32,11 @@ function createWindow () {
             submenu: [
                 {label: 'New Model', click (){
                         mainWindow.webContents.executeJavaScript('createNewModel();');
-                        dialog.showOpenDialog(mainWindow, {
-                            properties: ['openFile'],
-                            callback: function(file){
-
-                            }
-                        });
                     }},
                 {label: 'Import Model', click (){
+                        let pathFile = dialog.showOpenDialog(mainWindow, {
+                            properties: ['openFile']
+                        });
                         mainWindow.webContents.executeJavaScript('createImportModel();');
                     }},
                 {label: 'Export Model', click (){

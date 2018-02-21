@@ -858,11 +858,8 @@ function copyAttrs(source, target){
     }
 }
 
-var datagen = new DataGen();
+//var datagen = new DataGen();
 var DataGenerator = DataGen;
-/*let gen = new CounterGenerator(new RandomPoissonGenerator(new RandomGaussianGenerator(new CounterGenerator(new RandomCategorical()))));
-datagen.addCollumn("nunu", "Numeric", gen)
-console.log(datagen.generate());*/
 
 
 if(module){
