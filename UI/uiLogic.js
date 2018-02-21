@@ -1,13 +1,6 @@
 let activeGenerator;
 
-
 $("html").ready(function(){
-    $("#generateButton").click(function(){
-        /*$("#homeBtnNavBar").toggleClass("active", false);
-        $("#resultBtnNavBar").toggleClass("active", true);
-        $("#summaryTablePane").hide();
-        $("#resultTablePane").show();*/
-    });
     $("#resultBtnNavBar").click(function(){
         $(this).toggleClass("active", true);
         $("#homeBtnNavBar").toggleClass("active", false);
@@ -41,11 +34,6 @@ $("html").ready(function(){
         }));
     });
 
-    //<div class="form-group">
-// <label>Email address</label>
-//     <input type="email" class="form-control" placeholder="Email">
-//         </div>
-
     $("#tableCollumn").on("click", "div.md-chip", configGenProps);
 
     $("#generatorPropertiesForm").on("change blur", "input,select", function(){
@@ -64,60 +52,15 @@ $("html").ready(function(){
 
     $("#selectGeneratorType").on("change blur", function(){
         let nameNewGenerator = $(this).val();
-        // $(this).empty();
-        let newGen = new (datagen.listOfGens[nameNewGenerator])();//chooseGenerator(nameNewGenerator);
-        //if(!$(this).parent().get(0).__node__.changeGenerator(newGen, parseInt(orderGen))){
+        let newGen = new (datagen.listOfGens[nameNewGenerator])();
         //substitui o gerador na estrutura.
         console.log(datagen.listOfGens[nameNewGenerator]);
-
-        // let objColuna = $(this).parent().parent().parent().get(0).__node__;
 
         $(this).get(0).__node__.changeGenerator(newGen);
         activeGenerator = newGen;
         let $active_chip = showGenerators();
         configGenProps.apply($active_chip);
-        // //substitui o gerador na interface gráfica.
-        // $(this).parent().get(0).__node__ = newGen;
-        // $(this).parent().text(orderGen + "-" + nameNewGenerator);
-
-        //se o gerador é o zero ele não tem pai,
-        // por isso é necessário alterar a respectiva coluna no datagen.
-        // if(orderGen === 0){
-        //     objColuna.generator = newGen;
-        // }
     });
-
-    // $("#tableCollumn").on("dblclick", "div.md-chip", function(){
-    //     let orderGen = parseInt($(this).text().split("-")[0]);
-    //
-    //     $(this).empty();
-    //     $(this).append($("<select/>").attr("id", "selectGens").on("change",function(){
-    //         let nameNewGenerator = $(this).val();
-    //         // $(this).empty();
-    //         let newGen = chooseGenerator(nameNewGenerator);
-    //         //if(!$(this).parent().get(0).__node__.changeGenerator(newGen, parseInt(orderGen))){
-    //         //substitui o gerador na estrutura.
-    //
-    //
-    //         let objColuna = $(this).parent().parent().parent().get(0).__node__;
-    //
-    //         $(this).parent().get(0).__node__.changeGenerator(newGen);
-    //         //substitui o gerador na interface gráfica.
-    //         $(this).parent().get(0).__node__ = newGen;
-    //         //}
-    //         $(this).parent().text(orderGen + "-" + nameNewGenerator);
-    //
-    //         //se o gerador é o zero ele não tem pai,
-    //         // por isso é necessário alterar a respectiva coluna no datagen.
-    //         if(orderGen === 0){
-    //             objColuna.generator = newGen;
-    //         }
-    //     }));
-    //     var listGens = listGenerators();
-    //     for (var i = 0; i < listGens.length; i++){
-    //         $(this).find("#selectGens").append($("<option/>").attr("value", listGens[i]).text(listGens[i]));
-    //     }
-    // });
 
     $("#rowsQtInput").blur(function(){
         $(".tooltiptext").css("visibility", "hidden").css("opacity", 0);
@@ -150,7 +93,7 @@ $("html").ready(function(){
 function generateDatas(){
     document.getElementById("theadResult").innerHTML = "<tr>";
     let t = "";
-    // t += "<th>" + "Order" + "</th>";
+
     datagen.columns.forEach(function(item){
         t += "<th>" + item.name + "</th>";
     });
@@ -169,103 +112,13 @@ function generateDatas(){
         }
         document.getElementById("tbodyResult").appendChild(tr);
     }
-
-    // for (var i = 0; i < number; i++){
-    //     document.getElementById("tbodyResult").innerHTML = "<tr>\n";
-    //     t += "<td>" + (i+1) + "</td>\n";
-    //     datagen.columns.forEach(function(item){
-    //         t += "<td>" + item.generator.generate() + "</td>\n";
-    //     });
-    //     t += "</tr>";
-    // }
-    // document.getElementById("theadResult").innerHTML += t;
-    // document.getElementById("tbodyResult").innerHTML += "</tr>";
 }
-
-var generatorToAdd;
-// function chooseGenerator(gen){
-//
-//
-//     // let geradores = {
-//     //     "Counter Generator": CounterGenerator,
-//     //     "Gaussian Generator":RandomGaussianGenerator
-//     // };
-//     //
-//     // return new geradores[gen]();
-//
-//     switch (gen){
-//         case "Counter Generator":
-//             generatorToAdd = new CounterGenerator();
-//             break;
-//         case "Gaussian Generator":
-//             generatorToAdd = new RandomGaussianGenerator();
-//             break;
-//         case "Poisson Generator":
-//             generatorToAdd = new RandomPoissonGenerator();
-//             break;
-//         case "Bernoulli Generator":
-//             generatorToAdd = new RandomBernoulliGenerator();
-//             break;
-//         case "Cauchy Generator":
-//             generatorToAdd = new RandomCauchyGenerator();
-//             break;
-//         case "Noise Generator":
-//             generatorToAdd = new RandomNoiseGenerator();
-//             break;
-//         case "Range Filter":
-//             generatorToAdd = new RangeFilter();
-//             break;
-//         case "Categorical":
-//             generatorToAdd = new RandomCategorical();
-//             break;
-//         case "Linear Function":
-//             generatorToAdd = new LinearFunction();
-//             break;
-//         case "Quadratic Function":
-//             generatorToAdd = new QuadraticFunction();
-//             break;
-//         case "Polynomial Function":
-//             generatorToAdd = new PolynomialFunction();
-//             break;
-//         case "Exponential Function":
-//             generatorToAdd = new ExponentialFunction();
-//             break;
-//         case "Logarithm Function":
-//             generatorToAdd = new LogarithmFunction();
-//             break;
-//         default:
-//             generatorToAdd = new SinusoidalFunction();
-//     }
-//
-//     return generatorToAdd;
-// }
 
 function addGenerator(){
     datagen.addCollumn("Column "+(datagen.columns.length+1), "Numeric", new CounterGenerator());
 
     showGenerators();
 }
-
-// function listGenerators(){
-//     let list = [
-//         'Counter Generator',
-//         'Gaussian Generator',
-//         'Poisson Generator',
-//         'Bernoulli Generator',
-//         'Cauchy Generator',
-//         'Noise Generator',
-//         'Range Filter',
-//         'Categorical',
-//         'Linear Function',
-//         'Quadratic Function',
-//         'Polynomial Function',
-//         'Exponential Function',
-//         'Logarithm Function',
-//         'Sinusoidal Function'
-//     ];
-//
-//     return list;
-// }
 
 function showGenerators(){
     let active_gen_chip;
@@ -332,11 +185,6 @@ function configGenProps(){
     let $selectGenType = $("#selectGeneratorType").removeAttr("disabled").empty();
     putGeneratorOptions($selectGenType, generator.name);
     $selectGenType.get(0).__node__ = generator;
-    // for(let attr in  datagen.listOfGens){
-    //     if(datagen.listOfGens.hasOwnProperty(attr))
-    //         $selectGenType.append($("<option/>").text(attr));
-    // }
-
 
     let $propForms = $("#generatorPropertiesForm");
     $propForms.empty();
@@ -425,6 +273,18 @@ function configGenProps(){
     }
     tippy('.tooltip-label');
 
+}
+
+function createNewModel () {
+    alert('Create new model');
+}
+
+function createImportModel () {
+    alert('Create import model');
+}
+
+function createExportModel () {
+    alert('Create export model');
 }
 
 function minhafuncao(){

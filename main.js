@@ -26,25 +26,44 @@ function createWindow () {
   }));
 
     const menu = new electron.Menu();
-    menu.append(new electron.MenuItem({
-        label: 'File', submenu: [
-            {label: 'New Model', click (){
-                console.log("Voce clicou em New Model");
-                mainWindow.webContents.executeJavaScript('minhafuncao("'+str+'");');
-                dialog.showOpenDialog(mainWindow, {
-                    properties: ['openFile'],
-                    callback: function(file){
+    menu.append(new electron.MenuItem(
+        {
+            label: 'File',
+            submenu: [
+                {label: 'New Model', click (){
+                        mainWindow.webContents.executeJavaScript('createNewModel();');
+                        dialog.showOpenDialog(mainWindow, {
+                            properties: ['openFile'],
+                            callback: function(file){
 
+                            }
+                        });
+                    }},
+                {label: 'Import Model', click (){
+                        mainWindow.webContents.executeJavaScript('createImportModel();');
+                    }},
+                {label: 'Export Model', click (){
+                        mainWindow.webContents.executeJavaScript('createExportModel();');
+                    }},
+                {role: 'close'}
+            ]
+        }
+    ));
+    menu.append(new electron.MenuItem(
+        {
+            label: 'Debug',
+            submenu: [
+                {
+                    label: 'Toggle Developer Tools',
+                    accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
+                    click (item, focusedWindow) {
+                        if (focusedWindow) focusedWindow.webContents.toggleDevTools()
                     }
-                });
-            }},
-            {label: 'Import Model', click (){console.log("Voce clicou em Import Model")}},
-            {label: 'Export Model', click (){console.log("Voce clicou em Export Model")}},
-            {role: 'close'}
-    ]}));
+                }
+            ]
+        }
+    ));
     mainWindow.setMenu(menu);
-
-
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
@@ -55,14 +74,7 @@ function createWindow () {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     mainWindow = null
-  });
-
-
-
-
-  for(let prop in mainWindow.webContents.webContents){
-      console.log(prop);
-  }
+  })
 }
 
 // This method will be called when Electron has finished
