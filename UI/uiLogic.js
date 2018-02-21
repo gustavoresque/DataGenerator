@@ -426,3 +426,8 @@ function configGenProps(){
     tippy('.tooltip-label');
 
 }
+
+function minhafuncao(){
+    alert("HAHAHAH");
+    document.getElementById('business').click();
+}

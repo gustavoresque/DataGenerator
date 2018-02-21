@@ -1,4 +1,5 @@
 const electron = require('electron');
+const dialog = electron.dialog;
 // Module to control application life.
 
 const app = electron.app;
@@ -24,11 +25,19 @@ function createWindow () {
     slashes: true
   }));
 
-
     const menu = new electron.Menu();
     menu.append(new electron.MenuItem({
         label: 'File', submenu: [
-            {label: 'New Model', click (){console.log("Voce clicou em New Model")}},
+            {label: 'New Model', click (){
+                console.log("Voce clicou em New Model");
+                mainWindow.webContents.executeJavaScript('minhafuncao("'+str+'");');
+                dialog.showOpenDialog(mainWindow, {
+                    properties: ['openFile'],
+                    callback: function(file){
+
+                    }
+                });
+            }},
             {label: 'Import Model', click (){console.log("Voce clicou em Import Model")}},
             {label: 'Export Model', click (){console.log("Voce clicou em Export Model")}},
             {role: 'close'}
@@ -46,7 +55,14 @@ function createWindow () {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     mainWindow = null
-  })
+  });
+
+
+
+
+  for(let prop in mainWindow.webContents.webContents){
+      console.log(prop);
+  }
 }
 
 // This method will be called when Electron has finished
