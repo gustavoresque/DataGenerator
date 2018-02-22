@@ -8,6 +8,7 @@ const BrowserWindow = electron.BrowserWindow;
 
 const path = require('path');
 const url = require('url');
+const fs = require('fs');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -37,10 +38,23 @@ function createWindow () {
                         let pathFile = dialog.showOpenDialog(mainWindow, {
                             properties: ['openFile']
                         });
-                        mainWindow.webContents.executeJavaScript('createImportModel();');
+                        fs.readFile(pathFile.toString(), 'utf8', (err, data) => {
+                            if (err) throw err;
+                            mainWindow.webContents.executeJavaScript("createImportModel('"+ data +"');");
+                        });
+                        //mainWindow.webContents.executeJavaScript('createImportModel("'+ str +'");');
                     }},
                 {label: 'Export Model', click (){
-                        mainWindow.webContents.executeJavaScript('createExportModel();');
+                        dialog.showSaveDialog({title:"Salvar modelo"}, function(targetPath) {
+                            var partsOfStr = targetPath.split('\\');
+                            targetPath = "";
+                            for (let i = 0; i < partsOfStr.length; i++){
+                                targetPath += partsOfStr[i] + "\\\\";
+                            }
+                            console.log(targetPath);
+                            mainWindow.webContents.executeJavaScript("createExportModel('" + targetPath + "');");
+                        });
+                        //mainWindow.webContents.executeJavaScript('createExportModel("' + str + '");');
                     }},
                 {role: 'close'}
             ]

@@ -708,6 +708,7 @@ class SinusoidalFunction extends Function{
 class DataGen {
 
     constructor () {
+        this.name = "Model";
         this.n_lines = 100; // Quantidade de linhas na geração
         let defaultGenerator = new CounterGenerator();
         let column = {
@@ -767,9 +768,12 @@ class DataGen {
     }
     
     exportModel(){
-        let model = [];
+        let model = {
+            name: this.name,
+            generator: []
+        };
         for(let i=0; i<this.columns.length; i++){
-            model.push({
+            model.generator.push({
                 name: this.columns[i].name,
                 type: this.columns[i].type,
             });
@@ -779,42 +783,42 @@ class DataGen {
             for(let gen of fullGenerator){
                 fullGenNames.push(gen.getModel());
             }
-            model[i].generator = fullGenNames;
+            model.generator[i].generator = fullGenNames;
         }
         console.log(JSON.stringify(model));
+        return JSON.stringify(model);
     }
 
     //TODO: resolver funções e ruido.
     importModel(model_str){
         let model = JSON.parse(model_str);
-        let datagen = new DataGen();
-        datagen.columns = [];
-        for(let i=0; i<model.length; i++){
+        // let datagen = new DataGen();
+        // this.columns = [];
+        for(let i=0; i<model.generator.length; i++){
 
             let generator;
 
-            for(let j=0; j<model[i].generator.length; j++){
-                let selectedGenerator = datagen.listOfGens[model[i].generator[j].name];
+            for(let j=0; j<model.generator[i].generator.length; j++){
+                let selectedGenerator = this.listOfGens[model.generator[i].generator[j].name];
                 if(generator){
                     let newgen = new selectedGenerator();
                     generator.addGenerator(newgen);
-                    copyAttrs(model[i].generator, newgen);
+                    copyAttrs(model.generator[i].generator, newgen);
 
                 }else{
                     generator = new selectedGenerator();
-                    copyAttrs(model[i].generator, generator);
+                    copyAttrs(model.generator[i].generator, generator);
                 }
 
             }
-
-            datagen.columns.push({
-                name: model[i].name,
-                type: model[i].type,
+            this.name = model.name;
+            this.columns.push({
+                name: model.generator[i].name,
+                type: model.generator[i].type,
                 generator: generator
             })
-
         }
-        console.log(datagen);
+        console.log(this);
     }
 
 

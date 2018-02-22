@@ -1,19 +1,16 @@
 var datagen = [new DataGen(), new DataGen()];
+let currentDataGen = 0;
 let activeGenerator;
 
 $("html").ready(function(){
-    /*$("#resultBtnNavBar").click(function(){
-        $(this).toggleClass("active", true);
-        $("#homeBtnNavBar").toggleClass("active", false);
-        $("#summaryTablePane").hide();
-        $("#resultTablePane").show();
-    });
-    $("#homeBtnNavBar").click(function(){
-        $(this).toggleClass("active", true);
-        $("#resultBtnNavBar").toggleClass("active", false);
-        $("#summaryTablePane").show();
-        $("#resultTablePane").hide();
-    });*/
+    for(let i = 0; i < datagen.length; i++){
+        let modelButton = $("<span/>").addClass("nav-group-item").text(datagen[i].name).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
+        modelButton.on("click", function () {
+            currentDataGen = i;
+            showGenerators(datagen[currentDataGen]);
+        });
+        $("#modelsPane").append(modelButton);
+    }
 
     $("#tableCollumn").on("dblclick", "td.columnName", function(){
         var title = $(this).text();
@@ -46,20 +43,20 @@ $("html").ready(function(){
         else if($input.attr("data-type") === "Generator")
             this.__node__[$input.attr("data-variable")] = new (DataGenerator.prototype.listOfGens[$input.val()])();
         else if($input.attr("data-type") === "Column") {
-            this.__node__[$input.attr("data-variable")] = datagen.columns[parseInt($input.val())].generator;
+            this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].columns[parseInt($input.val())].generator;
             this.__node__.inputGenIndex = parseInt($input.val());
         }
     });
 
     $("#selectGeneratorType").on("change blur", function(){
         let nameNewGenerator = $(this).val();
-        let newGen = new (datagen.listOfGens[nameNewGenerator])();
+        let newGen = new (datagen[currentDataGen].listOfGens[nameNewGenerator])();
         //substitui o gerador na estrutura.
-        console.log(datagen.listOfGens[nameNewGenerator]);
+        console.log(datagen[currentDataGen].listOfGens[nameNewGenerator]);
 
         $(this).get(0).__node__.changeGenerator(newGen);
         activeGenerator = newGen;
-        let $active_chip = showGenerators();
+        let $active_chip = showGenerators(datagen[currentDataGen]);
         configGenProps.apply($active_chip);
     });
 
@@ -75,19 +72,19 @@ $("html").ready(function(){
     });
 
     $("#tableCollumn").on("click", "span.btnRemoveGen", function(){
-        datagen.removeLastGenerator(parseInt($(this).parent().parent().find(".tdIndex").text()) - 1);
-        showGenerators();
+        datagen[currentDataGen].removeLastGenerator(parseInt($(this).parent().parent().find(".tdIndex").text()) - 1);
+        showGenerators(datagen[currentDataGen]);
     });
 
     $("#tableCollumn").on("click", "span.btnAddGen", function(){
         console.log("Adicionar Generator no index: " + $(this).parent().parent().find(".tdIndex").text());
-        datagen.addGeneratorToIndex(parseInt($(this).parent().parent().find(".tdIndex").text())-1, new CounterGenerator())
-        showGenerators();
+        datagen[currentDataGen].addGeneratorToIndex(parseInt($(this).parent().parent().find(".tdIndex").text())-1, new CounterGenerator())
+        showGenerators(datagen[currentDataGen]);
     });
 
     $("#tableCollumn").on("click", "td.btnRemoveColumn", function(){
-        datagen.removeCollumn(parseInt($(this).parent().find(".tdIndex").text()) - 1);
-        showGenerators();
+        datagen[currentDataGen].removeCollumn(parseInt($(this).parent().find(".tdIndex").text()) - 1);
+        showGenerators(datagen[currentDataGen]);
     });
 });
 
@@ -95,13 +92,13 @@ function generateDatas(){
     document.getElementById("theadResult").innerHTML = "<tr>";
     let t = "";
 
-    datagen.columns.forEach(function(item){
+    datagen[currentDataGen].columns.forEach(function(item){
         t += "<th>" + item.name + "</th>";
     });
     document.getElementById("theadResult").innerHTML += t + "</tr>";
 
-    datagen.n_lines = $("#rowsQtInput").val();
-    let data = datagen.generate();
+    datagen[currentDataGen].n_lines = $("#rowsQtInput").val();
+    let data = datagen[currentDataGen].generate();
 
     document.getElementById("tbodyResult").innerHTML="";
     for (let i = 0; i < data.length; i++) {
@@ -116,26 +113,26 @@ function generateDatas(){
 }
 
 function addGenerator(){
-    datagen.addCollumn("Column "+(datagen.columns.length+1), "Numeric", new CounterGenerator());
+    datagen[currentDataGen].addCollumn("Column "+(datagen[currentDataGen].columns.length+1), "Numeric", new CounterGenerator());
 
-    showGenerators();
+    showGenerators(datagen[currentDataGen]);
 }
 
 function showGenerators(){
     let active_gen_chip;
     $("#tbody").empty();
-    for(var i = 0; i < datagen[0].columns.length; i++){
+    for(var i = 0; i < datagen[currentDataGen].columns.length; i++){
         var $tr = $("<tr/>");
         $("#tbody").append($tr
             .append($("<td/>").append($("<input/>").attr("type", "checkbox")))
             .append($("<td/>").text(i+1).addClass("tdIndex"))
-            .append($("<td/>").text(datagen[0].columns[i].name).addClass("columnName"))
-            .append($("<td/>").text(datagen[0].columns[i].type).addClass("columnType"))
+            .append($("<td/>").text(datagen[currentDataGen].columns[i].name).addClass("columnName"))
+            .append($("<td/>").text(datagen[currentDataGen].columns[i].type).addClass("columnType"))
         );
         let generators = [];
         let $tdGen = $("<td/>").addClass("columnGen");
 
-        datagen[0].columns[i].generator.getFullGenerator(generators);
+        datagen[currentDataGen].columns[i].generator.getFullGenerator(generators);
         var counter = 0;
 
         for(let gen of generators){
@@ -153,7 +150,7 @@ function showGenerators(){
         );
         $tr.append($tdGen);
 
-        $tr.get(0).__node__ = datagen.columns[i];
+        $tr.get(0).__node__ = datagen[currentDataGen].columns[i];
         $tr.append($("<td/>").addClass("btnGenerator btnRemoveColumn icon icon-trash"))
     }
     return active_gen_chip;
@@ -253,12 +250,12 @@ function configGenProps(){
             //Preenche a lista de seleção para funções
             //Só podem ser utilizadas as colunas anteriores a essa.
 
-            for(let i=0; i<datagen.columns.length; i++){
-                if(datagen.columns[i] !== coluna){
-                    let $option = $("<option/>").attr("value", i).text(datagen.columns[i].name);
-                    $option.get(0).__node__ = datagen.columns[i];
+            for(let i=0; i<datagen[currentDataGen].columns.length; i++){
+                if(datagen[currentDataGen].columns[i] !== coluna){
+                    let $option = $("<option/>").attr("value", i).text(datagen[currentDataGen].columns[i].name);
+                    $option.get(0).__node__ = datagen[currentDataGen].columns[i];
 
-                    if(generator[p.variableName] === datagen.columns[i].generator){
+                    if(generator[p.variableName] === datagen[currentDataGen].columns[i].generator){
                         console.log("entrou.....");
                         $option.attr("selected", "selected");
                     }
@@ -273,19 +270,43 @@ function configGenProps(){
         }
     }
     tippy('.tooltip-label');
-
 }
 
-function createNewModel (msg) {
-    alert('File opened: ' + msg);
+function createNewModel () {
+    datagen.push(new DataGen());
+    let modelButton = $("<span/>").addClass("nav-group-item").text(datagen[datagen.length-1].name).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
+    let pos = (datagen.length-1);
+    modelButton.on("click", function () {
+        currentDataGen = pos;
+        showGenerators(datagen[currentDataGen]);
+    });
+    $("#modelsPane").append(modelButton);
+    currentDataGen = pos;
+    showGenerators(datagen[currentDataGen]);
 }
 
-function createImportModel () {
-    alert('Create import model');
+function createExportModel (path) {
+    var fs = require('fs');
+    fs.writeFile(path, datagen[currentDataGen].exportModel(), (err) => {
+        if (err) throw err;
+    });
 }
 
-function createExportModel () {
-    alert('Create export model');
+function createImportModel (data) {
+    // console.log(data);
+    let dg = new DataGen();
+    dg.importModel(data);
+    datagen.push(dg);
+
+    let modelButton = $("<span/>").addClass("nav-group-item").text(datagen[datagen.length-1].name).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
+    let pos = (datagen.length-1);
+    modelButton.on("click", function () {
+        currentDataGen = pos;
+        showGenerators(datagen[currentDataGen]);
+    });
+    $("#modelsPane").append(modelButton);
+    currentDataGen = pos;
+    showGenerators(datagen[currentDataGen]);
 }
 
 function minhafuncao(){
