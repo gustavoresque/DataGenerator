@@ -55,7 +55,6 @@ $("html").ready(function(){
 
         this.__node__.changeGenerator(newGen);
         activeGenerator = newGen;
-        this.__node__ = newGen;
         let $active_chip = showGenerators();
         configGenProps.apply($active_chip.get(0));
     });
@@ -77,7 +76,6 @@ $("html").ready(function(){
     });
 
     $("#tableCollumn").on("click", "span.btnAddGen", function(){
-        console.log("Adicionar Generator no index: " + $(this).parent().parent().find(".tdIndex").text());
         datagen[currentDataGen].addGeneratorToIndex(parseInt($(this).parent().parent().find(".tdIndex").text())-1, new CounterGenerator())
         showGenerators(datagen[currentDataGen]);
     });
@@ -135,12 +133,7 @@ function showGenerators(){
         datagen[currentDataGen].columns[i].generator.getFullGenerator(generators);
         var counter = 0;
 
-        // console.log('1: ');
-        console.log("active: ", activeGenerator);
-
         for(let gen of generators){
-            // console.log('2: ');
-            console.log("loop: ", gen);
             let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
             if(gen === activeGenerator)
                 active_gen_chip = $chip.addClass("active-md-chip");
@@ -179,7 +172,6 @@ function configGenProps(){
     $("div.md-chip").removeClass("active-md-chip");
     $(this).addClass("active-md-chip");
 
-    console.log(this.__node__);
     let generator = this.__node__;
     activeGenerator = generator;
     let coluna = $(this).parent().parent().get(0).__node__;
@@ -232,7 +224,6 @@ function configGenProps(){
             $tr.append($("<td/>").append($input));
 
         }else if(p.type === "Generator"){
-            console.log(generator[p.variableName]);
             let $select = $("<select/>")
                 .addClass("form-control")
                 .addClass("smallInput")
@@ -262,7 +253,6 @@ function configGenProps(){
                     $option.get(0).__node__ = datagen[currentDataGen].columns[i];
 
                     if(generator[p.variableName] === datagen[currentDataGen].columns[i].generator){
-                        console.log("entrou.....");
                         $option.attr("selected", "selected");
                     }
                     $select.append($option);
@@ -313,9 +303,4 @@ function createImportModel (data) {
     $("#modelsPane").append(modelButton);
     currentDataGen = pos;
     showGenerators(datagen[currentDataGen]);
-}
-
-function minhafuncao(){
-    alert("HAHAHAH");
-    document.getElementById('business').click();
 }
