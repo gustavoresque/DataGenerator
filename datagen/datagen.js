@@ -36,6 +36,7 @@ class Generator{
     changeGenerator(gen){
         if (this.parent) {
             gen.order = this.order;
+            gen.parent = this.parent;
             this.parent.generator = gen;
         }
 
@@ -71,12 +72,18 @@ class Generator{
         }
     }
 
+    /*Entrada: generators - Lista com as referências dos geradores alocados neste Generator
+     *Pega as referências de todos os Generators dentro deste Generator, de forma recursiva, alocando-as em uma lista*/
     getFullGenerator(generators){
         generators.push(this);
         if(this.generator)
             this.generator.getFullGenerator(generators)
     }
 
+    /*Entrada: sub_value - valor que será combinado com o gerado através (ou não) de um operador
+     *Saída: lastGenerated - valor gerado pelo Generator
+     *Recebe um valor que é inserido no operador juntamente com um segundo valor gerado pelo Generator inserido neste.
+     *Caso não exista um operador, o valor inserido é somado ao valor gerado e retornado*/
     generate(sub_value){
         let value = 0;
         if(this.generator){
@@ -792,8 +799,6 @@ class DataGen {
     //TODO: resolver funções e ruido.
     importModel(model_str){
         let model = JSON.parse(model_str);
-        // let datagen = new DataGen();
-        // this.columns = [];
         for(let i=0; i<model.generator.length; i++){
 
             let generator;
@@ -804,12 +809,10 @@ class DataGen {
                     let newgen = new selectedGenerator();
                     generator.addGenerator(newgen);
                     copyAttrs(model.generator[i].generator, newgen);
-
                 }else{
                     generator = new selectedGenerator();
                     copyAttrs(model.generator[i].generator, generator);
                 }
-
             }
             this.name = model.name;
             this.columns.push({

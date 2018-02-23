@@ -1,4 +1,4 @@
-var datagen = [new DataGen(), new DataGen()];
+var datagen = [new DataGen()];
 let currentDataGen = 0;
 let activeGenerator;
 
@@ -32,8 +32,6 @@ $("html").ready(function(){
         }));
     });
 
-    $("#tableCollumn").on("click", "div.md-chip", configGenProps);
-
     $("#generatorPropertiesForm").on("change blur", "input,select", function(){
         let $input = $(this);
         if($input.attr("data-type") === "number")
@@ -48,16 +46,18 @@ $("html").ready(function(){
         }
     });
 
+    $("#tableCollumn").on("click", "div.md-chip", configGenProps);
+
     $("#selectGeneratorType").on("change blur", function(){
         let nameNewGenerator = $(this).val();
         let newGen = new (datagen[currentDataGen].listOfGens[nameNewGenerator])();
         //substitui o gerador na estrutura.
-        console.log(datagen[currentDataGen].listOfGens[nameNewGenerator]);
 
-        $(this).get(0).__node__.changeGenerator(newGen);
+        this.__node__.changeGenerator(newGen);
         activeGenerator = newGen;
-        let $active_chip = showGenerators(datagen[currentDataGen]);
-        configGenProps.apply($active_chip);
+        this.__node__ = newGen;
+        let $active_chip = showGenerators();
+        configGenProps.apply($active_chip.get(0));
     });
 
     $("#rowsQtInput").blur(function(){
@@ -135,7 +135,12 @@ function showGenerators(){
         datagen[currentDataGen].columns[i].generator.getFullGenerator(generators);
         var counter = 0;
 
+        // console.log('1: ');
+        console.log("active: ", activeGenerator);
+
         for(let gen of generators){
+            // console.log('2: ');
+            console.log("loop: ", gen);
             let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
             if(gen === activeGenerator)
                 active_gen_chip = $chip.addClass("active-md-chip");
@@ -158,7 +163,7 @@ function showGenerators(){
 
 function putGeneratorOptions(select, selected, noise) {
     let list = noise ? DataGenerator.prototype.listOfGensForNoise : DataGenerator.prototype.listOfGens;
-    for(let attr in  list){
+    for(let attr in list){
         if(list.hasOwnProperty(attr)) {
             let $option = $("<option/>").attr("value",attr).text(attr);
             if(selected === attr)
@@ -174,7 +179,8 @@ function configGenProps(){
     $("div.md-chip").removeClass("active-md-chip");
     $(this).addClass("active-md-chip");
 
-    let generator = $(this).get(0).__node__;
+    console.log(this.__node__);
+    let generator = this.__node__;
     activeGenerator = generator;
     let coluna = $(this).parent().parent().get(0).__node__;
     let params = generator.getGenParams();
@@ -293,8 +299,8 @@ function createExportModel (path) {
 }
 
 function createImportModel (data) {
-    // console.log(data);
     let dg = new DataGen();
+    dg.columns = [];
     dg.importModel(data);
     datagen.push(dg);
 
