@@ -1,16 +1,6 @@
 
 
 let randgen = require("randgen");
-//
-// // console.log(randgen);
-// data = [];
-//
-// for(let i =0; i<50000; i++){
-//     data.push(randgen.rnorm());
-// }
-// let hist = randgen.histogram(data,20);
-//
-// console.log(hist);
 
 class Generator{
     constructor(name, generator, operator){
@@ -34,13 +24,15 @@ class Generator{
     //     return true;
     // }
     changeGenerator(gen){
+        gen.order = this.order;
         if (this.parent) {
-            gen.order = this.order;
             gen.parent = this.parent;
             this.parent.generator = gen;
         }
 
         gen.generator = this.generator;
+        if(gen.generator)
+            gen.generator.parent = gen;
         // let genSub = this.generator.generator;
         // this.generator = gen;
         // this.generator.generator = genSub;
