@@ -431,8 +431,8 @@ class RandomCategorical extends Generator {
     }
 
     generate() {
-        let result =  super.generate(this.array.length);
-        if(result >= this.array.length || result < 0){
+        let result =  parseInt(super.generate(this.array.length));
+        if(isNaN(result) || result >= this.array.length || result < 0){
             return this.array[Math.floor(Math.random() * this.array.length)];
         } else{
             return this.array[result];
