@@ -568,7 +568,7 @@ class Function extends Generator{
                 shortName: "Input",
                 variableName: "inputGenerator",
                 name: "Input Column (Previous one)",
-                type: "Column"
+                type: "NumericColumn"
             }
         ];
     }
@@ -797,6 +797,49 @@ class SinusoidalFunction extends Function{
         return model;
     }
 }
+
+class CategoricalFunction extends Function{
+    constructor(generator, operator, inputGenerator){
+        super("Categorical Function", generator, operator, inputGenerator);
+        this.listOfGenerators = {};
+
+
+    }
+
+    reset(){
+        let auxgen = new RandomUniformGenerator();
+        this.generator = auxgen;
+        auxgen.parent = this;
+
+        for(let i=0; i<this.inputGenerator.array.length; i++){
+            let gen = new RandomUniformGenerator();
+            auxgen.changeGenerator(gen);
+            this.listOfGenerators[this.inputGenerator.array[i]] = gen;
+        }
+    }
+
+    transform(x){
+        this.generator = this.listOfGenerators[x];
+        return 0;
+    }
+    getGenParams() {
+        let params = super.getGenParams();
+        params[0].type = "CategoricalColumn";
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.listOfGenerators = {};
+        for(let p in this.listOfGeneratorss){
+            if(this.listOfGenerators.hasOwnProperty(p)){
+                model.listOfGenerators[p] = this.listOfGenerators[p].getModel();
+            }
+        }
+        return model;
+    }
+
+}
 ///--------------------------  Gerenciador de Colunas e Geração da base total. ----------------------------------------
 
 class DataGen {
@@ -931,7 +974,8 @@ DataGen.prototype.listOfGens = {
     'Polynomial Function': PolynomialFunction,
     'Exponential Function': ExponentialFunction,
     'Logarithm Function': LogarithmFunction,
-    'Sinusoidal Function': SinusoidalFunction
+    'Sinusoidal Function': SinusoidalFunction,
+    'Categorical Function': CategoricalFunction
 };
 
 DataGen.prototype.listOfGensForNoise = {
