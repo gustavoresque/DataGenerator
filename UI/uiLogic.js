@@ -55,6 +55,7 @@ $("html").ready(function(){
 
         this.__node__.changeGenerator(newGen);
         activeGenerator = newGen;
+
         let $active_chip = showGenerators();
         configGenProps.apply($active_chip.get(0));
     });
