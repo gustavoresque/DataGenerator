@@ -34,13 +34,15 @@ class Generator{
     //     return true;
     // }
     changeGenerator(gen){
+        gen.order = this.order;
         if (this.parent) {
-            gen.order = this.order;
             gen.parent = this.parent;
             this.parent.generator = gen;
         }
 
         gen.generator = this.generator;
+        if(gen.generator)
+            gen.generator.parent = gen;
         // let genSub = this.generator.generator;
         // this.generator = gen;
         // this.generator.generator = genSub;
@@ -424,6 +426,61 @@ class RangeFilter extends Generator {
     }
 }
 
+class LinearScale extends Generator {
+    constructor(generator,operator,minDomain,maxDomain, minRange, maxRange) {
+        super("Linear Scale",generator,operator);
+        this.minDomain = minDomain;
+        this.maxDomain = maxDomain;
+        this.minRange = minRange;
+        this.maxRange = maxRange;
+    }
+
+    generate() {
+        let result =  (super.generate(0)-this.minDomain)/(this.maxDomain-this.minDomain);
+        result = result*(this.maxRange - this.minRange) + this.minRange;
+        return result;
+    }
+
+    getGenParams() {
+        return [
+            {
+                shortName: "MinIn",
+                variableName: "minDomain",
+                name: "Minimum Domain Value",
+                type: "number"
+            },
+            {
+                shortName: "MaxIn",
+                variableName: "maxDomain",
+                name: "Maximum Domain Value",
+                type: "number"
+            },
+            {
+                shortName: "MinOut",
+                variableName: "minRange",
+                name: "Minimum Range Value",
+                type: "number"
+            },
+            {
+                shortName: "MaxOut",
+                variableName: "maxRange",
+                name: "Maximum Range Value",
+                type: "number"
+            }
+        ];
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.array = this.array;
+        model.minDomain = this.minDomain;
+        model.maxDomain = this.maxDomain;
+        model.minRange = this.minRange;
+        model.maxRange = this.maxRange;
+        return model;
+    }
+}
+
 class RandomCategorical extends Generator {
     constructor(generator,operator,array,number) {
             super("Categorical",generator,operator);
@@ -431,7 +488,7 @@ class RandomCategorical extends Generator {
     }
 
     generate() {
-        let result =  parseInt(super.generate(this.array.length));
+        let result =  parseInt(super.generate(0));
         if(isNaN(result) || result >= this.array.length || result < 0){
             return this.array[Math.floor(Math.random() * this.array.length)];
         } else{
@@ -836,6 +893,7 @@ DataGen.prototype.listOfGens = {
     'Cauchy Generator': RandomCauchyGenerator,
     'Noise Generator': RandomNoiseGenerator,
     'Range Filter': RangeFilter,
+    'Linear Scale': LinearScale,
     'Categorical': RandomCategorical,
     'Linear Function': LinearFunction,
     'Quadratic Function': QuadraticFunction,

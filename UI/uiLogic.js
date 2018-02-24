@@ -120,8 +120,8 @@ function addGenerator(){
 function showGenerators(){
     let active_gen_chip;
     $("#tbody").empty();
-    for(var i = 0; i < datagen[currentDataGen].columns.length; i++){
-        var $tr = $("<tr/>");
+    for(let i = 0; i < datagen[currentDataGen].columns.length; i++){
+        let $tr = $("<tr/>");
         $("#tbody").append($tr
             .append($("<td/>").append($("<input/>").attr("type", "checkbox")))
             .append($("<td/>").text(i+1).addClass("tdIndex"))
@@ -132,8 +132,8 @@ function showGenerators(){
         let $tdGen = $("<td/>").addClass("columnGen");
 
         datagen[currentDataGen].columns[i].generator.getFullGenerator(generators);
-        var counter = 0;
-        generators.reverse();
+        let counter = 0;
+
         for(let gen of generators){
             let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
             if(gen === activeGenerator)
