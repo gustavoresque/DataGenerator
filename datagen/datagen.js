@@ -34,15 +34,13 @@ class Generator{
     //     return true;
     // }
     changeGenerator(gen){
-        gen.order = this.order;
         if (this.parent) {
+            gen.order = this.order;
             gen.parent = this.parent;
             this.parent.generator = gen;
         }
 
         gen.generator = this.generator;
-        if(gen.generator)
-            gen.generator.parent = gen;
         // let genSub = this.generator.generator;
         // this.generator = gen;
         // this.generator.generator = genSub;
@@ -480,6 +478,8 @@ class LinearScale extends Generator {
         return model;
     }
 }
+
+
 
 class MinMax extends Generator {
     constructor(generator, operator, min, max) {
