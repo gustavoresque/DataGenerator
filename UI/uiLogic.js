@@ -38,11 +38,14 @@ $("html").ready(function(){
             this.__node__[$input.attr("data-variable")] = parseFloat($input.val());
         else if($input.attr("data-type") === "array")
             this.__node__[$input.attr("data-variable")] = $input.val().split(",");
+
+            //TODO: Colocar tipo boolean aqui.
         else if($input.attr("data-type") === "Generator")
             this.__node__[$input.attr("data-variable")] = new (DataGenerator.prototype.listOfGens[$input.val()])();
-        else if($input.attr("data-type") === "Column") {
+        else if($input.attr("data-type").indexOf("Column") >= 0) {
             this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].columns[parseInt($input.val())].generator;
             this.__node__.inputGenIndex = parseInt($input.val());
+            this.__node__.reset();
         }
     });
 
@@ -231,6 +234,7 @@ function configGenProps(){
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input));
 
+            //TODO: Colocar tipo boolean aqui.
         }else if(p.type === "Generator"){// Utiliza os geradores das colunas anteriormente criadas no mesmo model
             let $select = $("<select/>")
                 .addClass("form-control")
@@ -242,7 +246,7 @@ function configGenProps(){
             putGeneratorOptions($select, generator[p.variableName], true);
             $tr.append($("<td/>").append($select));
 
-        }else if(p.type === "Column"){
+        }else if(p.type.indexOf("Column") >= 0){
             let $select = $("<select/>")
                 .addClass("form-control")
                 .addClass("smallInput")
@@ -257,6 +261,10 @@ function configGenProps(){
 
             for(let i=0; i<datagen[currentDataGen].columns.length; i++){
                 if(datagen[currentDataGen].columns[i] !== coluna){
+                    console.log("p.type", p.type, "column.type", datagen[currentDataGen].columns[i].type);
+                    if((p.type.indexOf("Categorical") >= 0 && datagen[currentDataGen].columns[i].type !== "Categorical")
+                        || (p.type.indexOf("Numeric") >= 0 && datagen[currentDataGen].columns[i].type !== "Numeric"))
+                        continue;
                     let $option = $("<option/>").attr("value", i).text(datagen[currentDataGen].columns[i].name);
                     $option.get(0).__node__ = datagen[currentDataGen].columns[i];
 

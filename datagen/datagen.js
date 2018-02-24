@@ -802,8 +802,6 @@ class CategoricalFunction extends Function{
     constructor(generator, operator, inputGenerator){
         super("Categorical Function", generator, operator, inputGenerator);
         this.listOfGenerators = {};
-
-
     }
 
     reset(){
@@ -831,7 +829,7 @@ class CategoricalFunction extends Function{
     getModel(){
         let model = super.getModel();
         model.listOfGenerators = {};
-        for(let p in this.listOfGeneratorss){
+        for(let p in this.listOfGenerators){
             if(this.listOfGenerators.hasOwnProperty(p)){
                 model.listOfGenerators[p] = this.listOfGenerators[p].getModel();
             }
