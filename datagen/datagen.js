@@ -424,6 +424,44 @@ class RangeFilter extends Generator {
     }
 }
 
+class MinMax extends Generator {
+    constructor(generator, operator, min, max) {
+        super("MinMax", generator,operator);
+        this.min = min;
+        this.max = max;
+
+    }
+
+    generate() {
+        let value =  super.generate(0);
+        return Math.max(Math.min(value, this.max), this.min);
+    }
+
+    getGenParams(){
+        return [
+            {
+                shortName: "Minimum",
+                variableName: "min",
+                name: "Minimum Value",
+                type: "number"
+            },
+            {
+                shortName: "Maximum",
+                variableName: "max",
+                name: "Maximum Value",
+                type: "number"
+            }
+        ];
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.min = this.min;
+        model.max = this.max;
+        return model;
+    }
+}
+
 class RandomCategorical extends Generator {
     constructor(generator,operator,array,number) {
             super("Categorical",generator,operator);
@@ -836,6 +874,7 @@ DataGen.prototype.listOfGens = {
     'Cauchy Generator': RandomCauchyGenerator,
     'Noise Generator': RandomNoiseGenerator,
     'Range Filter': RangeFilter,
+    'MinMax': MinMax,
     'Categorical': RandomCategorical,
     'Linear Function': LinearFunction,
     'Quadratic Function': QuadraticFunction,
