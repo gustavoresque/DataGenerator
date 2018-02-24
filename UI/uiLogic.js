@@ -4,7 +4,7 @@ let activeGenerator;
 
 $("html").ready(function(){
     for(let i = 0; i < datagen.length; i++){
-        let modelButton = $("<span/>").addClass("nav-group-item").text(datagen[i].name).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
+        let modelButton = $("<span/>").addClass("nav-group-item").text(datagen[i].name + " " + (i+1)).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
         modelButton.on("click", function () {
             currentDataGen = i;
             showGenerators(datagen[currentDataGen]);
@@ -116,6 +116,7 @@ function addGenerator(){
     showGenerators(datagen[currentDataGen]);
 }
 
+/*Desenha na tela principal as colunas e seus respectivos geradores paseados nos dados armazendos no array datagen*/
 function showGenerators(){
     let active_gen_chip;
     $("#tbody").empty();
@@ -132,7 +133,7 @@ function showGenerators(){
 
         datagen[currentDataGen].columns[i].generator.getFullGenerator(generators);
         var counter = 0;
-
+        generators.reverse();
         for(let gen of generators){
             let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
             if(gen === activeGenerator)
@@ -154,6 +155,12 @@ function showGenerators(){
     return active_gen_chip;
 }
 
+/*putGeneratorOptions
+* Entradas: select - Lista que será mostrada na hora da seleção
+*           selected - Opção que já deverá aparecer selecionada
+*           noise - Booleano que indica se os geradores retornados serão geradores de ruídos ou não
+* Saída: Lista de geradores que serão mostradas em tags select's
+* */
 function putGeneratorOptions(select, selected, noise) {
     let list = noise ? DataGenerator.prototype.listOfGensForNoise : DataGenerator.prototype.listOfGens;
     for(let attr in list){
@@ -223,7 +230,7 @@ function configGenProps(){
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input));
 
-        }else if(p.type === "Generator"){
+        }else if(p.type === "Generator"){// Utiliza os geradores das colunas anteriormente criadas no mesmo model
             let $select = $("<select/>")
                 .addClass("form-control")
                 .addClass("smallInput")
@@ -270,7 +277,7 @@ function configGenProps(){
 
 function createNewModel () {
     datagen.push(new DataGen());
-    let modelButton = $("<span/>").addClass("nav-group-item").text(datagen[datagen.length-1].name).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
+    let modelButton = $("<span/>").addClass("nav-group-item").text(datagen[datagen.length-1].name + " " + datagen.length).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
     let pos = (datagen.length-1);
     modelButton.on("click", function () {
         currentDataGen = pos;
