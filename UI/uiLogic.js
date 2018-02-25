@@ -38,8 +38,10 @@ $("html").ready(function(){
             this.__node__[$input.attr("data-variable")] = parseFloat($input.val());
         else if($input.attr("data-type") === "array")
             this.__node__[$input.attr("data-variable")] = $input.val().split(",");
-
             //TODO: Colocar tipo boolean aqui.
+        else if($input.attr("data-type") === "boolean"){
+            this.__node__[$input.attr("data-variable")] = $input.get(0).checked;
+        }
         else if($input.attr("data-type") === "Generator")
             this.__node__[$input.attr("data-variable")] = new (DataGenerator.prototype.listOfGens[$input.val()])();
         else if($input.attr("data-type").indexOf("Column") >= 0) {
@@ -221,20 +223,31 @@ function configGenProps(){
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input));
 
-        }else if(p.type === "array"){
+        }else if(p.type === "array") {
             let $input = $("<input/>")
                 .addClass("form-control")
                 .addClass("smallInput")
-                .attr("type","text")
+                .attr("type", "text")
                 .attr("onkeydown", "if (event.keyCode == 13) return false;")
                 .attr("value", generator[p.variableName])
-                .attr("id", "input_"+p.variableName)
+                .attr("id", "input_" + p.variableName)
                 .attr("data-variable", p.variableName)
                 .attr("data-type", p.type);
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input));
 
-            //TODO: Colocar tipo boolean aqui.
+        }else if (p.type === "boolean") {
+            let $input = $("<input/>")
+                .attr("type","checkbox")
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type);
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input));
+            if (generator[p.variableName]){
+                $input.attr("checked", "");
+            }
+
         }else if(p.type === "Generator"){// Utiliza os geradores das colunas anteriormente criadas no mesmo model
             let $select = $("<select/>")
                 .addClass("form-control")
