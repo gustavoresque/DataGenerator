@@ -7,7 +7,7 @@ $("html").ready(function(){
         let modelButton = $("<span/>").addClass("nav-group-item").text(datagen[i].name + " " + (i+1)).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
         modelButton.on("click", function () {
             currentDataGen = i;
-            showGenerators(datagen[currentDataGen]);
+            showGenerators();
         });
         $("#modelsPane").append(modelButton);
     }
@@ -36,8 +36,10 @@ $("html").ready(function(){
         let $input = $(this);
         if($input.attr("data-type") === "number")
             this.__node__[$input.attr("data-variable")] = parseFloat($input.val());
-        else if($input.attr("data-type") === "array")
+        else if($input.attr("data-type") === "array"){
             this.__node__[$input.attr("data-variable")] = $input.val().split(",");
+            showGenerators();
+        }
             //TODO: Colocar tipo boolean aqui.
         else if($input.attr("data-type") === "boolean"){
             this.__node__[$input.attr("data-variable")] = $input.get(0).checked;
@@ -78,17 +80,17 @@ $("html").ready(function(){
 
     $("#tableCollumn").on("click", "span.btnRemoveGen", function(){
         datagen[currentDataGen].removeLastGenerator(parseInt($(this).parent().parent().find(".tdIndex").text()) - 1);
-        showGenerators(datagen[currentDataGen]);
+        showGenerators();
     });
 
     $("#tableCollumn").on("click", "span.btnAddGen", function(){
         datagen[currentDataGen].addGeneratorToIndex(parseInt($(this).parent().parent().find(".tdIndex").text())-1, new CounterGenerator())
-        showGenerators(datagen[currentDataGen]);
+        showGenerators();
     });
 
     $("#tableCollumn").on("click", "td.btnRemoveColumn", function(){
         datagen[currentDataGen].removeCollumn(parseInt($(this).parent().find(".tdIndex").text()) - 1);
-        showGenerators(datagen[currentDataGen]);
+        showGenerators();
     });
 });
 
@@ -119,7 +121,7 @@ function generateDatas(){
 function addGenerator(){
     datagen[currentDataGen].addCollumn("Column "+(datagen[currentDataGen].columns.length+1), "Numeric", new CounterGenerator());
 
-    showGenerators(datagen[currentDataGen]);
+    showGenerators();
 }
 
 /*Desenha na tela principal as colunas e seus respectivos geradores paseados nos dados armazendos no array datagen*/
@@ -140,23 +142,60 @@ function showGenerators(){
         datagen[currentDataGen].columns[i].generator.getFullGenerator(generators);
         let counter = 0;
 
-        for(let gen of generators){
-            let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
-            if(gen === activeGenerator)
+        // FILHOS DO CATEGORICO
+        if (datagen[currentDataGen].columns[i].generator.name === "Categorical Function"){
+            let $switchGenTable = $("<table/>");
+            let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(generators[0].order + "-" + generators[0].name);
+            if(generators[0] === activeGenerator)
                 active_gen_chip = $chip.addClass("active-md-chip");
-            $chip.get(0).__node__ = gen;
+            $chip.get(0).__node__ = generators[0];
             $tdGen.append($chip);
-            counter++;
-        }
-        $tdGen.append($("<span/>")
+
+            //$switchGenTr.append($("<td/>").attr("rowspan", datagen[currentDataGen].columns[i].generator.listOfGenerators.length).text("Oi"));
+            let $switchGenTr;
+            for (let c in datagen[currentDataGen].columns[i].generator.listOfGenerators){
+                $switchGenTr = $("<tr/>").append($("<td/>").text(c));
+                let generators2 = [];
+                datagen[currentDataGen].columns[i].generator.listOfGenerators[c].getFullGenerator(generators2);
+                let counter = 0;
+                for(let gen of generators2){
+                    let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
+                    if(gen === activeGenerator)
+                        active_gen_chip = $chip.addClass("active-md-chip");
+                    $chip.get(0).__node__ = gen;
+                    $switchGenTr.append($("<td/>").append($chip));
+                    counter++;
+                }
+                // $switchGenTr.append($("<span/>")
+                //     .addClass("btnGenerator btnAddGen icon icon-plus-circled")
+                // ).append($("<span/>")
+                //     .addClass("btnGenerator btnRemoveGen icon icon-trash")
+                // );
+
+                $switchGenTable.append($switchGenTr);
+            }
+            $tdGen.append($switchGenTable);
+        }// END FILHOS DO CATEGORICO
+        else{
+            for(let gen of generators){
+                let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
+                if(gen === activeGenerator)
+                    active_gen_chip = $chip.addClass("active-md-chip");
+                $chip.get(0).__node__ = gen;
+                $tdGen.append($chip);
+                counter++;
+            }
+            $tdGen.append($("<span/>")
                 .addClass("btnGenerator btnAddGen icon icon-plus-circled")
             ).append($("<span/>")
-            .addClass("btnGenerator btnRemoveGen icon icon-trash")
-        );
+                .addClass("btnGenerator btnRemoveGen icon icon-trash")
+            );
+        }
+
         $tr.append($tdGen);
 
         $tr.get(0).__node__ = datagen[currentDataGen].columns[i];
-        $tr.append($("<td/>").addClass("btnGenerator btnRemoveColumn icon icon-trash"))
+        $tr.append($("<td/>").addClass("btnGenerator btnRemoveColumn icon icon-trash"));
     }
     return active_gen_chip;
 }
@@ -303,11 +342,11 @@ function createNewModel () {
     let pos = (datagen.length-1);
     modelButton.on("click", function () {
         currentDataGen = pos;
-        showGenerators(datagen[currentDataGen]);
+        showGenerators();
     });
     $("#modelsPane").append(modelButton);
     currentDataGen = pos;
-    showGenerators(datagen[currentDataGen]);
+    showGenerators();
 }
 
 function createExportModel (path) {
@@ -327,9 +366,9 @@ function createImportModel (data) {
     let pos = (datagen.length-1);
     modelButton.on("click", function () {
         currentDataGen = pos;
-        showGenerators(datagen[currentDataGen]);
+        showGenerators();
     });
     $("#modelsPane").append(modelButton);
     currentDataGen = pos;
-    showGenerators(datagen[currentDataGen]);
+    showGenerators();
 }
