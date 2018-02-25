@@ -23,10 +23,10 @@ $("html").ready(function(){
     });
 
     $("#tableCollumn").on("dblclick", "td.columnType", function(){
-        var typeData = $(this).text();
+        let typeData = $(this).text();
         $(this).empty();
         $(this).append($("<input/>").attr("type", "text").attr("value", typeData).blur(function(){
-            var cor = $(this).val();
+            let cor = $(this).val();
             $(this).parent().parent().get(0).__node__.type = cor;
             $(this).parent().text(cor);
         }));
@@ -38,7 +38,6 @@ $("html").ready(function(){
             this.__node__[$input.attr("data-variable")] = parseFloat($input.val());
         else if($input.attr("data-type") === "array")
             this.__node__[$input.attr("data-variable")] = $input.val().split(",");
-
             //TODO: Colocar tipo boolean aqui.
         else if($input.attr("data-type") === "Generator")
             this.__node__[$input.attr("data-variable")] = new (DataGenerator.prototype.listOfGens[$input.val()])();
@@ -47,6 +46,8 @@ $("html").ready(function(){
             this.__node__.inputGenIndex = parseInt($input.val());
             this.__node__.reset();
         }
+        console.log(currentDataGen);
+        datagen[currentDataGen].resetAll();
     });
 
     $("#tableCollumn").on("click", "div.md-chip", configGenProps);
@@ -61,6 +62,7 @@ $("html").ready(function(){
 
         let $active_chip = showGenerators();
         configGenProps.apply($active_chip.get(0));
+        datagen[currentDataGen].resetAll();
     });
 
     $("#rowsQtInput").blur(function(){
@@ -126,6 +128,7 @@ function showGenerators(){
     $("#tbody").empty();
     for(let i = 0; i < datagen[currentDataGen].columns.length; i++){
         let $tr = $("<tr/>");
+        datagen[currentDataGen].columns[i].type = datagen[currentDataGen].columns[i].generator.getReturnedType();
         $("#tbody").append($tr
             .append($("<td/>").append($("<input/>").attr("type", "checkbox")))
             .append($("<td/>").text(i+1).addClass("tdIndex"))
@@ -138,6 +141,7 @@ function showGenerators(){
         datagen[currentDataGen].columns[i].generator.getFullGenerator(generators);
         let counter = 0;
 
+        console.log(i, generators, activeGenerator);
         for(let gen of generators){
             let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
             if(gen === activeGenerator)
@@ -184,6 +188,7 @@ function configGenProps(){
     $(this).addClass("active-md-chip");
 
     let generator = this.__node__;
+    console.log(generator);
     activeGenerator = generator;
     let coluna = $(this).parent().parent().get(0).__node__;
     let params = generator.getGenParams();
@@ -261,7 +266,7 @@ function configGenProps(){
 
             for(let i=0; i<datagen[currentDataGen].columns.length; i++){
                 if(datagen[currentDataGen].columns[i] !== coluna){
-                    console.log("p.type", p.type, "column.type", datagen[currentDataGen].columns[i].type);
+
                     if((p.type.indexOf("Categorical") >= 0 && datagen[currentDataGen].columns[i].type !== "Categorical")
                         || (p.type.indexOf("Numeric") >= 0 && datagen[currentDataGen].columns[i].type !== "Numeric"))
                         continue;

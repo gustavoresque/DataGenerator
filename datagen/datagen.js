@@ -94,7 +94,10 @@ class Generator{
 
     getGenParams(){}
 
-    reset(){}
+    reset(){
+        if(this.generator)
+            this.generator.reset();
+    }
 
     getModel(){
         let self = this;
@@ -102,6 +105,10 @@ class Generator{
             name: self.name,
             order: self.order
         }
+    }
+
+    getReturnedType(){
+        return "Numeric";
     }
 }
 
@@ -123,6 +130,7 @@ class CounterGenerator extends Generator{
 
     reset(){
         this.count = this.begin;
+        super.reset();
     }
 
     getGenParams(){
@@ -518,7 +526,7 @@ class RandomCategorical extends Generator {
     }
 
     generate() {
-        let result =  parseInt(super.generate(0));
+        let result =  this.generator ? parseInt(super.generate(0)) : -1;
         if(isNaN(result) || result >= this.array.length || result < 0){
             return this.array[Math.floor(Math.random() * this.array.length)];
         } else{
@@ -541,6 +549,10 @@ class RandomCategorical extends Generator {
         let model = super.getModel();
         model.array = this.array;
         return model;
+    }
+
+    getReturnedType(){
+        return "Categorical";
     }
 }
 
@@ -804,15 +816,30 @@ class CategoricalFunction extends Function{
         this.listOfGenerators = {};
     }
 
+
     reset(){
         let auxgen = new RandomUniformGenerator();
         this.generator = auxgen;
         auxgen.parent = this;
 
+        let attrs = [];
+        for(let attr in this.listOfGenerators)
+            if(this.listOfGenerators.hasOwnProperty(attr))
+                attrs.push(attr);
         for(let i=0; i<this.inputGenerator.array.length; i++){
-            let gen = new RandomUniformGenerator();
-            auxgen.changeGenerator(gen);
-            this.listOfGenerators[this.inputGenerator.array[i]] = gen;
+            if(!(this.listOfGenerators[this.inputGenerator.array[i]])) {
+                let gen = new RandomUniformGenerator();
+                auxgen.changeGenerator(gen);
+                this.listOfGenerators[this.inputGenerator.array[i]] = gen;
+            }
+            let index = attrs.indexOf(this.inputGenerator.array[i]);
+            if(index >= 0){
+                attrs.splice(index, 1);
+            }
+        }
+        for(let attr of attrs){
+            this.listOfGenerators[attr] = undefined;
+            delete this.listOfGenerators[attr];
         }
     }
 
@@ -831,12 +858,22 @@ class CategoricalFunction extends Function{
         model.listOfGenerators = {};
         for(let p in this.listOfGenerators){
             if(this.listOfGenerators.hasOwnProperty(p)){
-                model.listOfGenerators[p] = this.listOfGenerators[p].getModel();
+                let fullGen = [];
+                this.listOfGenerators[p].getFullGenerator(fullGen);
+                model.listOfGenerators[p] = [];//this.listOfGenerators[p].getModel();
+                for(let gen of fullGen){
+                    model.listOfGenerators[p].push(gen.getModel());
+                }
             }
         }
         return model;
     }
 
+    getReturnedType(){
+        if(this.generator)
+            return this.generator.getReturnedType();
+        return "Numeric";
+    }
 }
 ///--------------------------  Gerenciador de Colunas e Geração da base total. ----------------------------------------
 
@@ -848,7 +885,7 @@ class DataGen {
         let defaultGenerator = new CounterGenerator();
         let column = {
             name: "Column 1",
-            type: "Numeric",
+            type: defaultGenerator.getReturnedType(),
             generator: defaultGenerator
         };
         defaultGenerator.parent = column;
@@ -859,7 +896,7 @@ class DataGen {
         generator = generator || new CounterGenerator();
         let column = {
             name: name,
-            type: type,
+            type: generator.getReturnedType(),
             generator: generator
         };
         generator.parent = column;
@@ -895,11 +932,14 @@ class DataGen {
                 data[i].push(this.columns[j].generator.generate());
             }
         }
+        this.resetAll();
+        return data;
+    }
+
+    resetAll (){
         for (let j = 0; j < this.columns.length; j++){
-            console.log(this.columns[j].generator);
             this.columns[j].generator.reset();
         }
-        return data;
     }
     
     exportModel(){
@@ -927,6 +967,8 @@ class DataGen {
     //TODO: resolver funções e ruido.
     importModel(model_str){
         let model = JSON.parse(model_str);
+        this.name = model.name;
+
         for(let i=0; i<model.generator.length; i++){
 
             let generator;
@@ -936,18 +978,20 @@ class DataGen {
                 if(generator){
                     let newgen = new selectedGenerator();
                     generator.addGenerator(newgen);
-                    copyAttrs(model.generator[i].generator, newgen);
+                    copyAttrs(model.generator[i].generator[j], newgen, this);
                 }else{
                     generator = new selectedGenerator();
-                    copyAttrs(model.generator[i].generator, generator);
+                    copyAttrs(model.generator[i].generator[j], generator, this);
                 }
             }
-            this.name = model.name;
-            this.columns.push({
+
+            let col = {
                 name: model.generator[i].name,
                 type: model.generator[i].type,
                 generator: generator
-            })
+            };
+            this.columns.push(col);
+            generator.parent = col;
         }
         console.log(this);
     }
@@ -984,11 +1028,30 @@ DataGen.prototype.listOfGensForNoise = {
     'Cauchy Generator': RandomCauchyGenerator,
 };
 
-function copyAttrs(source, target){
+function copyAttrs(source, target, context){
+
     for(let attr in source){
         if(source.hasOwnProperty(attr) && attr !== "name"){
             if(attr === "generator2"){
                 target[attr] = new (DataGen.prototype.listOfGens[source[attr]])();
+            }else if(attr === "inputGenIndex") {
+                target.inputGenerator = context.columns[source[attr]].generator;
+                target[attr] = source[attr];
+            }else if(attr === "listOfGenerators") {
+                target[attr] = {};
+                for(let attr2 in source[attr]){
+                    if(source[attr].hasOwnProperty(attr2))
+                        for(let genObj of source[attr][attr2]){
+                            if(target[attr][attr2]) {
+                                let gen1 = new (DataGen.prototype.listOfGens[genObj.name])();
+                                target[attr][attr2].addGenerator(gen1);
+                                gen1.parent = target;
+                            }else {
+                                target[attr][attr2] = new (DataGen.prototype.listOfGens[genObj.name])();
+                                target[attr][attr2].parent = target;
+                            }
+                        }
+                }
             }else{
                 target[attr] = source[attr];
             }
