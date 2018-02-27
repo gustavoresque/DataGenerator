@@ -5,9 +5,17 @@ let activeGenerator;
 $("html").ready(function(){
     for(let i = 0; i < datagen.length; i++){
         let modelButton = $("<span/>").addClass("nav-group-item").text(datagen[i].name + " " + (i+1)).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
+        if (currentDataGen === i)
+            modelButton.addClass("active");
         modelButton.on("click", function () {
-            currentDataGen = i;
-            showGenerators();
+            if (currentDataGen !== i){
+                currentDataGen = i;
+                $("#modelsPane").children().removeClass('active');
+                $(this).addClass("active");
+                $('#selectGeneratorType').empty().attr("disabled", true);
+                $('#generatorPropertiesForm').empty();
+                showGenerators();
+            }
         });
         $("#modelsPane").append(modelButton);
     }
@@ -38,10 +46,8 @@ $("html").ready(function(){
             this.__node__[$input.attr("data-variable")] = parseFloat($input.val());
         else if($input.attr("data-type") === "array")
             this.__node__[$input.attr("data-variable")] = $input.val().split(",");
-            //TODO: Colocar tipo boolean aqui.
-        else if($input.attr("data-type") === "boolean"){
+        else if($input.attr("data-type") === "boolean")
             this.__node__[$input.attr("data-variable")] = $input.get(0).checked;
-        }
         else if($input.attr("data-type") === "Generator")
             this.__node__[$input.attr("data-variable")] = new (DataGenerator.prototype.listOfGens[$input.val()])();
         else if($input.attr("data-type").indexOf("Column") >= 0) {
@@ -49,8 +55,8 @@ $("html").ready(function(){
             this.__node__.inputGenIndex = parseInt($input.val());
             this.__node__.reset();
         }
-        console.log(currentDataGen);
         datagen[currentDataGen].resetAll();
+        showGenerators();
     });
 
     $("#tableCollumn").on("click", "div.md-chip", configGenProps);
@@ -153,10 +159,16 @@ function showGenerators(){
             $chip.get(0).__node__ = generators[0];
             $tdGen.append($chip);
 
-            //$switchGenTr.append($("<td/>").attr("rowspan", datagen[currentDataGen].columns[i].generator.listOfGenerators.length).text("Oi"));
             let $switchGenTr;
+            let flag = false;
+            //$switchGenTr.append($("<td/>").attr("rowspan", datagen[currentDataGen].columns[i].generator.listOfGenerators.length).text("Oi"));
             for (let c in datagen[currentDataGen].columns[i].generator.listOfGenerators){
-                $switchGenTr = $("<tr/>").append($("<td/>").text(c));
+                $switchGenTr = $("<tr/>");
+                if (!flag){
+                    $switchGenTr.append($("<td/>").attr("rowspan", Object.keys(datagen[currentDataGen].columns[i].generator.listOfGenerators).length).append($chip));
+                    flag = true;
+                }
+                $switchGenTr.append($("<td/>").text(c));
                 let generators2 = [];
                 datagen[currentDataGen].columns[i].generator.listOfGenerators[c].getFullGenerator(generators2);
                 let counter = 0;
@@ -168,11 +180,6 @@ function showGenerators(){
                     $switchGenTr.append($("<td/>").append($chip));
                     counter++;
                 }
-                // $switchGenTr.append($("<span/>")
-                //     .addClass("btnGenerator btnAddGen icon icon-plus-circled")
-                // ).append($("<span/>")
-                //     .addClass("btnGenerator btnRemoveGen icon icon-trash")
-                // );
 
                 $switchGenTable.append($switchGenTr);
             }
@@ -312,7 +319,6 @@ function configGenProps(){
 
             //Preenche a lista de seleção para funções
             //Só podem ser utilizadas as colunas anteriores a essa.
-
             for(let i=0; i<datagen[currentDataGen].columns.length; i++){
                 if(datagen[currentDataGen].columns[i] !== coluna){
 
@@ -330,7 +336,9 @@ function configGenProps(){
                     break;
                 }
             }
-
+            if (!generator[p.variableName]){
+                $select.prepend($("<option/>").attr("selected", "selected").text("null"));
+            }
 
             $tr.append($("<td/>").append($select));
         }
@@ -343,8 +351,14 @@ function createNewModel () {
     let modelButton = $("<span/>").addClass("nav-group-item").text(datagen[datagen.length-1].name + " " + datagen.length).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
     let pos = (datagen.length-1);
     modelButton.on("click", function () {
-        currentDataGen = pos;
-        showGenerators();
+        if (currentDataGen !== pos){
+            currentDataGen = pos;
+            $("#modelsPane").children().removeClass('active');
+            $(this).addClass("active");
+            $('#selectGeneratorType').empty().attr("disabled", true);
+            $('#generatorPropertiesForm').empty();
+            showGenerators();
+        }
     });
     $("#modelsPane").append(modelButton);
     currentDataGen = pos;

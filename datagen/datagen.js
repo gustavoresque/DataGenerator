@@ -818,6 +818,8 @@ class CategoricalFunction extends Function{
 
 
     reset(){
+        if (!this.inputGenerator)
+            return;
         let auxgen = new RandomUniformGenerator();
         this.generator = auxgen;
         auxgen.parent = this;
