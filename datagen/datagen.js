@@ -335,6 +335,45 @@ class RandomCauchyGenerator extends Generator{
     }
 }
 
+class RandomConstantNoiseGenerator extends Generator{
+    constructor(generator, operator, probability, value){
+        super("Constant Noise Generator", generator, operator);
+        this.probability = probability || 0.3;
+        this.value = value || 1;
+    }
+
+    generate(){
+        if (Math.random() < this.probability){
+            return super.generate(0) + this.value;
+        }else{
+            return super.generate(0);
+        }
+    }
+    getGenParams(){
+        return [
+            {
+                shortName: "Prob",
+                variableName: "probability",
+                name: "Occurrence Probability",
+                type: "number"
+            },
+            {
+                shortName: "Value",
+                variableName: "value",
+                name: "Constant Value",
+                type: "number"
+            }
+        ];
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.probability = this.probability;
+        model.value = this.value;
+        return model;
+    }
+}
+
 class RandomNoiseGenerator extends Generator{
     constructor(generator, operator, generator2, probability, intensity){
         super("Noise Generator", generator, operator);
@@ -1010,6 +1049,7 @@ DataGen.prototype.listOfGens = {
     'Bernoulli Generator': RandomBernoulliGenerator,
     'Cauchy Generator': RandomCauchyGenerator,
     'Noise Generator': RandomNoiseGenerator,
+    'Constant Noise Generator': RandomConstantNoiseGenerator,
     'Range Filter': RangeFilter,
     'Linear Scale': LinearScale,
     'MinMax': MinMax,
