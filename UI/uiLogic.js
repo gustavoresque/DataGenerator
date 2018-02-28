@@ -86,12 +86,17 @@ $("html").ready(function(){
     });
 
     $("#tableCollumn").on("click", "span.btnRemoveGen", function(){
-        datagen[currentDataGen].removeLastGenerator(parseInt($(this).parent().parent().find(".tdIndex").text()) - 1);
-        showGenerators();
+        if ($(this).parent().find("div.md-chip").length > 1){
+            let l = $(this).parent().find("div.md-chip").length-2;
+            $(this).parent().find("div.md-chip").get(l).__node__.removeLastGenerator();
+            showGenerators();
+        }
     });
 
     $("#tableCollumn").on("click", "span.btnAddGen", function(){
-        datagen[currentDataGen].addGeneratorToIndex(parseInt($(this).parent().parent().find(".tdIndex").text())-1, new CounterGenerator())
+        let l = $(this).parent().find("div.md-chip").length-1;
+        $(this).parent().find("div.md-chip").get(l).__node__.addGenerator(new CounterGenerator());
+
         showGenerators();
     });
 
@@ -161,7 +166,6 @@ function showGenerators(){
 
             let $switchGenTr;
             let flag = false;
-            //$switchGenTr.append($("<td/>").attr("rowspan", datagen[currentDataGen].columns[i].generator.listOfGenerators.length).text("Oi"));
             for (let c in datagen[currentDataGen].columns[i].generator.listOfGenerators){
                 $switchGenTr = $("<tr/>");
                 if (!flag){
@@ -181,6 +185,11 @@ function showGenerators(){
                     counter++;
                 }
 
+                $switchGenTr.append($("<span/>")
+                    .addClass("btnGenerator btnAddGen icon icon-plus-circled")
+                ).append($("<span/>")
+                    .addClass("btnGenerator btnRemoveGen icon icon-trash")
+                );
                 $switchGenTable.append($switchGenTr);
             }
             $tdGen.append($switchGenTable);

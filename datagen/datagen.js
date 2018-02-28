@@ -22,6 +22,17 @@ class Generator{
     //         this.generator.changeGenerator(gen, order);
     //     }
     //     return true;
+
+    addGenerator(gen, order){
+        if (!this.generator){
+            gen.order = (order || this.order) + 1;
+            this.generator = gen;
+            gen.parent = this;
+        }
+        else{
+            this.generator.addGenerator(gen, (order || this.order) + 1);
+        }
+    }
     // }
     changeGenerator(gen){
         gen.order = this.order;
@@ -38,17 +49,6 @@ class Generator{
         // this.generator.generator = genSub;
         //
         // return true;
-    }
-
-    addGenerator(gen, order){
-        if (!this.generator){
-            gen.order = order || 1;
-            this.generator = gen;
-            gen.parent = this;
-        }
-        else{
-            this.generator.addGenerator(gen, (order || 1) + 1);
-        }
     }
 
     removeLastGenerator(){
@@ -846,6 +846,7 @@ class CategoricalFunction extends Function{
     }
 
     transform(x){
+        console.log("Nice: " + x);
         this.generator = this.listOfGenerators[x];
         return 0;
     }
