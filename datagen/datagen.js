@@ -44,6 +44,15 @@ class Generator{
         gen.generator = this.generator;
         if(gen.generator)
             gen.generator.parent = gen;
+
+        if(gen.parent instanceof CategoricalFunction){
+            console.log("parent", gen.parent);
+            console.log("gen", gen);
+            for(let cat in gen.parent.listOfGenerators){
+                if(gen.parent.listOfGenerators.hasOwnProperty(cat) && gen.parent.listOfGenerators[cat] === this)
+                    gen.parent.listOfGenerators[cat] = gen;
+            }
+        }
         // let genSub = this.generator.generator;
         // this.generator = gen;
         // this.generator.generator = genSub;
@@ -109,6 +118,35 @@ class Generator{
 
     getReturnedType(){
         return "Numeric";
+    }
+}
+
+class ConstantValue extends Generator{
+
+    constructor(generator, operator, value){
+        super("Constant Value", generator, operator);
+        this.value = value || 1;
+    }
+
+    generate(){
+        return super.generate(this.value);
+    }
+
+    getGenParams(){
+        return [
+            {
+                shortName: "Value",
+                variableName: "value",
+                name: "The Constant Value",
+                type: "number"
+            }
+        ];
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.value = this.value;
+        return model;
     }
 }
 
@@ -519,7 +557,6 @@ class LinearScale extends Generator {
 }
 
 
-
 class MinMax extends Generator {
     constructor(generator, operator, min, max) {
         super("MinMax", generator,operator);
@@ -567,9 +604,11 @@ class RandomCategorical extends Generator {
     generate() {
         let result =  this.generator ? parseInt(super.generate(0)) : -1;
         if(isNaN(result) || result >= this.array.length || result < 0){
-            return this.array[Math.floor(Math.random() * this.array.length)];
+            this.lastGenerated = this.array[Math.floor(Math.random() * this.array.length)];
+            return this.lastGenerated;
         } else{
-            return this.array[result];
+            this.lastGenerated = this.array[result];
+            return this.lastGenerated;
         }
     }
 
@@ -967,6 +1006,7 @@ class DataGen {
 
     generate (){
         console.log("GENERATE!!!!!!");
+        console.log(this.columns);
         let data = [];
         for (let i = 0; i < this.n_lines; i++){
             data.push([]);
@@ -1042,6 +1082,7 @@ class DataGen {
 }
 
 DataGen.prototype.listOfGens = {
+    'Constant Value': ConstantValue,
     'Counter Generator': CounterGenerator,
     'Uniform Generator': RandomUniformGenerator,
     'Gaussian Generator': RandomGaussianGenerator,

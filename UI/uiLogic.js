@@ -78,11 +78,20 @@ $("html").ready(function(){
         $(".tooltiptext").css("visibility", "hidden").css("opacity", 0);
     });
 
-    $(".tooltip").click(function(){
-        if($(".tooltiptext").css("visibility") === "hidden")
-            $(".tooltiptext").css("visibility", "visible").css("opacity", 1);
-        else
-            $(".tooltiptext").css("visibility", "hidden").css("opacity", 0);
+    $("#btnConfigGeneration").click(function(){
+        // if($(".tooltiptext").css("visibility") === "hidden")
+        //     $(".tooltiptext").css("visibility", "visible").css("opacity", 1);
+        // else
+        //     $(".tooltiptext").css("visibility", "hidden").css("opacity", 0);
+
+        // console.log(window.location);
+        // let windowObjectReference = window.open("http://localhost:63342/DataGenerator/pages/configDatagen.html", "Configure Generation");
+        // windowObjectReference.minhavar = "ALo";
+        // windowObjectReference.document.write("<p>This is 'myWindow'</p>");
+
+        let ipc = require('electron').ipcRenderer;
+        console.log(ipc);
+        ipc.send('open-config-datagen-window', 'Wow!!!!!!!!');
     });
 
     $("#tableCollumn").on("click", "span.btnRemoveGen", function(){
