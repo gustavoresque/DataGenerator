@@ -1005,8 +1005,6 @@ class DataGen {
     }
 
     generate (){
-        console.log("GENERATE!!!!!!");
-        console.log(this.columns);
         let data = [];
         for (let i = 0; i < this.n_lines; i++){
             data.push([]);

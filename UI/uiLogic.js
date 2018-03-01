@@ -1,3 +1,7 @@
+var fs = require('fs');
+const electron = require('electron').remote;
+const dialog = electron.dialog;
+
 var datagen = [new DataGen()];
 let currentDataGen = 0;
 let activeGenerator;
@@ -117,6 +121,7 @@ $("html").ready(function(){
 
 function generateDatas(){
     document.getElementById("theadResult").innerHTML = "<tr>";
+    let dataToExport = [];
     let t = "";
 
     datagen[currentDataGen].columns.forEach(function(item){
@@ -124,7 +129,6 @@ function generateDatas(){
     });
     document.getElementById("theadResult").innerHTML += t + "</tr>";
 
-    datagen[currentDataGen].n_lines = $("#rowsQtInput").val();
     let data = datagen[currentDataGen].generate();
 
     document.getElementById("tbodyResult").innerHTML="";
@@ -137,6 +141,12 @@ function generateDatas(){
         }
         document.getElementById("tbodyResult").appendChild(tr);
     }
+    if (datagen[currentDataGen].save_as === 'csv')
+        exportResultsCSVTSV(data, ";");
+    else if (datagen[currentDataGen].save_as === 'tsv')
+        exportResultsCSVTSV(data, "\t");
+    else
+        exportResultsJSON(data);
 }
 
 function addGenerator(){
@@ -384,7 +394,6 @@ function createNewModel () {
 }
 
 function createExportModel (path) {
-    var fs = require('fs');
     fs.writeFile(path, datagen[currentDataGen].exportModel(), (err) => {
         if (err) throw err;
     });
@@ -405,4 +414,81 @@ function createImportModel (data) {
     $("#modelsPane").append(modelButton);
     currentDataGen = pos;
     showGenerators();
+}
+
+function exportResultsCSVTSV(data, separator){
+    let str = "";
+    if (datagen[currentDataGen].header){
+        datagen[currentDataGen].columns.forEach(function(item){
+            str += item.name + separator;
+        });
+        str += "\n";
+    }
+
+    if(datagen[currentDataGen].header_type){
+        datagen[currentDataGen].columns.forEach(function(item){
+            str += item.type + separator;
+        });
+        str += "\n";
+    }
+
+    for (let i = 0; i < data.length; i++){
+        for (let j = 0; j < data[i].length; j++){
+            str += data[i][j].toString().replace(".", ",") + separator;
+        }
+        str += "\n";
+    }
+    let filt = {};
+    if (separator === ";"){
+        filt.name = "csv";
+        filt.extensions = ['csv'];
+    }else{
+        filt.name = "tsv";
+        filt.extensions = ['tsv'];
+    }
+
+    dialog.showSaveDialog({title:"Salvar resultados", filters:[filt]}, function(targetPath) {
+        var partsOfStr = targetPath.split('\\');
+        targetPath = "";
+        for (let i = 0; i < partsOfStr.length; i++) {
+            targetPath += partsOfStr[i] + "\\\\";
+        }
+        fs.writeFile(targetPath, str, (err) => {
+            if (err) throw err;
+        });
+    });
+}
+
+function exportResultsJSON(data){
+    let str = [];
+    let obj = [];
+    for (let j = 0; j < data[0].length; j++){// Numero de columns
+        str.push([]);
+        for (let i = 0; i < data.length; i++){// Numero de resultados
+            str[j].push(data[i][j]);
+        }
+    }
+    for(let j = 0; j < data[0].length; j++){
+        let cols = {};
+        if (datagen[currentDataGen].header)
+            cols.name = datagen[currentDataGen].columns[j].name;
+
+        if (datagen[currentDataGen].header_type)
+            cols.type = datagen[currentDataGen].columns[j].type;
+
+        cols.data = str[j];
+        obj.push(cols);
+    }
+    let myJSON = JSON.stringify(obj);
+
+    dialog.showSaveDialog({title:"Salvar resultados", filters:[{name: 'JSON', extensions:['json']}]}, function(targetPath) {
+        var partsOfStr = targetPath.split('\\');
+        targetPath = "";
+        for (let i = 0; i < partsOfStr.length; i++) {
+            targetPath += partsOfStr[i] + "\\\\";
+        }
+        fs.writeFile(targetPath, myJSON, (err) => {
+            if (err) throw err;
+        });
+    });
 }
