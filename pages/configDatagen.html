@@ -3,9 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <title>Generation Settings</title>
-    <script src="../photon-0.1.2-dist/template-app/js/menu.js" charset="utf-8"></script>
+    <link rel="stylesheet" href="../photon-0.1.2-dist/css/photon.min.css">
+    <style>
+        body{
+            padding: 10px;
+        }
+        label{
+            display: block;
+            margin: 0;
+        }
+        td:first-child{
+            vertical-align: middle;
+            text-align: right;
+            padding-right: 2px;
+        }
+        td:last-child{
+            padding-left: 2px;
+            text-align: left;
+        }
+        button{
+            position: absolute;
+            bottom: 15px;
+            right: 25px;
+        }
+        button.btn-negative{
+            right: 90px;
+        }
+    </style>
+
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+    </script>
+    <script src="../lib/jquery-3.2.1.min.js"></script>
+    <script>if (window.module) module = window.module;</script>
+
+    <script>
+        let ipc = require('electron').ipcRenderer;
+        let obj = {};
+        ipc.on('configure-datagen', (event, arg) => {
+            obj = arg;
+            for(let attr in obj){
+                if(obj.hasOwnProperty(attr)){
+                    let $ele = $("#"+attr);
+                    console.log($ele.get(0),obj[attr]);
+                    if($ele.is("[type=checkbox]")){
+                        $ele.get(0).checked = obj[attr];
+                    }else{
+                        $ele.val(obj[attr]);
+                    }
+                }
+            }
+        });
+
+        $(document).ready(function(){
+            $("input, select").on("change blur", function(){
+                let $t = $(this);
+                obj[$t.attr("id")] = $t.is("[type=checkbox]") ? $t.is(":checked") : $t.val();
+                console.log(obj);
+            });
+            $("button").click(function () {
+                if($(this).is(".btn-primary")){
+                    ipc.send('change-datagen', obj);
+                }else{
+                    ipc.send('change-datagen', false);
+                }
+            });
+        });
+
+    </script>
+    <!--<script src="../photon-0.1.2-dist/template-app/js/menu.js" charset="utf-8"></script>-->
 </head>
 <body>
-        <h2>HAHAHAHA</h2>
+    <table>
+        <tr>
+            <td><label for="n_lines">Number of Lines</label></td>
+            <td><input id="n_lines" type="number" class="form-control"></td>
+        </tr>
+
+        <tr>
+            <td>
+                <label for="save_as">Save as</label>
+            </td>
+            <td>
+                <select id="save_as" class="form-control">
+                    <option value="csv">CSV</option>
+                    <option value="tsv">TSV</option>
+                    <option value="json">JSON</option>
+                    <option value="sql">SQL</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="header">Header</label>
+            </td>
+            <td><input id="header" type="checkbox" class="form-control"></td>
+        </tr>
+        <tr>
+            <td>
+                <label for="header_type">Header Type</label>
+            </td>
+            <td><input id="header_type" type="checkbox" class="form-control"></td>
+        </tr>
+
+        <button id="btnCancel" class="btn btn-negative">Cancel</button>
+        <button id="btnConfirm" class="btn btn-primary">Confirm</button>
+
+    </table>
+
+
 </body>
 </html>

@@ -27,13 +27,18 @@ function createWindow () {
         slashes: true
     }));
 
-
+    let configDatagenWindow;
     ipcMain.on('open-config-datagen-window', (event, arg) => {
-        let configDatagenWindow = new BrowserWindow({
+        configDatagenWindow = new BrowserWindow({
             parent: mainWindow,
             modal: true,
-            width: 900,
-            height: 600
+            width: 300,
+            height: 300,
+            show: false,
+            resizable: false,
+            closable: false,
+            minimizable: false,
+            maximizable: false
         });
         // configDatagenWindow.setMenu(null);
         configDatagenWindow.loadURL(url.format({
@@ -44,9 +49,18 @@ function createWindow () {
         configDatagenWindow.on('closed', function () {
             configDatagenWindow = undefined;
         });
+        configDatagenWindow.once('ready-to-show', () => {
+            configDatagenWindow.show();
+            configDatagenWindow.webContents.send('configure-datagen', arg);
+        })
     });
     ipcMain.on('change-datagen', (event, message) => {
-        mainWindow.webContents.send('change-datagen', message);
+        if(message)
+            mainWindow.webContents.send('change-datagen', message);
+        if(configDatagenWindow){
+            configDatagenWindow.setClosable(true);
+            configDatagenWindow.close();
+        }
     });
 
 
@@ -62,21 +76,25 @@ function createWindow () {
                         let pathFile = dialog.showOpenDialog(mainWindow, {
                             properties: ['openFile']
                         });
-                        fs.readFile(pathFile.toString(), 'utf8', (err, data) => {
-                            if (err) throw err;
-                            mainWindow.webContents.executeJavaScript("createImportModel('"+ data +"');");
-                        });
+                        if(pathFile){
+                            fs.readFile(pathFile.toString(), 'utf8', (err, data) => {
+                                if (err) throw err;
+                                mainWindow.webContents.executeJavaScript("createImportModel('"+ data +"');");
+                            });
+                        }
                         //mainWindow.webContents.executeJavaScript('createImportModel("'+ str +'");');
                     }},
                 {label: 'Export Model', click (){
                         dialog.showSaveDialog({title:"Salvar modelo"}, function(targetPath) {
-                            var partsOfStr = targetPath.split('\\');
-                            targetPath = "";
-                            for (let i = 0; i < partsOfStr.length; i++){
-                                targetPath += partsOfStr[i] + "\\\\";
+                            if(targetPath){
+                                let partsOfStr = targetPath.split('\\');
+                                targetPath = "";
+                                for (let i = 0; i < partsOfStr.length; i++){
+                                    targetPath += partsOfStr[i] + "\\\\";
+                                }
+                                console.log(targetPath);
+                                mainWindow.webContents.executeJavaScript("createExportModel('" + targetPath + "');");
                             }
-                            console.log(targetPath);
-                            mainWindow.webContents.executeJavaScript("createExportModel('" + targetPath + "');");
                         });
                         //mainWindow.webContents.executeJavaScript('createExportModel("' + str + '");');
                     }},

@@ -963,6 +963,9 @@ class DataGen {
     constructor () {
         this.name = "Model";
         this.n_lines = 100; // Quantidade de linhas na geração
+        this.save_as = "csv";
+        this.header = true;
+        this.header_type = true;
         let defaultGenerator = new CounterGenerator();
         let column = {
             name: "Column 1",
@@ -971,6 +974,22 @@ class DataGen {
         };
         defaultGenerator.parent = column;
         this.columns = [column];
+    }
+
+    get configs(){
+        return {
+            n_lines: this.n_lines,
+            save_as: this.save_as,
+            header: this.header,
+            header_type: this.header_type
+        }
+    }
+
+    set configs(obj){
+        if(obj.n_lines) this.n_lines = obj.n_lines;
+        if(obj.save_as) this.save_as = obj.save_as;
+        if(typeof obj.header === "boolean") this.header = obj.header;
+        if(typeof obj.header_type === "boolean") this.header_type = obj.header_type;
     }
 
     addCollumn(name, type, generator){

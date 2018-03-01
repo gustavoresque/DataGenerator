@@ -1,6 +1,12 @@
 var datagen = [new DataGen()];
 let currentDataGen = 0;
 let activeGenerator;
+let ipc = require('electron').ipcRenderer;
+
+ipc.on('change-datagen', function(event, arg){
+    datagen[currentDataGen].configs = arg;
+    console.log(datagen[currentDataGen].configs);
+});
 
 $("html").ready(function(){
     for(let i = 0; i < datagen.length; i++){
@@ -89,9 +95,7 @@ $("html").ready(function(){
         // windowObjectReference.minhavar = "ALo";
         // windowObjectReference.document.write("<p>This is 'myWindow'</p>");
 
-        let ipc = require('electron').ipcRenderer;
-        console.log(ipc);
-        ipc.send('open-config-datagen-window', 'Wow!!!!!!!!');
+        ipc.send('open-config-datagen-window', datagen[currentDataGen].configs);
     });
 
     $("#tableCollumn").on("click", "span.btnRemoveGen", function(){
@@ -384,7 +388,7 @@ function createNewModel () {
 }
 
 function createExportModel (path) {
-    var fs = require('fs');
+    let fs = require('fs');
     fs.writeFile(path, datagen[currentDataGen].exportModel(), (err) => {
         if (err) throw err;
     });
