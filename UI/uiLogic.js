@@ -146,7 +146,7 @@ function generateDatas(){
     else if (datagen[currentDataGen].save_as === 'tsv')
         exportResultsCSVTSV(data, "\t");
     else
-        exportResultsJSON(data);
+        exportResultsCSVTSV(data, "\t");
 }
 
 function addGenerator(){
@@ -448,14 +448,16 @@ function exportResultsCSVTSV(data, separator){
     }
 
     dialog.showSaveDialog({title:"Salvar resultados", filters:[filt]}, function(targetPath) {
-        var partsOfStr = targetPath.split('\\');
-        targetPath = "";
-        for (let i = 0; i < partsOfStr.length; i++) {
-            targetPath += partsOfStr[i] + "\\\\";
+        if(targetPath){
+            var partsOfStr = targetPath.split('\\');
+            targetPath = "";
+            for (let i = 0; i < partsOfStr.length; i++) {
+                targetPath += partsOfStr[i] + "\\\\";
+            }
+            fs.writeFile(targetPath, str, (err) => {
+                if (err) throw err;
+            });
         }
-        fs.writeFile(targetPath, str, (err) => {
-            if (err) throw err;
-        });
     });
 }
 
@@ -479,16 +481,19 @@ function exportResultsJSON(data){
         cols.data = str[j];
         obj.push(cols);
     }
+
     let myJSON = JSON.stringify(obj);
 
     dialog.showSaveDialog({title:"Salvar resultados", filters:[{name: 'JSON', extensions:['json']}]}, function(targetPath) {
-        var partsOfStr = targetPath.split('\\');
-        targetPath = "";
-        for (let i = 0; i < partsOfStr.length; i++) {
-            targetPath += partsOfStr[i] + "\\\\";
+        if(targetPath){
+            var partsOfStr = targetPath.split('\\');
+            targetPath = "";
+            for (let i = 0; i < partsOfStr.length; i++) {
+                targetPath += partsOfStr[i] + "\\\\";
+            }
+            fs.writeFile(targetPath, myJSON, (err) => {
+                if (err) throw err;
+            });
         }
-        fs.writeFile(targetPath, myJSON, (err) => {
-            if (err) throw err;
-        });
     });
 }
