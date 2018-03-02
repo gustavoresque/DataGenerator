@@ -1,11 +1,13 @@
-var fs = require('fs');
+let fs = require('fs');
 const electron = require('electron').remote;
 const dialog = electron.dialog;
 
-var datagen = [new DataGen()];
+let datagen = [new DataGen()];
 let currentDataGen = 0;
 let activeGenerator;
 let ipc = require('electron').ipcRenderer;
+
+const Json2csvParser = require('json2csv').Parser;
 
 ipc.on('change-datagen', function(event, arg){
     datagen[currentDataGen].configs = arg;
@@ -54,6 +56,10 @@ $("html").ready(function(){
         let $input = $(this);
         if($input.attr("data-type") === "number")
             this.__node__[$input.attr("data-variable")] = parseFloat($input.val());
+        else if($input.attr("data-type") === "string")
+            this.__node__[$input.attr("data-variable")] = $input.val();
+        else if($input.attr("data-type") === "auto")
+            this.__node__[$input.attr("data-variable")] = isNaN(parseFloat($input.val())) ? $input.val() : parseFloat($input.val());
         else if($input.attr("data-type") === "array")
             this.__node__[$input.attr("data-variable")] = $input.val().split(",");
         else if($input.attr("data-type") === "boolean")
@@ -124,33 +130,76 @@ $("html").ready(function(){
 });
 
 function generateDatas(){
-    document.getElementById("theadResult").innerHTML = "<tr>";
-    let dataToExport = [];
-    let t = "";
-
-    datagen[currentDataGen].columns.forEach(function(item){
-        t += "<th>" + item.name + "</th>";
-    });
-    document.getElementById("theadResult").innerHTML += t + "</tr>";
+    // document.getElementById("theadResult").innerHTML = "<tr>";
+    // let dataToExport = [];
+    // let t = "";
+    //
+    // datagen[currentDataGen].columns.forEach(function(item){
+    //     t += "<th>" + item.name + "</th>";
+    // });
+    // document.getElementById("theadResult").innerHTML += t + "</tr>";
+    //
+    // document.getElementById("tbodyResult").innerHTML="";
+    // for (let i = 0; i < data.length; i++) {
+    //     let tr = document.createElement('TR');
+    //     for (let j = 0; j < data[i].length; j++) {
+    //         let td = document.createElement('TD');
+    //         td.appendChild(document.createTextNode(data[i][j]));
+    //         tr.appendChild(td)
+    //     }
+    //     document.getElementById("tbodyResult").appendChild(tr);
+    // }
+    //
 
     let data = datagen[currentDataGen].generate();
+    let datastr;
+    let save_as = datagen[currentDataGen].save_as;
+    let filt = {};
 
-    document.getElementById("tbodyResult").innerHTML="";
-    for (let i = 0; i < data.length; i++) {
-        let tr = document.createElement('TR');
-        for (let j = 0; j < data[i].length; j++) {
-            let td = document.createElement('TD');
-            td.appendChild(document.createTextNode(data[i][j]));
-            tr.appendChild(td)
+    if(save_as === "json"){
+        filt.name = "json";
+        filt.extensions = ['json'];
+        datastr = JSON.stringify(data);
+    }else if(save_as === "csv" || save_as === "tsv"){
+        let json2csvParser = new Json2csvParser({ fields: datagen[currentDataGen].getColumnsNames() });
+        console.log(json2csvParser);
+        if(save_as === "csv"){
+            filt.name = "csv";
+            filt.extensions = ['csv'];
+        }else{
+            json2csvParser.opts.delimiter = "\t";
+            filt.name = "tsv";
+            filt.extensions = ['tsv'];
         }
-        document.getElementById("tbodyResult").appendChild(tr);
+
+        json2csvParser.opts.header = datagen[currentDataGen].header;
+
+        datastr = json2csvParser.parse(data);
     }
-    if (datagen[currentDataGen].save_as === 'csv')
-        exportResultsCSVTSV(data, ";");
-    else if (datagen[currentDataGen].save_as === 'tsv')
-        exportResultsCSVTSV(data, "\t");
-    else
-        exportResultsCSVTSV(data, "\t");
+
+
+
+    dialog.showSaveDialog({title:"Save Data", filters:[filt]}, function(targetPath) {
+        if(targetPath){
+            // console.log(targetPath);
+            // let partsOfStr = targetPath.split('\\');
+            // targetPath = "";
+            // for (let i = 0; i < partsOfStr.length; i++) {
+            //     targetPath += partsOfStr[i] + "\\\\";
+            // }
+            // console.log(targetPath);
+            fs.writeFile(targetPath, datastr, (err) => {
+                if (err) throw err;
+            });
+        }
+    });
+
+    // if (datagen[currentDataGen].save_as === 'csv')
+    //     exportResultsCSVTSV(data, ";");
+    // else if (datagen[currentDataGen].save_as === 'tsv')
+    //     exportResultsCSVTSV(data, "\t");
+    // else
+    //     exportResultsCSVTSV(data, "\t");
 }
 
 function addGenerator(){
@@ -296,6 +345,18 @@ function configGenProps(){
                 .addClass("form-control")
                 .addClass("smallInput")
                 .attr("type","number")
+                .attr("value", generator[p.variableName])
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type);
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input));
+
+        }else if(p.type === "auto" || p.type === "string") {
+            let $input = $("<input/>")
+                .addClass("form-control")
+                .addClass("smallInput")
+                .attr("type","text")
                 .attr("value", generator[p.variableName])
                 .attr("id", "input_"+p.variableName)
                 .attr("data-variable", p.variableName)

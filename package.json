@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "jquery": "^3.2.1",
+    "json2csv": "^4.0.0",
     "randgen": "^0.1.0"
   }
 }

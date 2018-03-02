@@ -150,6 +150,47 @@ class ConstantValue extends Generator{
     }
 }
 
+class MissingValue extends Generator{
+
+    constructor(generator, operator, value, probability){
+        super("Missing Value", generator, operator);
+        this.value = value || "Miss";
+        this.probability = probability || 0.1;
+    }
+
+    generate(){
+        if(Math.random() < this.probability)
+            return this.value;
+        else{
+            return super.generate(0);
+        }
+    }
+
+    getGenParams(){
+        return [
+            {
+                shortName: "Value",
+                variableName: "value",
+                name: "The Constant Value",
+                type: "auto"
+            },
+            {
+                shortName: "Prob",
+                variableName: "probability",
+                name: "Occurrence Probability\n Must be between 0 and 1",
+                type: "number"
+            }
+        ];
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.value = this.value;
+        model.probability = this.probability;
+        return model;
+    }
+}
+
 class CounterGenerator extends Generator{
 
     constructor(generator, operator, begin, step){
@@ -992,6 +1033,15 @@ class DataGen {
         if(typeof obj.header_type === "boolean") this.header_type = obj.header_type;
     }
 
+    getColumnsNames(){
+        let names = [];
+        for(let col of this.columns){
+            names.push(col.name);
+        }
+        return names;
+    }
+
+
     addCollumn(name, type, generator){
         generator = generator || new CounterGenerator();
         let column = {
@@ -1025,10 +1075,19 @@ class DataGen {
 
     generate (){
         let data = [];
-        for (let i = 0; i < this.n_lines; i++){
-            data.push([]);
-            for (let j = 0; j < this.columns.length; j++){
-                data[i].push(this.columns[j].generator.generate());
+        if(this.save_as === "json" && !this.header){
+            for (let i = 0; i < this.n_lines; i++){
+                data.push([]);
+                for (let j = 0; j < this.columns.length; j++){
+                    data[i].push(this.columns[j].generator.generate());
+                }
+            }
+        }else{
+            for (let i = 0; i < this.n_lines; i++){
+                data.push({});
+                for (let j = 0; j < this.columns.length; j++){
+                    data[i][this.columns[j].name] = this.columns[j].generator.generate();
+                }
             }
         }
         this.resetAll();
@@ -1100,6 +1159,7 @@ class DataGen {
 
 DataGen.prototype.listOfGens = {
     'Constant Value': ConstantValue,
+    'Missing Value': MissingValue,
     'Counter Generator': CounterGenerator,
     'Uniform Generator': RandomUniformGenerator,
     'Gaussian Generator': RandomGaussianGenerator,

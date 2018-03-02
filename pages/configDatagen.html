@@ -61,7 +61,7 @@
         $(document).ready(function(){
             $("input, select").on("change blur", function(){
                 let $t = $(this);
-                obj[$t.attr("id")] = $t.is("[type=checkbox]") ? $t.is(":checked") : $t.val();
+                obj[$t.attr("id")] = $t.is("[type=checkbox]") ? $t.is(":checked") : ($t.is("[type=number]") ? parseInt($t.val()) : $t.val());
                 console.log(obj);
             });
             $("button").click(function () {
