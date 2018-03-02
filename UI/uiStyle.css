@@ -70,6 +70,10 @@ tr:hover {
     border-color: #e0e0e0;
 }
 
+.previewPanel.canvas{
+    overflow-y: scroll;
+    height: 270px;
+}
 
 #generatorPropertiesForm{
     padding: 10px;

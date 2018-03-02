@@ -78,14 +78,7 @@
     </div>
     <div class="previewPanel">
       <h5 class="nav-group-title">Preview</h5>
-      <div style="overflow-y: scroll; height: 270px;">
-        <table class="table-striped">
-          <thead id="theadResult">
-          </thead>
-          <tbody id="tbodyResult">
-          </tbody>
-        </table>
-      </div>
+      <div class="previewPanel canvas"></div>
     </div>
 
     <footer class="toolbar toolbar-footer">
@@ -115,16 +108,17 @@
       }
   </script>
   <script src="lib/jquery-3.2.1.min.js"></script>
+  <script src="lib/d3.min.js"></script>
+  <script src="UI/previewLogic.js"></script>
   <script>if (window.module) module = window.module;</script>
 
   <script src="datagen/datagen.js"></script>
   <script src="UI/uiLogic.js"></script>
-    <script>
-      // You can also require other files to run in this process
-      require('./renderer.js');
+  <script>
+    // You can also require other files to run in this process
+    require('./renderer.js');
 
-      showGenerators();
-      //require('./datagen/datagen.js');
-    </script>
+    showGenerators();
+  </script>
   </body>
 </html>
