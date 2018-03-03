@@ -675,6 +675,54 @@ class RandomCategorical extends Generator {
     }
 }
 
+class RandomWeightedCategorical extends Generator {
+    constructor(generator,operator,array,weights) {
+        super("Weighted Categorical",generator,operator);
+        this.array = array || ["Banana", "Apple", "Orange"];
+        this.weights = weights || [0.3, 0.2, 0.5];
+    }
+
+    generate() {
+        let r = Math.random();
+        let p = this.weights[0];
+        let i = 0;
+        while(r > p && i < this.weights.length-1){
+            p+=this.weights[i];
+            i++;
+        }
+        this.lastGenerated = this.array[i];
+        return this.lastGenerated;
+    }
+
+    getGenParams() {
+        return [
+            {
+                shortName: "List",
+                variableName: "array",
+                name: "List of Categories",
+                type: "array"
+            },
+            {
+                shortName: "Probs",
+                variableName: "weights",
+                name: "List of Weights",
+                type: "numarray"
+            }
+        ];
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.array = this.array;
+        model.weights = this.weights;
+        return model;
+    }
+
+    getReturnedType(){
+        return "Categorical";
+    }
+}
+
 
 class Function extends Generator{
 
@@ -1171,6 +1219,7 @@ DataGen.prototype.listOfGens = {
     'Range Filter': RangeFilter,
     'Linear Scale': LinearScale,
     'MinMax': MinMax,
+    'Weighted Categorical': RandomWeightedCategorical,
     'Categorical': RandomCategorical,
     'Linear Function': LinearFunction,
     'Quadratic Function': QuadraticFunction,

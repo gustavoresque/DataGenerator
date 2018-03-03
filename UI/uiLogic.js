@@ -33,10 +33,10 @@ $("html").ready(function(){
     }
 
     $("#tableCollumn").on("dblclick", "td.columnName", function(){
-        var title = $(this).text();
+        let title = $(this).text();
         $(this).empty();
         $(this).append($("<input/>").attr("type", "text").attr("value", title).blur(function(){
-            var cor = $(this).val();
+            let cor = $(this).val();
             $(this).parent().parent().get(0).__node__.name = cor;
             $(this).parent().text(cor);
         }));
@@ -56,20 +56,31 @@ $("html").ready(function(){
         let $input = $(this);
         if($input.attr("data-type") === "number")
             this.__node__[$input.attr("data-variable")] = parseFloat($input.val());
+
         else if($input.attr("data-type") === "string")
             this.__node__[$input.attr("data-variable")] = $input.val();
+
         else if($input.attr("data-type") === "auto")
             this.__node__[$input.attr("data-variable")] = isNaN(parseFloat($input.val())) ? $input.val() : parseFloat($input.val());
+
         else if($input.attr("data-type") === "array")
             this.__node__[$input.attr("data-variable")] = $input.val().split(",");
+
         else if($input.attr("data-type") === "boolean")
             this.__node__[$input.attr("data-variable")] = $input.get(0).checked;
+
         else if($input.attr("data-type") === "Generator")
             this.__node__[$input.attr("data-variable")] = new (DataGenerator.prototype.listOfGens[$input.val()])();
+
         else if($input.attr("data-type").indexOf("Column") >= 0) {
             this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].columns[parseInt($input.val())].generator;
             this.__node__.inputGenIndex = parseInt($input.val());
             this.__node__.reset();
+        }else if($input.attr("data-type") === "numarray"){
+            let arr = $input.val().split(",");
+            for(let i=0; i<arr.length; i++)
+                arr[i] = +arr[i];
+            this.__node__[$input.attr("data-variable")] = arr;
         }
         datagen[currentDataGen].resetAll();
         showGenerators();
@@ -127,6 +138,28 @@ $("html").ready(function(){
         datagen[currentDataGen].removeCollumn(parseInt($(this).parent().find(".tdIndex").text()) - 1);
         showGenerators();
     });
+
+
+    $("#checkboxAllColumns").on("change", function(){
+        let haschecked = false;
+        let $cheboxes = $(".checkboxSelectColumn");
+        $cheboxes.each(function(){
+            if($(this).is(":checked"))
+                return haschecked = true;
+        });
+        haschecked = !haschecked;
+        $(this).get(0).checked = haschecked;
+        $cheboxes.each(function(){
+            $(this).get(0).checked = haschecked;
+        });
+        $cheboxes.trigger("change");
+
+    });
+
+    $("#tableCollumn").on("change", "input.checkboxSelectColumn", function(){
+        console.log(this);
+    });
+
 });
 
 function generateDatas(){
@@ -216,7 +249,7 @@ function showGenerators(){
         let $tr = $("<tr/>");
         datagen[currentDataGen].columns[i].type = datagen[currentDataGen].columns[i].generator.getReturnedType();
         $("#tbody").append($tr
-            .append($("<td/>").append($("<input/>").attr("type", "checkbox")))
+            .append($("<td/>").append($("<input/>").attr("type", "checkbox").addClass("checkboxSelectColumn")))
             .append($("<td/>").text(i+1).addClass("tdIndex"))
             .append($("<td/>").text(datagen[currentDataGen].columns[i].name).addClass("columnName"))
             .append($("<td/>").text(datagen[currentDataGen].columns[i].type).addClass("columnType"))
@@ -364,7 +397,7 @@ function configGenProps(){
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input));
 
-        }else if(p.type === "array") {
+        }else if(p.type === "array" || p.type === "numarray") {
             let $input = $("<input/>")
                 .addClass("form-control")
                 .addClass("smallInput")
