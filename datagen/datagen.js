@@ -1121,6 +1121,21 @@ class DataGen {
             this.columns.splice(index, 1);
     }
 
+
+    generateSample(){
+        let lb = this.n_lines;
+        let sb = this.save_as;
+        let hb = this.header;
+        this.n_lines = 100;
+        this.save_as = "json";
+        this.header = true;
+        let sampleData = this.generate();
+        this.n_lines = lb;
+        this.save_as = sb;
+        this.header = hb;
+        return sampleData;
+    }
+
     generate (){
         let data = [];
         if(this.save_as === "json" && !this.header){

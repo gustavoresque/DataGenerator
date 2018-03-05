@@ -14,10 +14,10 @@ ipc.on('change-datagen', function(event, arg){
     console.log(datagen[currentDataGen].configs);
 });
 
-$('.previewPanel').resizable({
-    handles: 'n',minHeight: 200,
-    maxHeight: 500
-});
+// $('.previewPanel').resizable({
+//     handles: 'n',minHeight: 200,
+//     maxHeight: 500
+// });
 
 $("html").ready(function(){
     for(let i = 0; i < datagen.length; i++){
@@ -215,7 +215,7 @@ function generateDatas(){
         datastr = json2csvParser.parse(data);
     }
 
-    preview(data);
+
 
     dialog.showSaveDialog({title:"Save Data", filters:[filt]}, function(targetPath) {
         if(targetPath){
@@ -249,11 +249,11 @@ function addGenerator(){
 /*Desenha na tela principal as colunas e seus respectivos geradores paseados nos dados armazendos no array datagen*/
 function showGenerators(){
     let active_gen_chip;
-    $("#tbody").empty();
+    let $tbody = $("#tbody").empty();
     for(let i = 0; i < datagen[currentDataGen].columns.length; i++){
         let $tr = $("<tr/>");
         datagen[currentDataGen].columns[i].type = datagen[currentDataGen].columns[i].generator.getReturnedType();
-        $("#tbody").append($tr
+        $tbody.append($tr
             .append($("<td/>").append($("<input/>").attr("type", "checkbox").addClass("checkboxSelectColumn")))
             .append($("<td/>").text(i+1).addClass("tdIndex"))
             .append($("<td/>").text(datagen[currentDataGen].columns[i].name).addClass("columnName"))
@@ -324,6 +324,12 @@ function showGenerators(){
 
         $tr.get(0).__node__ = datagen[currentDataGen].columns[i];
         $tr.append($("<td/>").addClass("btnGenerator btnRemoveColumn icon icon-trash"));
+    }
+    try{
+        preview(datagen[currentDataGen].generateSample());
+    }catch (e){
+        //TODO: alertar sobre erro de referência para o usuário.
+        console.log(e);
     }
     return active_gen_chip;
 }
@@ -552,7 +558,7 @@ function exportResultsCSVTSV(data, separator){
 
     dialog.showSaveDialog({title:"Salvar resultados", filters:[filt]}, function(targetPath) {
         if(targetPath){
-            var partsOfStr = targetPath.split('\\');
+            let partsOfStr = targetPath.split('\\');
             targetPath = "";
             for (let i = 0; i < partsOfStr.length; i++) {
                 targetPath += partsOfStr[i] + "\\\\";
@@ -589,7 +595,7 @@ function exportResultsJSON(data){
 
     dialog.showSaveDialog({title:"Salvar resultados", filters:[{name: 'JSON', extensions:['json']}]}, function(targetPath) {
         if(targetPath){
-            var partsOfStr = targetPath.split('\\');
+            let partsOfStr = targetPath.split('\\');
             targetPath = "";
             for (let i = 0; i < partsOfStr.length; i++) {
                 targetPath += partsOfStr[i] + "\\\\";
@@ -603,11 +609,9 @@ function exportResultsJSON(data){
 
 let margin = {top: 30, right: 10, bottom: 10, left: 10},
     width = 960 - margin.left - margin.right,
-    height = 500 - margin.top - margin.bottom;
+    height = 200 - margin.top - margin.bottom;
 
-let x = d3.scale.ordinal().rangePoints([0, width], 1),
-    y = {},
-    dragging = {};
+
 
 let line = d3.svg.line(),
     axis = d3.svg.axis().orient("left"),
@@ -615,23 +619,34 @@ let line = d3.svg.line(),
     foreground;
 
 let svg = d3.select(".canvas").append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .append("g")
+    .attr("width", "100%")//width + margin.left + margin.right)
+    .attr("height", "100%");//height + margin.top + margin.bottom)
+let g1 = svg.append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+console.log();
+
+let x = d3.scale.ordinal().rangePoints([50, $(svg[0][0]).width()-50], 0),
+    y = {},
+    dragging = {};
+
 function preview(data){
-    $( "g" ).empty();
+    $(g1[0][0]).empty();
     
     // Extract the list of dimensions and create a scale for each.
     x.domain(dimensions = d3.keys(data[0]).filter(function(d) {
-        return d != "name" && (y[d] = d3.scale.linear()
-            .domain(d3.extent(data, function(p) { return +p[d]; }))
-            .range([height, 0]));
+        console.log(d);
+        let scale = isNaN(+data[0][d]) ?
+            d3.scale.ordinal().domain(_.uniq(_.pluck(data, d))).rangePoints([$(svg[0][0]).height()-50, 0], 0):
+            d3.scale.linear()
+                .domain(d3.extent(data, function(p) { return +p[d]; }))
+                .range([$(svg[0][0]).height()-50, 0]);
+
+        return d !== "name" && (y[d] = scale);
     }));
 
     // Add grey background lines for context.
-    background = svg.append("g")
+    background = g1.append("g")
         .attr("class", "background")
         .selectAll("path")
         .data(data)
@@ -639,7 +654,7 @@ function preview(data){
         .attr("d", path);
 
     // Add blue foreground lines for focus.
-    foreground = svg.append("g")
+    foreground = g1.append("g")
         .attr("class", "foreground")
         .selectAll("path")
         .data(data)
@@ -647,7 +662,7 @@ function preview(data){
         .attr("d", path);
 
     // Add a group element for each dimension.
-    let g = svg.selectAll(".dimension")
+    let g = g1.selectAll(".dimension")
         .data(dimensions)
         .enter().append("g")
         .attr("class", "dimension")
