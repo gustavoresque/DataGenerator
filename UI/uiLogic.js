@@ -14,6 +14,11 @@ ipc.on('change-datagen', function(event, arg){
     console.log(datagen[currentDataGen].configs);
 });
 
+$('.previewPanel').resizable({
+    handles: 'n',minHeight: 200,
+    maxHeight: 500
+});
+
 $("html").ready(function(){
     for(let i = 0; i < datagen.length; i++){
         let modelButton = $("<span/>").addClass("nav-group-item").text(datagen[i].name + " " + (i+1)).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));

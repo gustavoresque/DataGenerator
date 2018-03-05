@@ -68,11 +68,14 @@ tr:hover {
     border-top-style: solid;
     border-width: 1px;
     border-color: #e0e0e0;
+    position: relative;
 }
 
-.previewPanel.canvas{
+.canvas{
     overflow-y: scroll;
-    height: 270px;
+    height: 100%;
+    outline: 1px solid #ccc;
+    background: #ccc;
 }
 
 #generatorPropertiesForm{
