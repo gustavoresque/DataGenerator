@@ -5,6 +5,7 @@ const dialog = electron.dialog;
 let datagen = [new DataGen()];
 let currentDataGen = 0;
 let activeGenerator;
+let collumnsSelected = [];
 let ipc = require('electron').ipcRenderer;
 
 const Json2csvParser = require('json2csv').Parser;
@@ -144,7 +145,6 @@ $("html").ready(function(){
         showGenerators();
     });
 
-
     $("#checkboxAllColumns").on("change", function(){
         let haschecked = false;
         let $cheboxes = $(".checkboxSelectColumn");
@@ -162,10 +162,25 @@ $("html").ready(function(){
     });
 
     $("#tableCollumn").on("change", "input.checkboxSelectColumn", function(){
-        console.log(this);
+        let col = $(this).parent().parent().get(0).__node__;
+        let i = collumnsSelected.indexOf(col);
+        if ($(this).is(':checked')){
+            if (i === -1){
+                collumnsSelected.push(col);
+            }
+        }
+        else if (i !== -1){
+            collumnsSelected.splice(i,1);
+        }
     });
-
 });
+
+function pasteCollums(){
+    for(let i = 0; i < collumnsSelected.length; i++){
+        datagen[currentDataGen].columns.push(collumnsSelected[i]);
+    }
+    showGenerators();
+}
 
 function generateDatas(){
     // document.getElementById("theadResult").innerHTML = "<tr>";
@@ -246,7 +261,7 @@ function addGenerator(){
     showGenerators();
 }
 
-/*Desenha na tela principal as colunas e seus respectivos geradores paseados nos dados armazendos no array datagen*/
+/*Desenha na tela principal as colunas e seus respectivos geradores baseados nos dados armazendos no array datagen*/
 function showGenerators(){
     let active_gen_chip;
     let $tbody = $("#tbody").empty();
@@ -487,6 +502,12 @@ function createNewModel () {
     datagen.push(new DataGen());
     let modelButton = $("<span/>").addClass("nav-group-item").text(datagen[datagen.length-1].name + " " + datagen.length).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
     let pos = (datagen.length-1);
+
+    $("#modelsPane").children().removeClass('active');
+    modelButton.addClass("active");
+    $('#selectGeneratorType').empty().attr("disabled", true);
+    $('#generatorPropertiesForm').empty();
+
     modelButton.on("click", function () {
         if (currentDataGen !== pos){
             currentDataGen = pos;
@@ -635,7 +656,6 @@ function preview(data){
     
     // Extract the list of dimensions and create a scale for each.
     x.domain(dimensions = d3.keys(data[0]).filter(function(d) {
-        console.log(d);
         let scale = isNaN(+data[0][d]) ?
             d3.scale.ordinal().domain(_.uniq(_.pluck(data, d))).rangePoints([$(svg[0][0]).height()-50, 0], 0):
             d3.scale.linear()
