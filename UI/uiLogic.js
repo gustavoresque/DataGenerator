@@ -6,6 +6,7 @@ let datagen = [new DataGen()];
 let currentDataGen = 0;
 let activeGenerator;
 let collumnsSelected = [];
+let collumnsCopied = [];
 let ipc = require('electron').ipcRenderer;
 
 const Json2csvParser = require('json2csv').Parser;
@@ -173,14 +174,25 @@ $("html").ready(function(){
             collumnsSelected.splice(i,1);
         }
     });
-});
 
-function pasteCollums(){
-    for(let i = 0; i < collumnsSelected.length; i++){
-        datagen[currentDataGen].columns.push(collumnsSelected[i]);
-    }
-    showGenerators();
-}
+    $(document).keydown(function(e) {
+        if (e.keyCode == 67 && e.ctrlKey) {// CRTL + C
+            collumnsCopied.length = 0;
+            for (let i = 0; i < collumnsSelected.length; i++){
+                collumnsCopied.push(collumnsSelected[i]);
+            }
+        }
+    });
+
+    $(document).keydown(function(e) {
+        if (e.keyCode == 86 && e.ctrlKey) {// CRTL + V
+            for(let i = 0; i < collumnsCopied.length; i++){
+                datagen[currentDataGen].columns.push(collumnsCopied[i]);
+            }
+            showGenerators();
+        }
+    });
+});
 
 function generateDatas(){
     // document.getElementById("theadResult").innerHTML = "<tr>";

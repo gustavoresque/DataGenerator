@@ -104,17 +104,6 @@ function createWindow () {
     ));
     menu.append(new electron.MenuItem(
         {
-            label: 'Edit',
-            submenu: [
-                {label: 'Copy selected collumns', click (){
-                        mainWindow.webContents.executeJavaScript('pasteCollums();');
-                    }
-                }
-            ]
-        }
-    ));
-    menu.append(new electron.MenuItem(
-        {
             label: 'Debug',
             submenu: [
                 {
