@@ -26,14 +26,26 @@ $("html").ready(function(){
         let modelButton = $("<span/>").addClass("nav-group-item").text(datagen[i].name + " " + (i+1)).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
         if (currentDataGen === i)
             modelButton.addClass("active");
-        modelButton.on("click", function () {
-            if (currentDataGen !== i){
-                currentDataGen = i;
-                $("#modelsPane").children().removeClass('active');
-                $(this).addClass("active");
-                $('#selectGeneratorType').empty().attr("disabled", true);
-                $('#generatorPropertiesForm').empty();
-                showGenerators();
+        modelButton.mouseup(function(e) {
+            switch (event.which) {
+                case 1:
+                    if (currentDataGen !== i){
+                        currentDataGen = i;
+                        $("#modelsPane").children().removeClass('active');
+                        $(this).addClass("active");
+                        $('#selectGeneratorType').empty().attr("disabled", true);
+                        $('#generatorPropertiesForm').empty();
+                        showGenerators();
+                    }
+                    break;
+                case 2:
+                    alert('Middle Mouse button pressed on ' + $(this).text());
+                    break;
+                case 3:
+                    alert('Right Mouse button pressed on ' + $(this).text());
+                    break;
+                default:
+                    alert('You have a strange Mouse!');
             }
         });
         $("#modelsPane").append(modelButton);
@@ -177,8 +189,8 @@ $("html").ready(function(){
 
     $(document).keydown(function(e) {
         if (e.keyCode == 67 && e.ctrlKey) {// CRTL + C
-            collumnsCopied.length = 0;
-            for (let i = 0; i < collumnsSelected.length; i++){
+            collumnsCopied = [];
+            for (let i = collumnsSelected.length-1; i >= 0; i--){
                 collumnsCopied.push(collumnsSelected[i]);
             }
         }
@@ -187,35 +199,25 @@ $("html").ready(function(){
     $(document).keydown(function(e) {
         if (e.keyCode == 86 && e.ctrlKey) {// CRTL + V
             for(let i = 0; i < collumnsCopied.length; i++){
-                datagen[currentDataGen].columns.push(collumnsCopied[i]);
+                let counter = 0, newName = '';
+                for (let j = 0; j < datagen[currentDataGen].columns.length; j++){
+                    if(datagen[currentDataGen].columns[j].name.includes(collumnsCopied[i].name)){
+                        counter++;
+                    }
+                }
+                if (counter > 0)
+                    newName = collumnsCopied[i].name + '(' + counter + ')';
+                else
+                    newName = collumnsCopied[i].name;
+                datagen[currentDataGen].addCollumn(newName, collumnsCopied[i].type, collumnsCopied[i].generator.copy());
             }
+            collumnsSelected = [];
             showGenerators();
         }
     });
 });
 
 function generateDatas(){
-    // document.getElementById("theadResult").innerHTML = "<tr>";
-    // let dataToExport = [];
-    // let t = "";
-    //
-    // datagen[currentDataGen].columns.forEach(function(item){
-    //     t += "<th>" + item.name + "</th>";
-    // });
-    // document.getElementById("theadResult").innerHTML += t + "</tr>";
-    //
-    // document.getElementById("tbodyResult").innerHTML="";
-    // for (let i = 0; i < data.length; i++) {
-    //     let tr = document.createElement('TR');
-    //     for (let j = 0; j < data[i].length; j++) {
-    //         let td = document.createElement('TD');
-    //         td.appendChild(document.createTextNode(data[i][j]));
-    //         tr.appendChild(td)
-    //     }
-    //     document.getElementById("tbodyResult").appendChild(tr);
-    // }
-    //
-
     let data = datagen[currentDataGen].generate();
     let datastr;
     let save_as = datagen[currentDataGen].save_as;
@@ -519,15 +521,26 @@ function createNewModel () {
     modelButton.addClass("active");
     $('#selectGeneratorType').empty().attr("disabled", true);
     $('#generatorPropertiesForm').empty();
-
-    modelButton.on("click", function () {
-        if (currentDataGen !== pos){
-            currentDataGen = pos;
-            $("#modelsPane").children().removeClass('active');
-            $(this).addClass("active");
-            $('#selectGeneratorType').empty().attr("disabled", true);
-            $('#generatorPropertiesForm').empty();
-            showGenerators();
+    modelButton.mousedown(function(e) {
+        switch (event.which) {
+            case 1:
+                if (currentDataGen !== pos){
+                    currentDataGen = pos;
+                    $("#modelsPane").children().removeClass('active');
+                    $(this).addClass("active");
+                    $('#selectGeneratorType').empty().attr("disabled", true);
+                    $('#generatorPropertiesForm').empty();
+                    showGenerators();
+                }
+                break;
+            case 2:
+                alert('Middle Mouse button pressed on ' + $(this).text());
+                break;
+            case 3:
+                alert('Right Mouse button pressed on ' + $(this).text());
+                break;
+            default:
+                alert('You have a strange Mouse!');
         }
     });
     $("#modelsPane").append(modelButton);
