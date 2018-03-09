@@ -62,6 +62,7 @@ $("html").ready(function(){
     }
 
     $("#modelsPane").on("contextmenu", "span.nav-group-item", function(e){
+        let i = $("#modelsPane span.nav-group-item").index(this);
         ipc.send('context-menu-datamodel', {x: e.pageX, y: e.pageY});
     });
 
