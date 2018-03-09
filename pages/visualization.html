@@ -19,12 +19,24 @@
 
     <script>
         $(document).ready(function(){
-            let partitionLayout = new PartitionLayout($("body").get(0));
+            let $body = $("body");
+            let partitionLayout = new PartitionLayout($body.get(0));
 
             $(window).resize(function(){
                 $(".partition-content").each(function(){
-                    this.__vis__.resize();
+                    if(this.__vis__)
+                        this.__vis__.resize();
                 });
+            });
+
+            $body.on("layout:resize", ".partition-node", function(e){
+                let content = $(this).children(".partition-content").get(0);
+
+                if(content && content.__vis__){
+                    console.log("alaoalaoal");
+                    content.__vis__.resize();
+                }
+                    
             });
         });
     </script>

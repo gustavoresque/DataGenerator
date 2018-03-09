@@ -4,6 +4,7 @@ const dialog = electron.dialog;
 
 let datagen = [new DataGen()];
 let currentDataGen = 0;
+let current_sample;
 let activeGenerator;
 let collumnsSelected = [];
 let collumnsCopied = [];
@@ -24,6 +25,10 @@ ipc.on('context-model-ans', function(event, arg){
             console.log('xxxxxx');
             break;
     }
+});
+ipc.on('update-sampledata', function () {
+    if(current_sample)
+        ipc.send('change-datasample', current_sample);
 });
 
 // $('.previewPanel').resizable({
@@ -360,9 +365,9 @@ function showGenerators(){
         $tr.append($("<td/>").addClass("btnGenerator btnRemoveColumn icon icon-trash"));
     }
     try{
-        let sample = datagen[currentDataGen].generateSample();
-        preview(sample);
-        ipc.send('change-datasample', sample);
+        current_sample = datagen[currentDataGen].generateSample();
+        preview(current_sample);
+        ipc.send('change-datasample', current_sample);
     }catch (e){
         //TODO: alertar sobre erro de referência para o usuário.
         console.log(e);
