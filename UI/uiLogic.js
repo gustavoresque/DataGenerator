@@ -15,6 +15,16 @@ ipc.on('change-datagen', function(event, arg){
     datagen[currentDataGen].configs = arg;
     console.log(datagen[currentDataGen].configs);
 });
+ipc.on('context-model-ans', function(event, arg){
+    switch (arg.id){
+        case 0:
+            console.log('rename');
+            break;
+        default:
+            console.log('xxxxxx');
+            break;
+    }
+});
 
 // $('.previewPanel').resizable({
 //     handles: 'n',minHeight: 200,
@@ -39,17 +49,21 @@ $("html").ready(function(){
                     }
                     break;
                 case 2:
-                    alert('Middle Mouse button pressed on ' + $(this).text());
+                    console.log('Middle Mouse button pressed on ' + $(this).text());
                     break;
                 case 3:
-                    alert('Right Mouse button pressed on ' + $(this).text());
+                    //ipc.send('context-menu-datamodel', {x: e.pageX, y: e.pageY, m: i});
                     break;
                 default:
-                    alert('You have a strange Mouse!');
+                    console.log('You have a strange Mouse!');
             }
         });
         $("#modelsPane").append(modelButton);
     }
+
+    $("#modelsPane").on("contextmenu", "span.nav-group-item", function(e){
+        ipc.send('context-menu-datamodel', {x: e.pageX, y: e.pageY});
+    });
 
     $("#tableCollumn").on("dblclick", "td.columnName", function(){
         let title = $(this).text();
@@ -526,13 +540,14 @@ function createNewModel () {
                 }
                 break;
             case 2:
-                alert('Middle Mouse button pressed on ' + $(this).text());
+                console.log('Middle Mouse button pressed on ' + $(this).text());
                 break;
             case 3:
-                alert('Right Mouse button pressed on ' + $(this).text());
+                //console.log('Right Mouse button pressed on ' + $(this).text());
+                //ipc.send('context-menu-datamodel', {x: e.pageX, y: e.pageY, m: pos});
                 break;
             default:
-                alert('You have a strange Mouse!');
+                console.log('You have a strange Mouse!');
         }
     });
     $("#modelsPane").append(modelButton);

@@ -1,6 +1,8 @@
 const electron = require('electron');
 const dialog = electron.dialog;
 // Module to control application life.
+const Menu = electron.Menu;
+const MenuItem = electron.MenuItem;
 
 const app = electron.app;
 const ipcMain = require('electron').ipcMain;
@@ -89,8 +91,8 @@ function createWindow () {
         });
     };
 
-    const menu = new electron.Menu();
-    menu.append(new electron.MenuItem(
+    const menu = new Menu();
+    menu.append(new MenuItem(
         {
             label: 'File',
             submenu: [
@@ -127,7 +129,7 @@ function createWindow () {
             ]
         }
     ));
-    menu.append(new electron.MenuItem(
+    menu.append(new MenuItem(
         {
             label: 'Visualize',
             submenu: [
@@ -153,7 +155,7 @@ function createWindow () {
             ]
         }
     ));
-    menu.append(new electron.MenuItem(
+    menu.append(new MenuItem(
         {
             label: 'Debug',
             submenu: [
@@ -168,6 +170,18 @@ function createWindow () {
         }
     ));
     mainWindow.setMenu(menu);
+
+    const ctxMenu = new Menu();
+    ctxMenu.append(new MenuItem({
+        label: 'Rename',
+        click: function(){
+            mainWindow.webContents.send('context-model-ans', {id: 0});
+        }
+    }));
+
+    ipcMain.on('context-menu-datamodel', function(e, params){
+        ctxMenu.popup(mainWindow, params.x, params.y);
+    });
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
