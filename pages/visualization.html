@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visualize</title>
+    <link rel="stylesheet" href="../photon-0.1.2-dist/css/photon.min.css">
+    <link rel="stylesheet" href="../lib/layout/partition_layout.css">
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+    </script>
+    <script src="../lib/jquery-3.2.1.min.js"></script>
+    <script src="../lib/d3.min.js"></script>
+    <script>if (window.module) module = window.module;</script>
+    <script src="../lib/layout/partition_layout.js"></script>
+    <script src="../lib/vis/vis.js"></script>
+
+    <script>
+        $(document).ready(function(){
+            let partitionLayout = new PartitionLayout($("body").get(0));
+
+            $(window).resize(function(){
+                $(".partition-content").each(function(){
+                    this.__vis__.resize();
+                });
+            });
+        });
+    </script>
+
+    <style>
+        svg {
+            font: 12px MONOSPACE;
+        }
+        .axis line,
+        .axis path {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+        .axis text {
+            text-shadow: 0 2px 0 #fff, 2px 0 0 #fff, 0 -2px 0 #fff, -2px 0 0 #fff;
+        }
+        path.data {
+            fill: none;
+        }
+    </style>
+
+    <script>
+        let ipc = require('electron').ipcRenderer;
+
+        ipc.on('add-vis', function(event, arg){
+            console.log(arg);
+            // $(".partition-content").text("legal");
+            console.log(vis);
+            let pc = new vis.ParallelCoordinates($(".partition-content").get(0));
+            pc.data([{alo: 1, haha: 2}, {alo: 3, haha: 5}, {alo: 2, haha: 3}]);
+            pc.redraw();
+        });
+        ipc.on('change-datasample', function(event, data){
+            $(".partition-content").each(function(){
+                console.log(data);
+                console.log(this);
+                this.__vis__.data(data);
+                this.__vis__.redraw();
+            });
+        });
+    </script>
+
+</head>
+<body>
+
+</body>
+</html>

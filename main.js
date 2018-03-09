@@ -13,7 +13,9 @@ const fs = require('fs');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let mainWindow;
+let mainWindow, visWindows = [];
+
+
 
 function createWindow () {
   // Create the browser window.
@@ -52,7 +54,7 @@ function createWindow () {
         configDatagenWindow.once('ready-to-show', () => {
             configDatagenWindow.show();
             configDatagenWindow.webContents.send('configure-datagen', arg);
-        })
+        });
     });
     ipcMain.on('change-datagen', (event, message) => {
         if(message)
@@ -62,7 +64,30 @@ function createWindow () {
             configDatagenWindow.close();
         }
     });
+    ipcMain.on('change-datasample', (event, message) => {
+        if(message)
+            for(let w of visWindows)
+                w.webContents.send('change-datasample', message);
+    });
 
+    let funcOpenVisWindow = (visType) => {
+        let visWindow = new BrowserWindow({width: 900, height: 600, show: false,});
+        visWindows.push(visWindow);
+        visWindow.loadURL(url.format({
+            pathname: path.join(__dirname, 'pages/visualization.html'),
+            protocol: 'file:',
+            slashes: true
+        }));
+        visWindow.on('closed', function () {
+            let i = visWindows.indexOf(visWindow);
+            visWindows.splice(i,1);
+            visWindow = undefined;
+        });
+        visWindow.once('ready-to-show', () => {
+            visWindow.show();
+            visWindow.webContents.send('add-vis', visType);
+        });
+    };
 
     const menu = new electron.Menu();
     menu.append(new electron.MenuItem(
@@ -99,6 +124,32 @@ function createWindow () {
                         //mainWindow.webContents.executeJavaScript('createExportModel("' + str + '");');
                     }},
                 {role: 'close'}
+            ]
+        }
+    ));
+    menu.append(new electron.MenuItem(
+        {
+            label: 'Visualize',
+            submenu: [
+                {
+                    label: 'Parallel Coordinates',
+                    click(){
+                        funcOpenVisWindow('Parallel Coordinates');
+                    }
+
+                },
+                {
+                    label: 'Scatterplot Matrix',
+                    click(){
+                        funcOpenVisWindow('Scatterplot Matrix');
+                    }
+                },
+                {
+                    label: 'Violin Plot',
+                    click(){
+                        funcOpenVisWindow('Violin Plot');
+                    }
+                }
             ]
         }
     ));
@@ -143,7 +194,7 @@ app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') {
     app.quit()
   }
-})
+});
 
 app.on('activate', function () {
   // On OS X it's common to re-create a window in the app when the

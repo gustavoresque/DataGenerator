@@ -125,16 +125,6 @@ $("html").ready(function(){
     });
 
     $("#btnConfigGeneration").click(function(){
-        // if($(".tooltiptext").css("visibility") === "hidden")
-        //     $(".tooltiptext").css("visibility", "visible").css("opacity", 1);
-        // else
-        //     $(".tooltiptext").css("visibility", "hidden").css("opacity", 0);
-
-        // console.log(window.location);
-        // let windowObjectReference = window.open("http://localhost:63342/DataGenerator/pages/configDatagen.html", "Configure Generation");
-        // windowObjectReference.minhavar = "ALo";
-        // windowObjectReference.document.write("<p>This is 'myWindow'</p>");
-
         ipc.send('open-config-datagen-window', datagen[currentDataGen].configs);
     });
 
@@ -355,7 +345,9 @@ function showGenerators(){
         $tr.append($("<td/>").addClass("btnGenerator btnRemoveColumn icon icon-trash"));
     }
     try{
-        preview(datagen[currentDataGen].generateSample());
+        let sample = datagen[currentDataGen].generateSample();
+        preview(sample);
+        ipc.send('change-datasample', sample);
     }catch (e){
         //TODO: alertar sobre erro de referência para o usuário.
         console.log(e);
@@ -677,6 +669,8 @@ let x = d3.scale.ordinal().rangePoints([50, $(svg[0][0]).width()-50], 0),
     dragging = {};
 
 function preview(data){
+
+
     $(g1[0][0]).empty();
     
     // Extract the list of dimensions and create a scale for each.
@@ -704,6 +698,9 @@ function preview(data){
         .selectAll("path")
         .data(data)
         .enter().append("path")
+        // .style("stroke",  (...arguments) => {
+        //     console.log(arguments);
+        // });
         .attr("d", path);
 
     // Add a group element for each dimension.
