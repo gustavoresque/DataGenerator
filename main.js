@@ -71,6 +71,9 @@ function createWindow () {
             for(let w of visWindows)
                 w.webContents.send('change-datasample', message);
     });
+    ipcMain.on('update-sampledata', function () {
+        mainWindow.webContents.send('update-sampledata');
+    });
 
     let funcOpenVisWindow = (visType) => {
         let visWindow = new BrowserWindow({width: 900, height: 600, show: false,});
@@ -137,20 +140,20 @@ function createWindow () {
                 {
                     label: 'Parallel Coordinates',
                     click(){
-                        funcOpenVisWindow('Parallel Coordinates');
+                        funcOpenVisWindow('ParallelCoordinates');
                     }
 
                 },
                 {
                     label: 'Scatterplot Matrix',
                     click(){
-                        funcOpenVisWindow('Scatterplot Matrix');
+                        funcOpenVisWindow('ScatterplotMatrix');
                     }
                 },
                 {
                     label: 'Violin Plot',
                     click(){
-                        funcOpenVisWindow('Violin Plot');
+                        funcOpenVisWindow('ViolinPlot');
                     }
                 }
             ]

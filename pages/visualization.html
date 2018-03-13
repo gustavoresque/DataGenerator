@@ -5,6 +5,7 @@
     <title>Visualize</title>
     <link rel="stylesheet" href="../photon-0.1.2-dist/css/photon.min.css">
     <link rel="stylesheet" href="../lib/layout/partition_layout.css">
+    <link rel="stylesheet" href="../lib/contextMenu/jquery.contextMenu.min.css">
     <script>
         if (typeof module === 'object') {
             window.module = module;
@@ -12,34 +13,13 @@
         }
     </script>
     <script src="../lib/jquery-3.2.1.min.js"></script>
+    <script src="../lib/contextMenu/jquery.contextMenu.js"></script>
+    <script src="../lib/contextMenu/jquery.ui.position.min.js"></script>
     <script src="../lib/d3.min.js"></script>
     <script>if (window.module) module = window.module;</script>
     <script src="../lib/layout/partition_layout.js"></script>
     <script src="../lib/vis/vis.js"></script>
 
-    <script>
-        $(document).ready(function(){
-            let $body = $("body");
-            let partitionLayout = new PartitionLayout($body.get(0));
-
-            $(window).resize(function(){
-                $(".partition-content").each(function(){
-                    if(this.__vis__)
-                        this.__vis__.resize();
-                });
-            });
-
-            $body.on("layout:resize", ".partition-node", function(e){
-                let content = $(this).children(".partition-content").get(0);
-
-                if(content && content.__vis__){
-                    console.log("alaoalaoal");
-                    content.__vis__.resize();
-                }
-                    
-            });
-        });
-    </script>
 
     <style>
         svg {
@@ -57,25 +37,70 @@
         path.data {
             fill: none;
         }
+
+        .axis,
+        .frame {
+            shape-rendering: crispEdges;
+        }
+
     </style>
 
     <script>
         let ipc = require('electron').ipcRenderer;
 
         ipc.on('add-vis', function(event, arg){
-            console.log(arg);
-            // $(".partition-content").text("legal");
-            console.log(vis);
-            let pc = new vis.ParallelCoordinates($(".partition-content").get(0));
-            pc.data([{alo: 1, haha: 2}, {alo: 3, haha: 5}, {alo: 2, haha: 3}]);
-            pc.redraw();
+            let pc = new vis[arg]($(".partition-content").get(0));
+            // pc.data([{alo: 1, haha: 2}, {alo: 3, haha: 5}, {alo: 2, haha: 3}]);
+            // pc.redraw();
         });
         ipc.on('change-datasample', function(event, data){
             $(".partition-content").each(function(){
-                console.log(data);
                 console.log(this);
                 this.__vis__.data(data);
                 this.__vis__.redraw();
+            });
+        });
+
+        $(document).ready(function(){
+            let $body = $("body");
+            let partitionLayout = new PartitionLayout($body.get(0));
+
+            $(window).resize(function(){
+                $(".partition-content").each(function(){
+                    if(this.__vis__)
+                        this.__vis__.resize();
+                });
+            });
+
+            $body.on("layout:resize", ".partition-node", function(e){
+                let content = $(this).children(".partition-content").get(0);
+
+                if(content && content.__vis__){
+                    content.__vis__.resize();
+                }
+            });
+            $body.on("layout:created", ".partition-node", function(e){
+                let content = $(this).children(".partition-content");
+                content.append($("<button/>")
+                    .text("Add Visualization")
+                    .addClass("btn btn-large btn-positive")
+                    .css({"float": "right"}));
+
+                $.contextMenu({
+                    selector: '.btn.btn-large.btn-positive',
+                    trigger: 'left',
+                    callback: function (key, options) {
+                        content.empty();
+                        console.log(vis, key);
+                        let pc = new vis[key](content.get(0));
+                        ipc.send('update-sampledata', {});
+                    },
+                    items: {
+                        "ParallelCoordinates": {name: "Parallel Coordinates"},
+                        "ScatterplotMatrix": {name: "Scatter Plot"},
+                        "ViolinPlot": {name: "Violin Plot"},
+                    }
+                });
             });
         });
     </script>
