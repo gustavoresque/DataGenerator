@@ -16,59 +16,102 @@ ipc.on('change-datagen', function(event, arg){
     datagen[currentDataGen].configs = arg;
     console.log(datagen[currentDataGen].configs);
 });
+function teste(i){
+    let idModel = "#" + $($("#modelsPane span.nav-group-item").get(i)).attr('id');
+
+    let title = $(idModel).text();
+    $(idModel).empty();
+    $(idModel).append($("<input/>").attr("type", "text").attr("value", title).blur(function(){
+        //datagen[i].name = $(this).val();
+    }));
+
+}
 ipc.on('context-model-ans', function(event, arg){
     switch (arg.id){
         case 0:
-            console.log('rename');
+            createNewModel();
+            break;
+        case 1:
+            console.log('Rename');
+            break;
+        case 2:
+            datagen = jQuery.grep(datagen, function(value) {
+                return value != datagen[arg.model];
+            });
+            if (arg.model === currentDataGen)
+                currentDataGen = (arg.model <= 0) ? 0 : (arg.model-1);
+
+            showModels();
+            showGenerators();
+            console.log('Delete');
             break;
         default:
             console.log('xxxxxx');
             break;
     }
+    showModels();
 });
 ipc.on('update-sampledata', function () {
     if(current_sample)
         ipc.send('change-datasample', current_sample);
 });
 
-// $('.previewPanel').resizable({
-//     handles: 'n',minHeight: 200,
-//     maxHeight: 500
-// });
-
 $("html").ready(function(){
-    for(let i = 0; i < datagen.length; i++){
-        let modelButton = $("<span/>").addClass("nav-group-item").text(datagen[i].name + " " + (i+1)).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
-        if (currentDataGen === i)
-            modelButton.addClass("active");
-        modelButton.mouseup(function(e) {
-            switch (event.which) {
-                case 1:
-                    if (currentDataGen !== i){
-                        currentDataGen = i;
-                        $("#modelsPane").children().removeClass('active');
-                        $(this).addClass("active");
-                        $('#selectGeneratorType').empty().attr("disabled", true);
-                        $('#generatorPropertiesForm').empty();
-                        showGenerators();
-                    }
-                    break;
-                case 2:
-                    console.log('Middle Mouse button pressed on ' + $(this).text());
-                    break;
-                case 3:
-                    //ipc.send('context-menu-datamodel', {x: e.pageX, y: e.pageY, m: i});
-                    break;
-                default:
-                    console.log('You have a strange Mouse!');
-            }
-        });
-        $("#modelsPane").append(modelButton);
-    }
+    showModels();
+
+    $("#modelsPane").on("dbclick", "span.nav-group-item", function(e){
+        let i = $("#modelsPane span.nav-group-item").index(this);
+        let title = $(this).text();
+        $(this).empty();
+        $(this).append($("<input/>").attr("type", "text").attr("value", title).blur(function(){
+            datagen[i].name = $(this).val();
+            showModels();
+        }));
+    });
 
     $("#modelsPane").on("contextmenu", "span.nav-group-item", function(e){
         let i = $("#modelsPane span.nav-group-item").index(this);
-        ipc.send('context-menu-datamodel', {x: e.pageX, y: e.pageY});
+        //ipc.send('context-menu-datamodel', {x: e.pageX, y: e.pageY, model: i});
+        $.contextMenu({
+            selector: 'span.nav-group-item',
+            trigger: 'right',
+            callback: function (key, options) {
+                switch (key){
+                    case "NewModel":
+                        createNewModel();
+                        break;
+                    case "Rename":
+                        console.log(i);
+                        let title = $(this).text();
+                        $(this).empty();
+                        $(this).append($("<input/>").attr("type", "text").attr("value", title).blur(function(){
+                            datagen[i].name = $(this).val();
+                            showModels();
+                        }));
+                        break;
+                    case "Delete":
+                        console.log(this.get(0).__node__);
+                        let index = datagen.indexOf(this.get(0).__node__);
+                        if (index > -1) {
+                            datagen.splice(index, 1);
+                        }
+                        if (i === currentDataGen)
+                            currentDataGen = (i <= 0) ? 0 : (i-1);
+
+                        showModels();
+                        showGenerators();
+                        console.log('Delete');
+                        break;
+                    default:
+                        console.log();
+                }
+            },
+            items: {
+                "NewModel": {name: "New Model"},
+                "Rename": {name: "Rename"},
+                "Delete": {name: "Delete"},
+            }
+        });
     });
 
     $("#tableCollumn").on("dblclick", "td.columnName", function(){
@@ -289,80 +332,82 @@ function addGenerator(){
 function showGenerators(){
     let active_gen_chip;
     let $tbody = $("#tbody").empty();
-    for(let i = 0; i < datagen[currentDataGen].columns.length; i++){
-        let $tr = $("<tr/>");
-        datagen[currentDataGen].columns[i].type = datagen[currentDataGen].columns[i].generator.getReturnedType();
-        $tbody.append($tr
-            .append($("<td/>").append($("<input/>").attr("type", "checkbox").addClass("checkboxSelectColumn")))
-            .append($("<td/>").text(i+1).addClass("tdIndex"))
-            .append($("<td/>").text(datagen[currentDataGen].columns[i].name).addClass("columnName"))
-            .append($("<td/>").text(datagen[currentDataGen].columns[i].type).addClass("columnType"))
-        );
-        let generators = [];
-        let $tdGen = $("<td/>").addClass("columnGen");
+    if (datagen.length > 0){
+        for(let i = 0; i < datagen[currentDataGen].columns.length; i++){
+            let $tr = $("<tr/>");
+            datagen[currentDataGen].columns[i].type = datagen[currentDataGen].columns[i].generator.getReturnedType();
+            $tbody.append($tr
+                .append($("<td/>").append($("<input/>").attr("type", "checkbox").addClass("checkboxSelectColumn")))
+                .append($("<td/>").text(i+1).addClass("tdIndex"))
+                .append($("<td/>").text(datagen[currentDataGen].columns[i].name).addClass("columnName"))
+                .append($("<td/>").text(datagen[currentDataGen].columns[i].type).addClass("columnType"))
+            );
+            let generators = [];
+            let $tdGen = $("<td/>").addClass("columnGen");
 
-        datagen[currentDataGen].columns[i].generator.getFullGenerator(generators);
-        let counter = 0;
+            datagen[currentDataGen].columns[i].generator.getFullGenerator(generators);
+            let counter = 0;
 
-        // FILHOS DO CATEGORICO
-        if (datagen[currentDataGen].columns[i].generator.name === "Categorical Function"){
-            let $switchGenTable = $("<table/>");
-            let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(generators[0].order + "-" + generators[0].name);
-            if(generators[0] === activeGenerator)
-                active_gen_chip = $chip.addClass("active-md-chip");
-            $chip.get(0).__node__ = generators[0];
-            $tdGen.append($chip);
+            // FILHOS DO CATEGORICO
+            if (datagen[currentDataGen].columns[i].generator.name === "Categorical Function"){
+                let $switchGenTable = $("<table/>");
+                let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(generators[0].order + "-" + generators[0].name);
+                if(generators[0] === activeGenerator)
+                    active_gen_chip = $chip.addClass("active-md-chip");
+                $chip.get(0).__node__ = generators[0];
+                $tdGen.append($chip);
 
-            let $switchGenTr;
-            let flag = false;
-            for (let c in datagen[currentDataGen].columns[i].generator.listOfGenerators){
-                $switchGenTr = $("<tr/>");
-                if (!flag){
-                    $switchGenTr.append($("<td/>").attr("rowspan", Object.keys(datagen[currentDataGen].columns[i].generator.listOfGenerators).length).append($chip));
-                    flag = true;
+                let $switchGenTr;
+                let flag = false;
+                for (let c in datagen[currentDataGen].columns[i].generator.listOfGenerators){
+                    $switchGenTr = $("<tr/>");
+                    if (!flag){
+                        $switchGenTr.append($("<td/>").attr("rowspan", Object.keys(datagen[currentDataGen].columns[i].generator.listOfGenerators).length).append($chip));
+                        flag = true;
+                    }
+                    $switchGenTr.append($("<td/>").text(c));
+                    let generators2 = [];
+                    datagen[currentDataGen].columns[i].generator.listOfGenerators[c].getFullGenerator(generators2);
+                    let counter = 0;
+                    for(let gen of generators2){
+                        let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
+                        if(gen === activeGenerator)
+                            active_gen_chip = $chip.addClass("active-md-chip");
+                        $chip.get(0).__node__ = gen;
+                        $switchGenTr.append($("<td/>").append($chip));
+                        counter++;
+                    }
+
+                    $switchGenTr.append($("<span/>")
+                        .addClass("btnGenerator btnAddGen icon icon-plus-circled")
+                    ).append($("<span/>")
+                        .addClass("btnGenerator btnRemoveGen icon icon-trash")
+                    );
+                    $switchGenTable.append($switchGenTr);
                 }
-                $switchGenTr.append($("<td/>").text(c));
-                let generators2 = [];
-                datagen[currentDataGen].columns[i].generator.listOfGenerators[c].getFullGenerator(generators2);
-                let counter = 0;
-                for(let gen of generators2){
+                $tdGen.append($switchGenTable);
+            }// END FILHOS DO CATEGORICO
+            else{
+                for(let gen of generators){
                     let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
                     if(gen === activeGenerator)
                         active_gen_chip = $chip.addClass("active-md-chip");
                     $chip.get(0).__node__ = gen;
-                    $switchGenTr.append($("<td/>").append($chip));
+                    $tdGen.append($chip);
                     counter++;
                 }
-
-                $switchGenTr.append($("<span/>")
+                $tdGen.append($("<span/>")
                     .addClass("btnGenerator btnAddGen icon icon-plus-circled")
                 ).append($("<span/>")
                     .addClass("btnGenerator btnRemoveGen icon icon-trash")
                 );
-                $switchGenTable.append($switchGenTr);
             }
-            $tdGen.append($switchGenTable);
-        }// END FILHOS DO CATEGORICO
-        else{
-            for(let gen of generators){
-                let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
-                if(gen === activeGenerator)
-                    active_gen_chip = $chip.addClass("active-md-chip");
-                $chip.get(0).__node__ = gen;
-                $tdGen.append($chip);
-                counter++;
-            }
-            $tdGen.append($("<span/>")
-                .addClass("btnGenerator btnAddGen icon icon-plus-circled")
-            ).append($("<span/>")
-                .addClass("btnGenerator btnRemoveGen icon icon-trash")
-            );
+
+            $tr.append($tdGen);
+
+            $tr.get(0).__node__ = datagen[currentDataGen].columns[i];
+            $tr.append($("<td/>").addClass("btnGenerator btnRemoveColumn icon icon-trash"));
         }
-
-        $tr.append($tdGen);
-
-        $tr.get(0).__node__ = datagen[currentDataGen].columns[i];
-        $tr.append($("<td/>").addClass("btnGenerator btnRemoveColumn icon icon-trash"));
     }
     try{
         current_sample = datagen[currentDataGen].generateSample();
@@ -524,40 +569,47 @@ function configGenProps(){
     tippy('.tooltip-label');
 }
 
+function showModels(){
+    $("#modelsPane").empty();
+    $("#modelsPane").append($("<h5/>").addClass("nav-group-title").text("Models"));
+    for(let i = 0; i < datagen.length; i++){
+        let idNameModel = datagen[i].name.toLowerCase().replace(' ','');
+
+        let modelButton = $("<span/>").attr('id', idNameModel).addClass("nav-group-item").text(datagen[i].name).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
+        if (currentDataGen === i)
+            modelButton.addClass("active");
+        modelButton.mouseup(function(e) {
+            switch (event.which) {
+                case 1:
+                    if (currentDataGen !== i){
+                        currentDataGen = i;
+                        $("#modelsPane").children().removeClass('active');
+                        $(this).addClass("active");
+                        $('#selectGeneratorType').empty().attr("disabled", true);
+                        $('#generatorPropertiesForm').empty();
+                        showGenerators();
+                    }
+                    break;
+                case 2:
+                    console.log('Middle Mouse button pressed on ' + $(this).text());
+                    break;
+                case 3:
+                    //ipc.send('context-menu-datamodel', {x: e.pageX, y: e.pageY, m: i});
+                    break;
+                default:
+                    console.log('You have a strange Mouse!');
+            }
+        });
+        modelButton.get(0).__node__ = datagen[i];
+        $("#modelsPane").append(modelButton);
+    }
+}
+
 function createNewModel () {
     datagen.push(new DataGen());
-    let modelButton = $("<span/>").addClass("nav-group-item").text(datagen[datagen.length-1].name + " " + datagen.length).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
-    let pos = (datagen.length-1);
-
-    $("#modelsPane").children().removeClass('active');
-    modelButton.addClass("active");
-    $('#selectGeneratorType').empty().attr("disabled", true);
-    $('#generatorPropertiesForm').empty();
-    modelButton.mousedown(function(e) {
-        switch (event.which) {
-            case 1:
-                if (currentDataGen !== pos){
-                    currentDataGen = pos;
-                    $("#modelsPane").children().removeClass('active');
-                    $(this).addClass("active");
-                    $('#selectGeneratorType').empty().attr("disabled", true);
-                    $('#generatorPropertiesForm').empty();
-                    showGenerators();
-                }
-                break;
-            case 2:
-                console.log('Middle Mouse button pressed on ' + $(this).text());
-                break;
-            case 3:
-                //console.log('Right Mouse button pressed on ' + $(this).text());
-                //ipc.send('context-menu-datamodel', {x: e.pageX, y: e.pageY, m: pos});
-                break;
-            default:
-                console.log('You have a strange Mouse!');
-        }
-    });
-    $("#modelsPane").append(modelButton);
-    currentDataGen = pos;
+    datagen[datagen.length-1].name += " " + datagen.length;
+    currentDataGen = datagen.length-1;
+    showModels();
     showGenerators();
 }
 

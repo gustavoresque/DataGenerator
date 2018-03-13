@@ -175,15 +175,35 @@ function createWindow () {
     ));
     mainWindow.setMenu(menu);
 
+    let model = 0;
     const ctxMenu = new Menu();
+    ctxMenu.append(new MenuItem({
+        label: 'New',
+        submenu: [
+            {
+                label: 'Model',
+                click: function(){
+                    mainWindow.webContents.send('context-model-ans', {id: 0, model: model});
+                }
+            }
+        ]
+
+    }))
     ctxMenu.append(new MenuItem({
         label: 'Rename',
         click: function(){
-            mainWindow.webContents.send('context-model-ans', {id: 0});
+            mainWindow.webContents.send('context-model-ans', {id: 1, model: model});
+        }
+    }))
+    ctxMenu.append(new MenuItem({
+        label: 'Delete',
+        click: function(){
+            mainWindow.webContents.send('context-model-ans', {id: 2, model: model});
         }
     }));
 
     ipcMain.on('context-menu-datamodel', function(e, params){
+        model = params.model;
         ctxMenu.popup(mainWindow, params.x, params.y);
     });
 
