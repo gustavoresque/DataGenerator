@@ -82,12 +82,16 @@
     </div>
 
     <div class="previewPanel">
-      <h5 class="nav-group-title">Preview</h5>
+      <h5 class="nav-group-title">Preview
+        <span id="hidePreview" class="icon btn icon-down-thin"></span>
+        <span id="reloadPreview" class="icon btn icon-arrows-ccw"></span>
+      </h5>
       <div class="canvas"></div>
     </div>
 
     <footer class="toolbar toolbar-footer">
       <div class="toolbar-actions">
+        <span id="showPreview" style="float: left; background-color: #ccc; color: black;"><span class="icon btn icon-chart-line"> Preview</span></span>
         <div class="btn-group pull-right">
           <button id="generateButton" onclick="generateDatas()" class="btn btn-primary">
             Generate

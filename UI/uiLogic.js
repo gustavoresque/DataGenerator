@@ -16,41 +16,6 @@ ipc.on('change-datagen', function(event, arg){
     datagen[currentDataGen].configs = arg;
     console.log(datagen[currentDataGen].configs);
 });
-function teste(i){
-    let idModel = "#" + $($("#modelsPane span.nav-group-item").get(i)).attr('id');
-
-    let title = $(idModel).text();
-    $(idModel).empty();
-    $(idModel).append($("<input/>").attr("type", "text").attr("value", title).blur(function(){
-        //datagen[i].name = $(this).val();
-    }));
-
-}
-ipc.on('context-model-ans', function(event, arg){
-    switch (arg.id){
-        case 0:
-            createNewModel();
-            break;
-        case 1:
-            console.log('Rename');
-            break;
-        case 2:
-            datagen = jQuery.grep(datagen, function(value) {
-                return value != datagen[arg.model];
-            });
-            if (arg.model === currentDataGen)
-                currentDataGen = (arg.model <= 0) ? 0 : (arg.model-1);
-
-            showModels();
-            showGenerators();
-            console.log('Delete');
-            break;
-        default:
-            console.log('xxxxxx');
-            break;
-    }
-    showModels();
-});
 ipc.on('update-sampledata', function () {
     if(current_sample)
         ipc.send('change-datasample', current_sample);
@@ -58,6 +23,24 @@ ipc.on('update-sampledata', function () {
 
 $("html").ready(function(){
     showModels();
+
+    $("#reloadPreview").on("click", "", function(e){
+        showGenerators();
+    });
+
+    $("#hidePreview").on("click", "", function(e){
+        $(".previewPanel").hide();
+    });
+    $("#showPreview").on("click", "", function(e){
+        if($(".previewPanel").is(":visible")){
+            $(".previewPanel").hide();
+            $(this).attr("style", "float: left;");
+        }
+        else{
+            $(".previewPanel").show();
+            $(this).attr("style", "float: left; background-color: #ccc; color: black;");
+        }
+    });
 
     $("#modelsPane").on("dbclick", "span.nav-group-item", function(e){
         let i = $("#modelsPane span.nav-group-item").index(this);
@@ -69,49 +52,42 @@ $("html").ready(function(){
         }));
     });
 
-    $("#modelsPane").on("contextmenu", "span.nav-group-item", function(e){
-        let i = $("#modelsPane span.nav-group-item").index(this);
-        //ipc.send('context-menu-datamodel', {x: e.pageX, y: e.pageY, model: i});
-        $.contextMenu({
-            selector: 'span.nav-group-item',
-            trigger: 'right',
-            callback: function (key, options) {
-                switch (key){
-                    case "NewModel":
-                        createNewModel();
-                        break;
-                    case "Rename":
-                        console.log(i);
-                        let title = $(this).text();
-                        $(this).empty();
-                        $(this).append($("<input/>").attr("type", "text").attr("value", title).blur(function(){
-                            datagen[i].name = $(this).val();
-                            showModels();
-                        }));
-                        break;
-                    case "Delete":
-                        console.log(this.get(0).__node__);
-                        let index = datagen.indexOf(this.get(0).__node__);
-                        if (index > -1) {
-                            datagen.splice(index, 1);
-                        }
-                        if (i === currentDataGen)
-                            currentDataGen = (i <= 0) ? 0 : (i-1);
-
+    $.contextMenu({
+        selector: 'span.nav-group-item',
+        trigger: 'right',
+        callback: function (key, options) {
+            switch (key){
+                case "Rename":
+                    console.log(i);
+                    let title = $(this).text();
+                    $(this).empty();
+                    $(this).append($("<input/>").attr("type", "text").attr("value", title).blur(function(){
+                        datagen[i].name = $(this).val();
                         showModels();
-                        showGenerators();
-                        console.log('Delete');
-                        break;
-                    default:
-                        console.log();
-                }
-            },
-            items: {
-                "NewModel": {name: "New Model"},
-                "Rename": {name: "Rename"},
-                "Delete": {name: "Delete"},
+                    }));
+                    break;
+                case "Delete":
+                    let index = 0;
+                    index = datagen.indexOf(this.get(0).__node__);
+                    if (index > -1) {
+                        datagen.splice(index, 1);
+                        if (index === currentDataGen)
+                            currentDataGen = (index == 0) ? 0 : (index-1);
+                        else if (index < currentDataGen)
+                            currentDataGen--;
+                    }
+
+                    showModels();
+                    showGenerators();
+                    break;
+                default:
+                    console.log();
             }
-        });
+        },
+        items: {
+            "Rename": {name: "Rename"},
+            "Delete": {name: "Delete"},
+        }
     });
 
     $("#tableCollumn").on("dblclick", "td.columnName", function(){
@@ -168,7 +144,7 @@ $("html").ready(function(){
         showGenerators();
     });
 
-    $("#tableCollumn").on("click", "div.md-chip", configGenProps);
+    $("#tableCollumn").on("mousedown", "div.md-chip", configGenProps);
 
     $("#selectGeneratorType").on("change blur", function(){
         let nameNewGenerator = $(this).val();
@@ -623,16 +599,11 @@ function createImportModel (data) {
     let dg = new DataGen();
     dg.columns = [];
     dg.importModel(data);
+    dg.name = "Model " + datagen.length;
     datagen.push(dg);
-
-    let modelButton = $("<span/>").addClass("nav-group-item").text(datagen[datagen.length-1].name).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
     let pos = (datagen.length-1);
-    modelButton.on("click", function () {
-        currentDataGen = pos;
-        showGenerators();
-    });
-    $("#modelsPane").append(modelButton);
     currentDataGen = pos;
+    showModels();
     showGenerators();
 }
 

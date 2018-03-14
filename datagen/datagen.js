@@ -1272,6 +1272,40 @@ class CategoricalFunction extends Function{
 }
 ///--------------------------  Gerenciador de Colunas e Geração da base total. ----------------------------------------
 
+function copyAttrs(source, target, context){
+    for(let attr in source){
+        if(source.hasOwnProperty(attr) && attr !== "name"){
+            if(attr === "generator2"){
+                target[attr] = new (DataGen.prototype.listOfGens[source[attr]])();
+            }else if(attr === "inputGenIndex") {
+                target.inputGenerator = context.columns[source[attr]].generator;
+                target[attr] = source[attr];
+            }else if(attr === "listOfGenerators") {
+                target[attr] = {};
+                for(let attr2 in source[attr]){
+                    if(source[attr].hasOwnProperty(attr2))
+                        for(let genObj of source[attr][attr2]){
+                            if(target[attr][attr2]) {
+                                let gen1 = new (DataGen.prototype.listOfGens[genObj.name])();
+                                target[attr][attr2].addGenerator(gen1);
+                                gen1.parent = target;
+                            }else {
+                                target[attr][attr2] = new (DataGen.prototype.listOfGens[genObj.name])();
+                                for (let t in genObj){
+                                    target[attr][attr2][t] = genObj[t];
+                                }
+                                console.log("----------");
+                                target[attr][attr2].parent = target;
+                            }
+                        }
+                }
+            }else{
+                target[attr] = source[attr];
+            }
+        }
+    }
+}
+
 class DataGen {
 
     constructor () {
@@ -1387,7 +1421,7 @@ class DataGen {
             this.columns[j].generator.reset();
         }
     }
-    
+
     exportModel(){
         let model = {
             name: this.name,
@@ -1439,7 +1473,6 @@ class DataGen {
             this.columns.push(col);
             generator.parent = col;
         }
-        console.log(this);
     }
 
 
@@ -1477,37 +1510,6 @@ DataGen.prototype.listOfGensForNoise = {
     'Bernoulli Generator': RandomBernoulliGenerator,
     'Cauchy Generator': RandomCauchyGenerator,
 };
-
-function copyAttrs(source, target, context){
-
-    for(let attr in source){
-        if(source.hasOwnProperty(attr) && attr !== "name"){
-            if(attr === "generator2"){
-                target[attr] = new (DataGen.prototype.listOfGens[source[attr]])();
-            }else if(attr === "inputGenIndex") {
-                target.inputGenerator = context.columns[source[attr]].generator;
-                target[attr] = source[attr];
-            }else if(attr === "listOfGenerators") {
-                target[attr] = {};
-                for(let attr2 in source[attr]){
-                    if(source[attr].hasOwnProperty(attr2))
-                        for(let genObj of source[attr][attr2]){
-                            if(target[attr][attr2]) {
-                                let gen1 = new (DataGen.prototype.listOfGens[genObj.name])();
-                                target[attr][attr2].addGenerator(gen1);
-                                gen1.parent = target;
-                            }else {
-                                target[attr][attr2] = new (DataGen.prototype.listOfGens[genObj.name])();
-                                target[attr][attr2].parent = target;
-                            }
-                        }
-                }
-            }else{
-                target[attr] = source[attr];
-            }
-        }
-    }
-}
 
 //var datagen = new DataGen();
 var DataGenerator = DataGen;

@@ -44,6 +44,15 @@ button.floatButton:active{
     border-style: solid;
     border-color: #555 transparent transparent transparent;
 }
+
+.icon.btn{
+    float: right;
+}
+.icon.btn:hover{
+    color: black;
+    background-color: #ccc;
+}
+
 .btnGenerator{
     font-size: 17px;
     line-height: 0px;
