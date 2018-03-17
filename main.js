@@ -151,9 +151,9 @@ function createWindow () {
                     }
                 },
                 {
-                    label: 'Violin Plot',
+                    label: 'Beeswarm Plot',
                     click(){
-                        funcOpenVisWindow('ViolinPlot');
+                        funcOpenVisWindow('BeeswarmPlot');
                     }
                 }
             ]

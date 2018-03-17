@@ -19,6 +19,7 @@
     <script>if (window.module) module = window.module;</script>
     <script src="../lib/layout/partition_layout.js"></script>
     <script src="../lib/vis/vis.js"></script>
+    <script src="../lib/underscore-min.js"></script>
 
 
     <style>
@@ -55,9 +56,10 @@
         });
         ipc.on('change-datasample', function(event, data){
             $(".partition-content").each(function(){
-                console.log(this);
-                this.__vis__.data(data);
-                this.__vis__.redraw();
+                if(this.__vis__){
+                    this.__vis__.data(data);
+                    this.__vis__.redraw();
+                }
             });
         });
 
@@ -80,25 +82,34 @@
                 }
             });
             $body.on("layout:created", ".partition-node", function(e){
-                let content = $(this).children(".partition-content");
-                content.append($("<button/>")
+
+                if(this !== e.target)
+                    return;
+
+                if($(this).children(".partition-content").children().is("button.btn.btn-large.btn-positive")) {
+                    $(this).children(".partition-content").children().attr("data-nodeid", $(this).attr("id"));
+                    return;
+                }
+
+                $(this).children(".partition-content").append($("<button/>")
                     .text("Add Visualization")
                     .addClass("btn btn-large btn-positive")
+                    .attr("data-nodeid", $(this).attr("id"))
                     .css({"float": "right"}));
 
                 $.contextMenu({
                     selector: '.btn.btn-large.btn-positive',
                     trigger: 'left',
-                    callback: function (key, options) {
+                    callback: function (key) {
+                        let content = $("#"+$(this).attr("data-nodeid")).children(".partition-content");
                         content.empty();
-                        console.log(vis, key);
                         let pc = new vis[key](content.get(0));
                         ipc.send('update-sampledata', {});
                     },
                     items: {
                         "ParallelCoordinates": {name: "Parallel Coordinates"},
                         "ScatterplotMatrix": {name: "Scatter Plot"},
-                        "ViolinPlot": {name: "Violin Plot"},
+                        "BeeswarmPlot": {name: "Beeswarm Plot"},
                     }
                 });
             });
