@@ -49,10 +49,43 @@
     <script>
         let ipc = require('electron').ipcRenderer;
 
+        let addVis = (visName, parentElement) => {
+            let pc = new vis[visName](parentElement);
+            pc
+                .on("highlightstart",function(d,i){
+                    $(".partition-content").each(function(){
+                        if(this.__vis__ && this.__vis__ !== pc){
+                            this.__vis__.highlight(d,i);
+                        }
+                    });
+                })
+                .on("highlightend",function(d,i){
+                    $(".partition-content").each(function(){
+                        if(this.__vis__ && this.__vis__ !== pc){
+                            this.__vis__.removeHighlight(d,i);
+                        }
+                    });
+                })
+                .on("datamouseover",function(d,i){
+                    pc.highlight(d,i);
+                })
+                .on("datamouseout",function(d,i){
+                    pc.removeHighlight(d,i);
+                })
+                .on("dataclick",function(d,i){
+                    $(".partition-content").each(function(){
+                        if(this.__vis__){
+                            console.log("clicou", d, i);
+                            let elem = this.__vis__.getHighlightElement(i);
+                            // d3.select(elem).selectAll(".lineHighlight").style("stroke", "limegreen");
+                            this.__vis__.annotate(elem);
+                        }
+                    });
+                });
+        };
+
         ipc.on('add-vis', function(event, arg){
-            let pc = new vis[arg]($(".partition-content").get(0));
-            // pc.data([{alo: 1, haha: 2}, {alo: 3, haha: 5}, {alo: 2, haha: 3}]);
-            // pc.redraw();
+            addVis(arg, $(".partition-content").get(0))
         });
         ipc.on('change-datasample', function(event, data){
             $(".partition-content").each(function(){
@@ -103,7 +136,7 @@
                     callback: function (key) {
                         let content = $("#"+$(this).attr("data-nodeid")).children(".partition-content");
                         content.empty();
-                        let pc = new vis[key](content.get(0));
+                        addVis(key, content.get(0));
                         ipc.send('update-sampledata', {});
                     },
                     items: {
