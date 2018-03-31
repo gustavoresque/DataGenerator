@@ -1,6 +1,7 @@
 
 
 let randgen = require("randgen");
+let moment = require("moment");
 
 class Generator{
     constructor(name, generator, operator){
@@ -172,9 +173,10 @@ class MissingValue extends Generator{
     }
 
     generate(){
-        if(Math.random() < this.probability)
+        if(Math.random() < this.probability) {
+            this.lastGenerated = this.value;
             return this.value;
-        else{
+        }else{
             return super.generate(0);
         }
     }
@@ -496,6 +498,220 @@ class RandomCauchyGenerator extends Generator{
     }
 }
 
+
+class FixedTimeGenerator extends Generator{
+    constructor(initTime, step, timeMask){
+        super("Fixed Time Generator");
+        this.initTime = initTime || "00:00:00";
+        this.step = step || "00:00:10";
+        this.timeMask = timeMask || "HH:mm:ss";
+        this.time = moment(this.initTime, this.timeMask);
+        this.timeStep = moment(this.step, this.timeMask);
+    }
+
+    set accessInitTime(initTime){
+        this.initTime = initTime;
+        this.time = moment(this.initTime, this.timeMask);
+    }
+    get accessInitTime(){
+        return this.initTime;
+    }
+    set accessStepTime(step){
+        this.step = step;
+        this.timeStep = moment(this.step, this.timeMask);
+    }
+    get accessStepTime(){
+        return this.step;
+    }
+    set accessMaskTime(timeMask){
+        this.timeMask = timeMask;
+        this.time = moment(this.initTime, this.timeMask);
+        this.timeStep = moment(this.step, this.timeMask);
+    }
+    get accessMaskTime(){
+        return this.timeMask;
+    }
+
+    generate(){
+        let v = this.time.format(this.timeMask);
+        console.log(v);
+        this.time.add(this.timeStep.seconds(), "s");
+        this.time.add(this.timeStep.minutes(), "m");
+        this.time.add(this.timeStep.hours(), "h");
+        this.time.add(super.generate(0), "s");
+        this.lastGenerated = v;
+        return this.lastGenerated;
+    }
+
+    getGenParams(){
+        return [
+            {
+                shortName: "Init",
+                variableName: "accessInitTime",
+                name: "Initial Time",
+                type: "string"
+            },
+            {
+                shortName: "Step",
+                variableName: "accessStepTime",
+                name: "Time Step",
+                type: "string"
+            },
+            {
+                shortName: "Mask",
+                variableName: "accessMaskTime",
+                name: "Time Mask according to Moment.js",
+                type: "string"
+            }
+        ];
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.initTime = this.initTime;
+        model.step = this.step;
+        model.timeMask = this.timeMask;
+        return model;
+    }
+
+    copy(){
+        let newGen = new FixedTimeGenerator(this.initTime, this.step, this.timeMask);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+
+    reset(){
+        this.time = moment(this.initTime, this.timeMask);
+    }
+
+    getReturnedType(){
+        return "Time";
+    }
+}
+
+class PoissonTimeGenerator extends Generator{
+    constructor(initTime, timeMask, interval, intervalUnit,lambda){
+        super("Poisson Time Generator");
+        this.initTime = initTime || "00:00:00";
+        this.interval = interval || 5;
+        this.intervalUnit = intervalUnit || "minutes";
+        this.timeMask = timeMask || "HH:mm:ss";
+        this.lambda = lambda || 2;
+        this.time = moment(this.initTime, this.timeMask);
+        this.accessIntervalTime = this.interval;
+    }
+
+    set accessInitTime(initTime){
+        this.initTime = initTime;
+        this.time = moment(this.initTime, this.timeMask);
+    }
+    get accessInitTime(){
+        return this.initTime;
+    }
+    set accessIntervalTime(interval){
+        this.interval = interval;
+        this.timeInterval = moment.duration(this.interval, this.intervalUnit);
+    }
+    get accessIntervalTime(){
+        return this.interval;
+    }
+
+    set accessIntervalUnit(intervalUnit){
+        this.intervalUnit = intervalUnit;
+        this.timeInterval = moment.duration(this.interval, this.intervalUnit);
+    }
+    get accessIntervalUnit(){
+        return this.intervalUnit;
+    }
+    set accessMaskTime(timeMask){
+        this.timeMask = timeMask;
+        this.time = moment(this.initTime, this.timeMask);
+        this.accessIntervalTime = this.interval;
+    }
+    get accessMaskTime(){
+        return this.timeMask;
+    }
+
+    generate(){
+        let events = randgen.rpoisson(this.lambda);
+        let millis = events>0
+            ? Math.round(this.timeInterval.asMilliseconds()/(events+Math.random()-Math.random()))
+            : Math.round(this.timeInterval.asMilliseconds()*(Math.random()+Math.random()));
+
+
+        this.time.add(millis, "ms");
+        this.time.add(super.generate(0), "s");
+        this.lastGenerated = this.time.format(this.timeMask);
+        return this.lastGenerated;
+    }
+
+    getGenParams(){
+        return [
+            {
+                shortName: "Init",
+                variableName: "accessInitTime",
+                name: "Initial Time",
+                type: "string"
+            },
+            {
+                shortName: "Inter",
+                variableName: "accessIntervalTime",
+                name: "Time Duration",
+                type: "number"
+            },
+            {
+                shortName: "IntUnit",
+                variableName: "accessIntervalUnit",
+                name: "Interval Unit",
+                type: "options",
+                options: ["milliseconds", "seconds", "minutes", "hours", "days", "weeks", "months", "years"]
+            },
+            {
+                shortName: "Mask",
+                variableName: "accessMaskTime",
+                name: "Time Mask according to Moment.js",
+                type: "string"
+            },
+            {
+                shortName: "Lambda",
+                variableName: "lambda",
+                name: "Expected number of events per interval",
+                type: "number"
+            }
+        ];
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.initTime = this.initTime;
+        model.timeMask = this.timeMask;
+        model.interval = this.interval;
+        model.intervalUnit = this.intervalUnit;
+        model.lambda = this.lambda;
+        return model;
+    }
+
+    copy(){
+        // initTime, timeMask, interval, intervalUnit,lambda
+        let newGen = new FixedTimeGenerator(this.initTime, this.timeMask, this.interval, this.intervalUnit, this.lambda);
+        //TODO: mover a adição do gerador filho para a superclasse.
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+
+    reset(){
+        this.time = moment(this.initTime, this.timeMask);
+    }
+
+    getReturnedType(){
+        return "Time";
+    }
+}
+
 class RandomConstantNoiseGenerator extends Generator{
     constructor(generator, operator, probability, value){
         super("Constant Noise Generator", generator, operator);
@@ -505,7 +721,8 @@ class RandomConstantNoiseGenerator extends Generator{
 
     generate(){
         if (Math.random() < this.probability){
-            return super.generate(0) + this.value;
+            this.lastGenerated = super.generate(0) + this.value;
+            return this.lastGenerated;
         }else{
             return super.generate(0);
         }
@@ -554,9 +771,9 @@ class RandomNoiseGenerator extends Generator{
     }
 
     generate(){
-        var value = 0;
         if (Math.random() < this.probability){
-            return super.generate(this.generator2.generate()) * this.intensity;
+            this.lastGenerated = super.generate(this.generator2.generate()) * this.intensity;
+            return this.lastGenerated;
         }else{
             return super.generate(0);
         }
@@ -619,6 +836,7 @@ class RangeFilter extends Generator {
         while (value > this.begin && value < this.end) {
             value = super.generate(0);
         }
+        this.lastGenerated = value;
         return value;
     }
 
@@ -669,6 +887,7 @@ class LinearScale extends Generator {
     generate() {
         let result =  (super.generate(0)-this.minDomain)/(this.maxDomain-this.minDomain);
         result = result*(this.maxRange - this.minRange) + this.minRange;
+        this.lastGenerated = result;
         return result;
     }
 
@@ -734,8 +953,8 @@ class MinMax extends Generator {
     }
 
     generate() {
-        let value =  super.generate(0);
-        return Math.max(Math.min(value, this.max), this.min);
+        this.lastGenerated =  Math.max(Math.min(super.generate(0), this.max), this.min);
+        return this.lastGenerated;
     }
 
     getGenParams(){
@@ -1314,7 +1533,7 @@ class DataGen {
         this.save_as = "csv";
         this.header = true;
         this.header_type = true;
-        let defaultGenerator = new CounterGenerator();
+        let defaultGenerator = new RandomUniformGenerator();
         let column = {
             name: "Column 1",
             type: defaultGenerator.getReturnedType(),
@@ -1478,10 +1697,12 @@ class DataGen {
 
 }
 
-DataGen.prototype.listOfGens = {
+DataGen.listOfGens = {
     'Constant Value': ConstantValue,
     'Missing Value': MissingValue,
     'Counter Generator': CounterGenerator,
+    'Fixed Time Generator': FixedTimeGenerator,
+    'Poisson Time Generator': PoissonTimeGenerator,
     'Uniform Generator': RandomUniformGenerator,
     'Gaussian Generator': RandomGaussianGenerator,
     'Poisson Generator': RandomPoissonGenerator,
@@ -1503,7 +1724,7 @@ DataGen.prototype.listOfGens = {
     'Categorical Function': CategoricalFunction
 };
 
-DataGen.prototype.listOfGensForNoise = {
+DataGen.listOfGensForNoise = {
     'Uniform Generator': RandomUniformGenerator,
     'Gaussian Generator': RandomGaussianGenerator,
     'Poisson Generator': RandomPoissonGenerator,
@@ -1516,10 +1737,11 @@ var DataGenerator = DataGen;
 
 
 if(module){
-    module.exports.CounterGenerator =         CounterGenerator;
-    module.exports.RandomGaussGenerator =     RandomGaussianGenerator;
-    module.exports.RandomPoissonGenerator =   RandomPoissonGenerator;
-    module.exports.RandomBernoulliGenerator = RandomBernoulliGenerator;
-    module.exports.RandomCauchyGenerator =    RandomCauchyGenerator;
-    module.exports.RandomNoiseGenerator =     RandomNoiseGenerator;
+    // module.exports.CounterGenerator =         CounterGenerator;
+    // module.exports.RandomGaussGenerator =     RandomGaussianGenerator;
+    // module.exports.RandomPoissonGenerator =   RandomPoissonGenerator;
+    // module.exports.RandomBernoulliGenerator = RandomBernoulliGenerator;
+    // module.exports.RandomCauchyGenerator =    RandomCauchyGenerator;
+    // module.exports.RandomNoiseGenerator =     RandomNoiseGenerator;
+    module.exports = DataGen;
 }
