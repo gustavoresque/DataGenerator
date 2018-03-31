@@ -334,7 +334,7 @@ function showGenerators(){
             let counter = 0;
 
             // FILHOS DO CATEGORICO
-            if (datagen[currentDataGen].columns[i].generator.name === "Categorical Function"){
+            if (datagen[currentDataGen].columns[i].generator instanceof DataGen.superTypes.SwitchCaseFunction){
                 let $switchGenTable = $("<table/>");
                 let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(generators[0].order + "-" + generators[0].name);
                 if(generators[0] === activeGenerator)
@@ -543,9 +543,10 @@ function configGenProps(){
             for(let i=0; i<datagen[currentDataGen].columns.length; i++){
                 if(datagen[currentDataGen].columns[i] !== coluna){
 
-                    if((p.type.indexOf("Categorical") >= 0 && datagen[currentDataGen].columns[i].type !== "Categorical")
-                        || (p.type.indexOf("Numeric") >= 0 && datagen[currentDataGen].columns[i].type !== "Numeric"))
+                    //Verifica se o tipo das dimensões anteriores é compatível com o tipo de dimensão esperado pela função.
+                    if(p.type.indexOf(datagen[currentDataGen].columns[i].type) < 0 )
                         continue;
+
                     let $option = $("<option/>").attr("value", i).text(datagen[currentDataGen].columns[i].name);
                     $option.get(0).__node__ = datagen[currentDataGen].columns[i];
 

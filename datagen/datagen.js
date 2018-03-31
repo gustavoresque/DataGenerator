@@ -1419,6 +1419,7 @@ class SwitchCaseFunction extends Function{
     constructor(name, listOfGenerators, inputGenerator, generator, operator){
         super(name, generator, operator, inputGenerator);
         this.listOfGenerators = listOfGenerators || {};
+        this.inputArray = [];
     }
 
     reset(){
@@ -1432,13 +1433,13 @@ class SwitchCaseFunction extends Function{
         for(let attr in this.listOfGenerators)
             if(this.listOfGenerators.hasOwnProperty(attr))
                 attrs.push(attr);
-        for(let i=0; i<this.inputGenerator.array.length; i++){
-            if(!(this.listOfGenerators[this.inputGenerator.array[i]])) {
+        for(let i=0; i<this.inputArray.length; i++){
+            if(!(this.listOfGenerators[this.inputArray[i]])) {
                 let gen = new RandomUniformGenerator();
                 auxgen.changeGenerator(gen);
-                this.listOfGenerators[this.inputGenerator.array[i]] = gen;
+                this.listOfGenerators[this.inputArray[i]] = gen;
             }
-            let index = attrs.indexOf(this.inputGenerator.array[i]);
+            let index = attrs.indexOf(this.inputArray[i]);
             if(index >= 0){
                 attrs.splice(index, 1);
             }
@@ -1472,90 +1473,41 @@ class SwitchCaseFunction extends Function{
     }
 
     getReturnedType(){
-        if(this.generator)
-            return this.generator.getReturnedType();
+        let outType;
+        for(let genName in this.listOfGenerators){
+            if(this.listOfGenerators.hasOwnProperty(genName)) {
+                if(outType && outType !== this.listOfGenerators[genName].getReturnedType()){
+                    return "Mixed";
+                }
+                outType = this.listOfGenerators[genName].getReturnedType();
+            }
+        }
+        if(outType){
+            return outType;
+        }
         return "Numeric";
     }
 
-    copy(){
-        // let newList = {};
-        // //Copia a lista de Geradores
-        // for(let prop in this.listOfGenerators)
-        //     if(this.listOfGenerators.hasOwnProperty(prop))
-        //         newList[prop] = this.listOfGenerators[prop].copy();
-        // let newGen = new CategoricalFunction(newList, this.inputGenerator);
-        // if (this.generator){
-        //     newGen.addGenerator(this.generator.copy(), this.order);
-        // }
-        // return newGen;
-    }
 }
 
-class CategoricalFunction extends Function{
+class CategoricalFunction extends SwitchCaseFunction{
     constructor(listOfGenerators, inputGenerator, generator, operator){
-        super("Categorical Function", generator, operator, inputGenerator);
-        this.listOfGenerators = listOfGenerators || {};
+        super("Categorical Function", listOfGenerators, inputGenerator, generator, operator);
     }
 
-    reset(){
-        if (!this.inputGenerator)
-            return;
-        let auxgen = new RandomUniformGenerator();
-        this.generator = auxgen;
-        auxgen.parent = this;
-
-        let attrs = [];
-        for(let attr in this.listOfGenerators)
-            if(this.listOfGenerators.hasOwnProperty(attr))
-                attrs.push(attr);
-        for(let i=0; i<this.inputGenerator.array.length; i++){
-            if(!(this.listOfGenerators[this.inputGenerator.array[i]])) {
-                let gen = new RandomUniformGenerator();
-                auxgen.changeGenerator(gen);
-                this.listOfGenerators[this.inputGenerator.array[i]] = gen;
-            }
-            let index = attrs.indexOf(this.inputGenerator.array[i]);
-            if(index >= 0){
-                attrs.splice(index, 1);
-            }
-        }
-        for(let attr of attrs){
-            this.listOfGenerators[attr] = undefined;
-            delete this.listOfGenerators[attr];
-        }
-    }
-
-    transform(x){
-        this.generator = this.listOfGenerators[x];
-        return 0;
-    }
     getGenParams() {
         let params = super.getGenParams();
         params[0].type = "CategoricalColumn";
         return params;
     }
 
-    getModel(){
-        let model = super.getModel();
-        model.listOfGenerators = {};
-        for(let p in this.listOfGenerators){
-            if(this.listOfGenerators.hasOwnProperty(p)){
-                let fullGen = [];
-                this.listOfGenerators[p].getFullGenerator(fullGen);
-                model.listOfGenerators[p] = [];//this.listOfGenerators[p].getModel();
-                for(let gen of fullGen){
-                    model.listOfGenerators[p].push(gen.getModel());
-                }
-            }
-        }
-        return model;
+    reset(){
+        if (!this.inputGenerator)
+            return;
+        this.inputArray = this.inputGenerator.array;
+        super.reset();
     }
 
-    getReturnedType(){
-        if(this.generator)
-            return this.generator.getReturnedType();
-        return "Numeric";
-    }
 
     copy(){
         let newList = {};
@@ -1564,6 +1516,86 @@ class CategoricalFunction extends Function{
             if(this.listOfGenerators.hasOwnProperty(prop))
                 newList[prop] = this.listOfGenerators[prop].copy();
         let newGen = new CategoricalFunction(newList, this.inputGenerator);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+}
+
+class TimeLapsFunction extends SwitchCaseFunction{
+    constructor(laps, listOfGenerators, inputGenerator, generator, operator){
+        super("TimeLaps Function", listOfGenerators, inputGenerator, generator, operator);
+        this.accessLaps = laps || [];
+    }
+
+    transform(x){
+        let inputTime = moment(x, this.inputGenerator.timeMask);
+        for(let timeLap of this.timeLaps){
+            if(inputTime.isSameOrBefore(timeLap)){
+                this.generator = this.listOfGenerators["<= "+timeLap.format(this.inputGenerator.timeMask)];
+                return 0;
+            }
+        }
+        if(this.timeLaps.length > 0)
+            this.generator = this.listOfGenerators["> "+this.timeLaps[this.timeLaps.length-1].format(this.timeMask)];
+        return 0;
+    }
+
+    get accessLaps(){
+        return this.laps;
+    }
+
+    set accessLaps(laps){
+        this.laps = laps;
+        this.reset();
+    }
+
+
+    reset(){
+        this.timeLaps = [];
+        this.inputArray = [];
+
+        if (!this.inputGenerator)
+            return;
+
+        //Caso não tenha nenhum lap ele cria uma função para qualquer tempo.
+        if(this.laps.length === 0){
+            this.inputArray = ["any time"];
+            super.reset();
+            return;
+        }
+
+        for(let lap of this.laps){
+            let timeLap = moment(lap, this.inputGenerator.timeMask);
+            this.timeLaps.push(timeLap);
+            this.inputArray.push("<= "+timeLap.format(this.inputGenerator.timeMask));
+        }
+        this.inputArray.push("> "+this.timeLaps[this.timeLaps.length-1].format(this.inputGenerator.timeMask));
+        super.reset();
+    }
+
+    getGenParams() {
+        let params = super.getGenParams();
+        params[0].type = "TimeColumn";
+        params.push({
+            shortName: "Laps",
+            variableName: "accessLaps",
+            name: "Laps of Time in Ascending Order",
+            type: "array"
+        });
+        return params;
+    }
+
+
+    copy(){
+        let newList = {};
+        //Copia a lista de Geradores
+        for(let prop in this.listOfGenerators)
+            if(this.listOfGenerators.hasOwnProperty(prop))
+                newList[prop] = this.listOfGenerators[prop].copy();
+        // laps, timeMask, listOfGenerators, inputGenerator, generator, operator
+        let newGen = new TimeLapsFunction(this.laps, newList, this.inputGenerator);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -1804,7 +1836,8 @@ DataGen.listOfGens = {
     'Exponential Function': ExponentialFunction,
     'Logarithm Function': LogarithmFunction,
     'Sinusoidal Function': SinusoidalFunction,
-    'Categorical Function': CategoricalFunction
+    'Categorical Function': CategoricalFunction,
+    'TimeLaps Function': TimeLapsFunction
 };
 
 DataGen.listOfGensForNoise = {
@@ -1813,6 +1846,12 @@ DataGen.listOfGensForNoise = {
     'Poisson Generator': RandomPoissonGenerator,
     'Bernoulli Generator': RandomBernoulliGenerator,
     'Cauchy Generator': RandomCauchyGenerator,
+};
+
+DataGen.superTypes = {
+    Generator,
+    Function,
+    SwitchCaseFunction
 };
 
 //var datagen = new DataGen();
