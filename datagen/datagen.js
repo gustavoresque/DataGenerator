@@ -1416,8 +1416,8 @@ class SinusoidalFunction extends Function{
 }
 
 class SwitchCaseFunction extends Function{
-    constructor(listOfGenerators, inputGenerator, generator, operator){
-        super("Categorical Function", generator, operator, inputGenerator);
+    constructor(name, listOfGenerators, inputGenerator, generator, operator){
+        super(name, generator, operator, inputGenerator);
         this.listOfGenerators = listOfGenerators || {};
     }
 
@@ -1453,11 +1453,7 @@ class SwitchCaseFunction extends Function{
         this.generator = this.listOfGenerators[x];
         return 0;
     }
-    getGenParams() {
-        let params = super.getGenParams();
-        params[0].type = "CategoricalColumn";
-        return params;
-    }
+
 
     getModel(){
         let model = super.getModel();
