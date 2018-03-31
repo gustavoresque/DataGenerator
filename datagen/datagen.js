@@ -1415,10 +1415,10 @@ class SinusoidalFunction extends Function{
     }
 }
 
-class CategoricalFunction extends Function{
-    constructor(generator, operator, inputGenerator){
+class SwitchCaseFunction extends Function{
+    constructor(listOfGenerators, inputGenerator, generator, operator){
         super("Categorical Function", generator, operator, inputGenerator);
-        this.listOfGenerators = {};
+        this.listOfGenerators = listOfGenerators || {};
     }
 
     reset(){
@@ -1482,13 +1482,100 @@ class CategoricalFunction extends Function{
     }
 
     copy(){
-        let newGen = new CategoricalFunction();
+        // let newList = {};
+        // //Copia a lista de Geradores
+        // for(let prop in this.listOfGenerators)
+        //     if(this.listOfGenerators.hasOwnProperty(prop))
+        //         newList[prop] = this.listOfGenerators[prop].copy();
+        // let newGen = new CategoricalFunction(newList, this.inputGenerator);
+        // if (this.generator){
+        //     newGen.addGenerator(this.generator.copy(), this.order);
+        // }
+        // return newGen;
+    }
+}
+
+class CategoricalFunction extends Function{
+    constructor(listOfGenerators, inputGenerator, generator, operator){
+        super("Categorical Function", generator, operator, inputGenerator);
+        this.listOfGenerators = listOfGenerators || {};
+    }
+
+    reset(){
+        if (!this.inputGenerator)
+            return;
+        let auxgen = new RandomUniformGenerator();
+        this.generator = auxgen;
+        auxgen.parent = this;
+
+        let attrs = [];
+        for(let attr in this.listOfGenerators)
+            if(this.listOfGenerators.hasOwnProperty(attr))
+                attrs.push(attr);
+        for(let i=0; i<this.inputGenerator.array.length; i++){
+            if(!(this.listOfGenerators[this.inputGenerator.array[i]])) {
+                let gen = new RandomUniformGenerator();
+                auxgen.changeGenerator(gen);
+                this.listOfGenerators[this.inputGenerator.array[i]] = gen;
+            }
+            let index = attrs.indexOf(this.inputGenerator.array[i]);
+            if(index >= 0){
+                attrs.splice(index, 1);
+            }
+        }
+        for(let attr of attrs){
+            this.listOfGenerators[attr] = undefined;
+            delete this.listOfGenerators[attr];
+        }
+    }
+
+    transform(x){
+        this.generator = this.listOfGenerators[x];
+        return 0;
+    }
+    getGenParams() {
+        let params = super.getGenParams();
+        params[0].type = "CategoricalColumn";
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.listOfGenerators = {};
+        for(let p in this.listOfGenerators){
+            if(this.listOfGenerators.hasOwnProperty(p)){
+                let fullGen = [];
+                this.listOfGenerators[p].getFullGenerator(fullGen);
+                model.listOfGenerators[p] = [];//this.listOfGenerators[p].getModel();
+                for(let gen of fullGen){
+                    model.listOfGenerators[p].push(gen.getModel());
+                }
+            }
+        }
+        return model;
+    }
+
+    getReturnedType(){
+        if(this.generator)
+            return this.generator.getReturnedType();
+        return "Numeric";
+    }
+
+    copy(){
+        let newList = {};
+        //Copia a lista de Geradores
+        for(let prop in this.listOfGenerators)
+            if(this.listOfGenerators.hasOwnProperty(prop))
+                newList[prop] = this.listOfGenerators[prop].copy();
+        let newGen = new CategoricalFunction(newList, this.inputGenerator);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
         return newGen;
     }
 }
+
+
 ///--------------------------  Gerenciador de Colunas e Geração da base total. ----------------------------------------
 
 function copyAttrs(source, target, context){
@@ -1673,7 +1760,7 @@ class DataGen {
             let generator;
 
             for(let j=0; j<model.generator[i].generator.length; j++){
-                let selectedGenerator = this.listOfGens[model.generator[i].generator[j].name];
+                let selectedGenerator = DataGen.listOfGens[model.generator[i].generator[j].name];
                 if(generator){
                     let newgen = new selectedGenerator();
                     generator.addGenerator(newgen);
