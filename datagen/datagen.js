@@ -1578,7 +1578,7 @@ function copyAttrs(source, target, context){
     for(let attr in source){
         if(source.hasOwnProperty(attr) && attr !== "name"){
             if(attr === "generator2"){
-                target[attr] = new (DataGen.prototype.listOfGens[source[attr]])();
+                target[attr] = new (DataGen.listOfGens[source[attr]])();
             }else if(attr === "inputGenIndex") {
                 target.inputGenerator = context.columns[source[attr]].generator;
                 target[attr] = source[attr];
@@ -1588,11 +1588,11 @@ function copyAttrs(source, target, context){
                     if(source[attr].hasOwnProperty(attr2))
                         for(let genObj of source[attr][attr2]){
                             if(target[attr][attr2]) {
-                                let gen1 = new (DataGen.prototype.listOfGens[genObj.name])();
+                                let gen1 = new (DataGen.listOfGens[genObj.name])();
                                 target[attr][attr2].addGenerator(gen1);
                                 gen1.parent = target;
                             }else {
-                                target[attr][attr2] = new (DataGen.prototype.listOfGens[genObj.name])();
+                                target[attr][attr2] = new (DataGen.listOfGens[genObj.name])();
                                 for (let t in genObj){
                                     target[attr][attr2][t] = genObj[t];
                                 }
