@@ -2,6 +2,8 @@ let fs = require('fs');
 const electron = require('electron').remote;
 const dialog = electron.dialog;
 
+let DataGen = require("./datagen/datagen.js");
+let UniformGenerator = DataGen.listOfGens['Uniform Generator'];
 let datagen = [new DataGen()];
 let currentDataGen = 0;
 let current_sample;
@@ -17,7 +19,7 @@ ipc.on('call-datagen', function(event, arg){
 });
 ipc.on('change-datagen', function(event, arg){
     datagen[currentDataGen].configs = arg;
-    console.log("Hi");
+    //console.log("Hi");
     //console.log(datagen[currentDataGen].configs);
 });
 ipc.on('update-sampledata', function () {
@@ -125,6 +127,9 @@ $("html").ready(function(){
         else if($input.attr("data-type") === "auto")
             this.__node__[$input.attr("data-variable")] = isNaN(parseFloat($input.val())) ? $input.val() : parseFloat($input.val());
 
+        else if($input.attr("data-type") === "options")
+            this.__node__[$input.attr("data-variable")] = $input.val();
+
         else if($input.attr("data-type") === "array")
             this.__node__[$input.attr("data-variable")] = $input.val().split(",");
 
@@ -132,7 +137,7 @@ $("html").ready(function(){
             this.__node__[$input.attr("data-variable")] = $input.get(0).checked;
 
         else if($input.attr("data-type") === "Generator")
-            this.__node__[$input.attr("data-variable")] = new (DataGenerator.prototype.listOfGens[$input.val()])();
+            this.__node__[$input.attr("data-variable")] = new (DataGen.listOfGens[$input.val()])();
 
         else if($input.attr("data-type").indexOf("Column") >= 0) {
             this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].columns[parseInt($input.val())].generator;
@@ -152,7 +157,7 @@ $("html").ready(function(){
 
     $("#selectGeneratorType").on("change blur", function(){
         let nameNewGenerator = $(this).val();
-        let newGen = new (datagen[currentDataGen].listOfGens[nameNewGenerator])();
+        let newGen = new (DataGen.listOfGens[nameNewGenerator])();
         //substitui o gerador na estrutura.
 
         this.__node__.changeGenerator(newGen);
@@ -181,7 +186,7 @@ $("html").ready(function(){
 
     $("#tableCollumn").on("click", "span.btnAddGen", function(){
         let l = $(this).parent().find("div.md-chip").length-1;
-        $(this).parent().find("div.md-chip").get(l).__node__.addGenerator(new CounterGenerator());
+        $(this).parent().find("div.md-chip").get(l).__node__.addGenerator(new UniformGenerator());
 
         showGenerators();
     });
@@ -303,7 +308,7 @@ function generateDatas(){
 }
 
 function addGenerator(){
-    datagen[currentDataGen].addCollumn("Dimension "+(datagen[currentDataGen].columns.length+1), "Numeric", new CounterGenerator());
+    datagen[currentDataGen].addCollumn("Dimension "+(datagen[currentDataGen].columns.length+1), "Numeric", new UniformGenerator());
 
     showGenerators();
 }
@@ -407,7 +412,7 @@ function showGenerators(){
 * Saída: Lista de geradores que serão mostradas em tags select's
 * */
 function putGeneratorOptions(select, selected, noise) {
-    let list = noise ? DataGenerator.prototype.listOfGensForNoise : DataGenerator.prototype.listOfGens;
+    let list = noise ? DataGen.listOfGensForNoise : DataGen.listOfGens;
     for(let attr in list){
         if(list.hasOwnProperty(attr)) {
             let $option = $("<option/>").attr("value",attr).text(attr);
@@ -471,6 +476,19 @@ function configGenProps(){
                 .attr("id", "input_"+p.variableName)
                 .attr("data-variable", p.variableName)
                 .attr("data-type", p.type);
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input));
+
+        }else if(p.type === "options") {
+            let $input = $("<select/>")
+                .addClass("form-control")
+                .addClass("smallInput")
+                .attr("value", generator[p.variableName])
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type);
+            for(let opt of p.options)
+                $input.append($("<option/>").attr("value", opt).text(opt));
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input));
 
