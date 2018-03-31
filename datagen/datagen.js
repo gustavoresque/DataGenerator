@@ -1316,7 +1316,7 @@ class DataGen {
         this.header_type = true;
         let defaultGenerator = new CounterGenerator();
         let column = {
-            name: "Column 1",
+            name: "Dimesion 1",
             type: defaultGenerator.getReturnedType(),
             generator: defaultGenerator
         };

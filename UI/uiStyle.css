@@ -60,11 +60,6 @@ button.floatButton:active{
     vertical-align: middle;
 }
 
-tr:hover {
-    background-color: inherit;
-    color: black;
-}
-
 .rightSidebar{
     float: right;
 }

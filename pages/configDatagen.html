@@ -29,6 +29,118 @@
         button.btn-negative{
             right: 90px;
         }
+        .TabControl{
+            width:100%;
+            overflow:hidden;
+            height:400px
+        }
+        .TabControl #headerTab{
+            width:100%;
+            overflow:hidden;
+            cursor:hand
+        }
+        .TabControl #content{
+            width:100%;
+            border-top: solid 1px;
+            overflow:hidden;
+            height:100%;
+        }
+        .TabControl .abas{
+            display:inline;
+        }
+        .TabControl .abas li{
+            float:left;
+        }
+        .aba{
+            width:100px;
+            height:30px;
+            border:solid 1px;
+            border-radius:5px 5px 0 0;
+            text-align:center;
+            padding-top:5px;
+        }
+        .ativa{
+            width:100px;
+            height:30px;
+            border:solid 1px;
+            border-radius:5px 5px 0 0;
+            text-align:center;
+            padding-top:5px;
+            background:#ddd;
+        }
+        .ativa span, .selected span{
+        }
+        .TabControl #content{
+        }
+        .TabControl .conteudo{
+            width:100%;
+            display:none;
+            height:100%;
+        }
+        .selected{
+            width:100px;
+            height:30px;
+            border:solid 1px;
+            border-radius:5px 5px 0 0;
+            text-align:center;
+            padding-top:5px;
+            background:#999;
+        }
+        /* The list style
+        -------------------------------------------------------------- */
+
+        .directory-list ul {
+            margin-left: 10px;
+            padding-left: 20px;
+            border-left: 1px dashed #ddd;
+        }
+
+        .directory-list li {
+            list-style: none;
+            font-size: 17px;
+            font-weight: normal;
+        }
+
+        .directory-list a {
+            border-bottom: 1px solid transparent;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .directory-list a:hover {
+            border-color: #eee;
+            color: #000;
+        }
+
+        .directory-list .folder,
+        .directory-list .folder > a {
+            color: #000;
+        }
+
+
+        /* The icons
+        -------------------------------------------------------------- */
+
+        .directory-list li:before {
+            margin-right: 10px;
+            content: "";
+            height: 20px;
+            vertical-align: middle;
+            width: 20px;
+            background-repeat: no-repeat;
+            display: inline-block;
+            /* file icon by default */
+            /*background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path fill='lightgrey' d='M85.714,42.857V87.5c0,1.487-0.521,2.752-1.562,3.794c-1.042,1.041-2.308,1.562-3.795,1.562H19.643 c-1.488,0-2.753-0.521-3.794-1.562c-1.042-1.042-1.562-2.307-1.562-3.794v-75c0-1.487,0.521-2.752,1.562-3.794 c1.041-1.041,2.306-1.562,3.794-1.562H50V37.5c0,1.488,0.521,2.753,1.562,3.795s2.307,1.562,3.795,1.562H85.714z M85.546,35.714 H57.143V7.311c3.05,0.558,5.505,1.767,7.366,3.627l17.41,17.411C83.78,30.209,84.989,32.665,85.546,35.714z' /></svg>");*/
+            background-position: center 2px;
+            background-size: 60% auto;
+        }
+
+        .directory-list li.folder:before {
+            /* folder icon if folder class is specified */
+            /*background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path fill='lightblue' d='M96.429,37.5v39.286c0,3.423-1.228,6.361-3.684,8.817c-2.455,2.455-5.395,3.683-8.816,3.683H16.071 c-3.423,0-6.362-1.228-8.817-3.683c-2.456-2.456-3.683-5.395-3.683-8.817V23.214c0-3.422,1.228-6.362,3.683-8.817 c2.455-2.456,5.394-3.683,8.817-3.683h17.857c3.422,0,6.362,1.228,8.817,3.683c2.455,2.455,3.683,5.395,3.683,8.817V25h37.5 c3.422,0,6.361,1.228,8.816,3.683C95.201,31.138,96.429,34.078,96.429,37.5z' /></svg>");*/
+            background-position: center top;
+            background-size: 75% auto;
+        }
     </style>
 
     <script>
@@ -43,12 +155,51 @@
     <script>
         let ipc = require('electron').ipcRenderer;
         let obj = {};
+        let dtg = {};
+        ipc.on('receive-datagen', function(event, arg){
+            dtg = arg;
+
+            let model = $("<ul/>");
+            for (let i = 0; i < arg.columns.length; i++){
+                let col = arg.columns[i];
+                console.log(col.generator);
+                model.append($("<li/>").text(col.name));
+            }
+            $(".directory-list").append($("<li/>").text(arg.name).append(model));
+
+            /*----------------------------------------------------------------------------*/
+            // get all folders in our .directory-list
+            var allFolders = $(".directory-list li > ul");
+            allFolders.each(function() {
+
+                // add the folder class to the parent <li>
+                var folderAndName = $(this).parent();
+                folderAndName.addClass("folder");
+
+                // backup this inner <ul>
+                var backupOfThisFolder = $(this);
+                // then delete it
+                $(this).remove();
+                // add an <a> tag to whats left ie. the folder name
+                folderAndName.wrapInner("<a href='#' />");
+                // then put the inner <ul> back
+                folderAndName.append(backupOfThisFolder);
+
+                // now add a slideToggle to the <a> we just added
+                folderAndName.find("a").click(function(e) {
+                    $(this).siblings("ul").slideToggle("slow");
+                    e.preventDefault();
+                });
+
+            });
+            /*----------------------------------------------------------------------------*/
+        });
         ipc.on('configure-datagen', (event, arg) => {
             obj = arg;
             for(let attr in obj){
                 if(obj.hasOwnProperty(attr)){
                     let $ele = $("#"+attr);
-                    console.log($ele.get(0),obj[attr]);
+                    //console.log($ele.get(0),obj[attr]);
                     if($ele.is("[type=checkbox]")){
                         $ele.get(0).checked = obj[attr];
                     }else{
@@ -57,12 +208,10 @@
                 }
             }
         });
-
         $(document).ready(function(){
             $("input, select").on("change blur", function(){
                 let $t = $(this);
                 obj[$t.attr("id")] = $t.is("[type=checkbox]") ? $t.is(":checked") : ($t.is("[type=number]") ? parseInt($t.val()) : $t.val());
-                console.log(obj);
             });
             $("button").click(function () {
                 if($(this).is(".btn-primary")){
@@ -71,49 +220,117 @@
                     ipc.send('change-datagen', false);
                 }
             });
-        });
 
+            $("#content div:nth-child(1)").show();
+            $(".abas li:first div").addClass("selected");
+            $(".aba").click(function(){
+                $(".aba").removeClass("selected");
+                $(this).addClass("selected");
+                var indice = $(this).parent().index();
+                indice++;
+                $("#content div").hide();
+                $("#content div:nth-child("+indice+")").show();
+                if (indice === 2){
+                    console.log("Aqui foi");
+                    ipc.send('call-datagen');
+                }
+            });
+
+            $(".aba").hover(
+                function(){$(this).addClass("ativa")},
+                function(){$(this).removeClass("ativa")}
+            );
+        });
     </script>
     <!--<script src="../photon-0.1.2-dist/template-app/js/menu.js" charset="utf-8"></script>-->
 </head>
 <body>
-    <table>
-        <tr>
-            <td><label for="n_lines">Number of Lines</label></td>
-            <td><input id="n_lines" type="number" class="form-control"></td>
-        </tr>
+    <div class="TabControl">
+        <div id="headerTab">
+            <ul class="abas">
+                <li>
+                    <div class="aba">
+                        <span>Tab 1</span>
+                    </div>
+                </li>
+                <li>
+                    <div class="aba">
+                        <span>Tab 2</span>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <div id="content">
+            <div class="conteudo">
+                <table>
+                    <tr>
+                        <td><label for="n_lines">Number of Lines</label></td>
+                        <td><input id="n_lines" type="number" class="form-control"></td>
+                    </tr>
 
-        <tr>
-            <td>
-                <label for="save_as">Save as</label>
-            </td>
-            <td>
-                <select id="save_as" class="form-control">
-                    <option value="csv">CSV</option>
-                    <option value="tsv">TSV</option>
-                    <option value="json">JSON</option>
-                    <option value="sql">SQL</option>
-                </select>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <label for="header">Header</label>
-            </td>
-            <td><input id="header" type="checkbox" class="form-control"></td>
-        </tr>
-        <tr>
-            <td>
-                <label for="header_type">Header Type</label>
-            </td>
-            <td><input id="header_type" type="checkbox" class="form-control"></td>
-        </tr>
+                    <tr>
+                        <td>
+                            <label for="save_as">Save as</label>
+                        </td>
+                        <td>
+                            <select id="save_as" class="form-control">
+                                <option value="csv">CSV</option>
+                                <option value="tsv">TSV</option>
+                                <option value="json">JSON</option>
+                                <option value="sql">SQL</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label for="header">Header</label>
+                        </td>
+                        <td><input id="header" type="checkbox" class="form-control"></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label for="header_type">Header Type</label>
+                        </td>
+                        <td><input id="header_type" type="checkbox" class="form-control"></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="conteudo">
+                <ul class="directory-list">
+                    <!--<li>assets
+                        <ul>
+                            <li>css
+                                <ul>
+                                    <li>typography.css</li>
+                                    <li>layout.css</li>
+                                    <li>modules.css</li>
+                                    <li>states.css</li>
+                                    <li>theme.css</li>
+                                </ul>
+                            </li>
+                            <li>js
+                                <ul>
+                                    <li>custom.js</li>
+                                    <li>jquery.js</li>
+                                </ul>
+                            </li>
+                            <li>images
+                                <ul>
+                                    <li>logo.svg</li>
+                                    <li>arrow-sprite.svg</li>
+                                    <li>social-sprite.svg</li>
+                                </ul>
+                            </li>
+                            <li>functions.php</li>
+                        </ul>
+                    </li>-->
+                </ul>
+            </div>
+        </div>
+    </div>
 
-        <button id="btnCancel" class="btn btn-negative">Cancel</button>
-        <button id="btnConfirm" class="btn btn-primary">Confirm</button>
-
-    </table>
-
+    <button id="btnCancel" class="btn btn-negative">Cancel</button>
+    <button id="btnConfirm" class="btn btn-primary">Confirm</button>
 
 </body>
 </html>

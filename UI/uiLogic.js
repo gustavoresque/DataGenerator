@@ -12,9 +12,13 @@ let ipc = require('electron').ipcRenderer;
 
 const Json2csvParser = require('json2csv').Parser;
 
+ipc.on('call-datagen', function(event, arg){
+    ipc.send('receive-datagen', datagen[currentDataGen].exportModel());
+});
 ipc.on('change-datagen', function(event, arg){
     datagen[currentDataGen].configs = arg;
-    console.log(datagen[currentDataGen].configs);
+    console.log("Hi");
+    //console.log(datagen[currentDataGen].configs);
 });
 ipc.on('update-sampledata', function () {
     if(current_sample)
@@ -299,7 +303,7 @@ function generateDatas(){
 }
 
 function addGenerator(){
-    datagen[currentDataGen].addCollumn("Column "+(datagen[currentDataGen].columns.length+1), "Numeric", new CounterGenerator());
+    datagen[currentDataGen].addCollumn("Dimension "+(datagen[currentDataGen].columns.length+1), "Numeric", new CounterGenerator());
 
     showGenerators();
 }

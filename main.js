@@ -36,10 +36,10 @@ function createWindow () {
         configDatagenWindow = new BrowserWindow({
             parent: mainWindow,
             modal: true,
-            width: 300,
-            height: 300,
+            width: 500,
+            height: 500,
             show: false,
-            resizable: false,
+            resizable: true,
             closable: false,
             minimizable: false,
             maximizable: false
@@ -57,6 +57,13 @@ function createWindow () {
             configDatagenWindow.show();
             configDatagenWindow.webContents.send('configure-datagen', arg);
         });
+    });
+    ipcMain.on('call-datagen', (event, message) => {
+        mainWindow.webContents.send('call-datagen', message);
+    });
+    ipcMain.on('receive-datagen', (event, message) => {
+        if (message)
+            configDatagenWindow.webContents.send('receive-datagen', message);
     });
     ipcMain.on('change-datagen', (event, message) => {
         if(message)
