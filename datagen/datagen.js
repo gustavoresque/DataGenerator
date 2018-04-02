@@ -1823,7 +1823,7 @@ class DataGen {
 
     exportDot(){
 
-        function drawGenerators(ref, col, i){
+        function drawGenerators(ref, col, i, pkey){
             let fullListOfGens = [];
             col.generator.getFullGenerator(fullListOfGens);
             for(let j=0;j<fullListOfGens.length;j++){
@@ -1841,7 +1841,7 @@ class DataGen {
                         }else if(param.type === "Generator"){
                             ref.str += '<tr><td align="left">&#8226; '+param.shortName+' = generator('+fullListOfGens[j][param.variableName].name+')</td></tr>';
                         }else if(param.type.indexOf("Column") >= 0){
-                            ref.str += '<tr><td align="left">&#8226; '+param.shortName+' = column('+fullListOfGens[j][param.variableName].name+')</td></tr>';
+                            ref.str += '<tr><td align="left">&#8226; '+param.shortName+' = column('+fullListOfGens[j][param.variableName].parent.name+')</td></tr>';
                     }else{
                         ref.str += '<tr><td align="left">&#8226; '+param.shortName+' = '+fullListOfGens[j][param.variableName]+'</td></tr>';
                     }
@@ -1854,12 +1854,12 @@ class DataGen {
                         if(fullListOfGens[j].listOfGenerators.hasOwnProperty(key)){
                             // str += "col_"+i+"_"+fullListOfGens[j].name.replace(/\s+/g,"_")+"_child_"+key.replace(/\s+/g,"_").replace(/\W+/g,"")
                             //     + ' [label=< <B><FONT point-size="14">'+fullListOfGens[j].listOfGenerators[key].name+'</FONT></B> >]\n';
-                            let keyForID = key.replace("<","lt").replace(">","gt").replace(/\s+/g,"_").replace(/\W+/g,"");
+                            let keyForID = (pkey?pkey+"_":"") + key.replace("<","lt").replace(">","gt").replace(/\s+/g,"_").replace(/\W+/g,"");
                             let refobj = {str: ref.str, edges: ref.edges};
                             drawGenerators(refobj, {
                                 name: "child_"+keyForID,
                                 generator: fullListOfGens[j].listOfGenerators[key]
-                            }, i);
+                            }, i, (pkey?pkey+"_":"") + j);
                             ref.str = refobj.str;
                             ref.edges = refobj.edges;
                             ref.edges += "col_"+i+"_"+col.name.replace(/\s+/g,"_") +"_"+fullListOfGens[j].name.replace(/\s+/g,"_")+"_"+j
