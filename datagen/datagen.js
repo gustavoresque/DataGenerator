@@ -14,13 +14,12 @@ class Generator{
     }
 
     addGenerator(gen, order){
-        if (!this.generator){
+        if (this.generator){
+            this.generator.addGenerator(gen, (order || this.order) + 1);
+        } else {
             gen.order = (order || this.order) + 1;
             this.generator = gen;
             gen.parent = this;
-        }
-        else{
-            this.generator.addGenerator(gen, (order || this.order) + 1);
         }
     }
 
@@ -46,7 +45,7 @@ class Generator{
         if(gen.generator)
             gen.generator.parent = gen;
 
-        if(gen.parent instanceof CategoricalFunction){
+        if(gen.parent instanceof SwitchCaseFunction){
             console.log("parent", gen.parent);
             console.log("gen", gen);
             for(let cat in gen.parent.listOfGenerators){
@@ -584,6 +583,8 @@ class FixedTimeGenerator extends Generator{
 
     reset(){
         this.time = moment(this.initTime, this.timeMask);
+        this.timeStep = moment(this.step, this.timeMask);
+        super.reset();
     }
 
     getReturnedType(){
@@ -705,6 +706,7 @@ class PoissonTimeGenerator extends Generator{
 
     reset(){
         this.time = moment(this.initTime, this.timeMask);
+        this.timeInterval = moment.duration(this.interval, this.intervalUnit);
     }
 
     getReturnedType(){
@@ -947,8 +949,8 @@ class LinearScale extends Generator {
 class MinMax extends Generator {
     constructor(generator, operator, min, max) {
         super("MinMax", generator,operator);
-        this.min = min;
-        this.max = max;
+        this.min = min || 0;
+        this.max = max || 100;
 
     }
 
@@ -1538,7 +1540,7 @@ class TimeLapsFunction extends SwitchCaseFunction{
             }
         }
         if(this.timeLaps.length > 0)
-            this.generator = this.listOfGenerators["> "+this.timeLaps[this.timeLaps.length-1].format(this.timeMask)];
+            this.generator = this.listOfGenerators["> "+this.timeLaps[this.timeLaps.length-1].format(this.inputGenerator.timeMask)];
         return 0;
     }
 
@@ -1587,6 +1589,11 @@ class TimeLapsFunction extends SwitchCaseFunction{
         return params;
     }
 
+    getModel(){
+        let model = super.getModel();
+        model.laps = this.laps;
+        return model;
+    }
 
     copy(){
         let newList = {};
@@ -1619,17 +1626,19 @@ function copyAttrs(source, target, context){
                 for(let attr2 in source[attr]){
                     if(source[attr].hasOwnProperty(attr2))
                         for(let genObj of source[attr][attr2]){
+                            //Resolve os filhos
+                            let gen1 = new (DataGen.listOfGens[genObj.name])();
                             if(target[attr][attr2]) {
-                                let gen1 = new (DataGen.listOfGens[genObj.name])();
                                 target[attr][attr2].addGenerator(gen1);
-                                gen1.parent = target;
+                                // gen1.parent = target;
                             }else {
-                                target[attr][attr2] = new (DataGen.listOfGens[genObj.name])();
-                                for (let t in genObj){
-                                    target[attr][attr2][t] = genObj[t];
-                                }
-                                console.log("----------");
+                                target[attr][attr2] = gen1;
                                 target[attr][attr2].parent = target;
+                            }
+                            //Copia os atributos desse filho.
+                            for (let t in genObj){
+                                if(genObj.hasOwnProperty(t))
+                                    gen1[t] = genObj[t];
                             }
                         }
                 }
@@ -1799,6 +1808,7 @@ class DataGen {
                 }
             }
 
+            generator.reset();
             let col = {
                 name: model.generator[i].name,
                 type: model.generator[i].type,
@@ -1807,8 +1817,96 @@ class DataGen {
             this.columns.push(col);
             generator.parent = col;
         }
+        console.log("import");
+        console.log(this);
     }
 
+    exportDot(){
+
+        function drawGenerators(ref, col, i){
+            let fullListOfGens = [];
+            col.generator.getFullGenerator(fullListOfGens);
+            for(let j=0;j<fullListOfGens.length;j++){
+                let params = fullListOfGens[j].getGenParams();
+                ref.str += "col_"+i+"_"+col.name.replace(/\s+/g,"_") +"_"+fullListOfGens[j].name.replace(/\s+/g,"_")+"_"+j
+                    + ' [label=< <table border="0" cellborder="0"><tr><td align="center"><B><FONT point-size="14">'+fullListOfGens[j].name+'</FONT></B></td></tr>';
+
+                for(let param of params){
+                    if(param.type === "array" || param.type === "numarray"){
+                        ref.str += '<tr><td align="left">&#8226; '+param.shortName+' = &#91;</td></tr>';
+                        for(let arrItem of fullListOfGens[j][param.variableName])
+                            ref.str += '<tr><td align="left">'+arrItem+',</td></tr>';
+                        ref.str+='<tr><td align="left">&#93;</td></tr>';
+
+                        }else if(param.type === "Generator"){
+                            ref.str += '<tr><td align="left">&#8226; '+param.shortName+' = generator('+fullListOfGens[j][param.variableName].name+')</td></tr>';
+                        }else if(param.type.indexOf("Column") >= 0){
+                            ref.str += '<tr><td align="left">&#8226; '+param.shortName+' = column('+fullListOfGens[j][param.variableName].name+')</td></tr>';
+                    }else{
+                        ref.str += '<tr><td align="left">&#8226; '+param.shortName+' = '+fullListOfGens[j][param.variableName]+'</td></tr>';
+                    }
+                }
+                ref.str += "</table> >] ; \n";
+
+
+                if(fullListOfGens[j] instanceof  SwitchCaseFunction){
+                    for(let key in fullListOfGens[j].listOfGenerators){
+                        if(fullListOfGens[j].listOfGenerators.hasOwnProperty(key)){
+                            // str += "col_"+i+"_"+fullListOfGens[j].name.replace(/\s+/g,"_")+"_child_"+key.replace(/\s+/g,"_").replace(/\W+/g,"")
+                            //     + ' [label=< <B><FONT point-size="14">'+fullListOfGens[j].listOfGenerators[key].name+'</FONT></B> >]\n';
+                            let keyForID = key.replace("<","lt").replace(">","gt").replace(/\s+/g,"_").replace(/\W+/g,"");
+                            let refobj = {str: ref.str, edges: ref.edges};
+                            drawGenerators(refobj, {
+                                name: "child_"+keyForID,
+                                generator: fullListOfGens[j].listOfGenerators[key]
+                            }, i);
+                            ref.str = refobj.str;
+                            ref.edges = refobj.edges;
+                            ref.edges += "col_"+i+"_"+col.name.replace(/\s+/g,"_") +"_"+fullListOfGens[j].name.replace(/\s+/g,"_")+"_"+j
+                                + ' -> '+"col_"+i+"_"+ "child_"+keyForID +"_"+fullListOfGens[j].listOfGenerators[key].name.replace(/\s+/g,"_")+"_0"+
+                                '[label="case: '+key+'"]; \n';
+                        }
+                    }
+                    break;
+                }else{
+                    if(fullListOfGens[(j+1)])
+                        ref.edges += "col_"+i+"_"+col.name.replace(/\s+/g,"_") +"_"+fullListOfGens[j].name.replace(/\s+/g,"_")+"_"+j
+                            + ' -> '+"col_"+i+"_"+col.name.replace(/\s+/g,"_") +"_"+fullListOfGens[(j+1)].name.replace(/\s+/g,"_")+"_"+ (j+1) +"; \n";
+                }
+
+
+            }
+        }
+
+        let str = 'digraph { \n node [shape=box,fontsize=12,fontname="Verdana"];\n graph [fontsize=12,fontname="Verdana",compound=true]; \n';
+        let edges = "";
+        for(let i=0;i<this.columns.length;i++){
+            let col = this.columns[i];
+            str += "col_"+i+"_"+col.name.replace(/\s+/g,"_")
+                +' [label=< <table border="0" cellborder="0"><tr><td align="center"><B><FONT point-size="14">'
+                +col.name +'</FONT></B></td></tr><tr><td align="left">&#8226; type = "'+ col.type +'"</td></tr></table> > ]; \n';
+        }
+        str += "\n";
+        for(let i=0;i<this.columns.length;i++){
+            let col = this.columns[i];
+
+
+            edges += "col_"+i+"_"+col.name.replace(/\s+/g,"_") + "-> col_"+i+"_"+col.name.replace(/\s+/g,"_") +"_"+col.generator.name.replace(/\s+/g,"_")+"_"+0
+                +' [lhead='+'cluster_'+i+'_'+col.name.replace(/\s+/g,"_")+',minlen="2"] ; \n';
+            str +='subgraph cluster_'+i+'_'+col.name.replace(/\s+/g,"_")+' { \n';
+            str += 'label="List of Generators";\n';
+            let refobj = {str, edges};
+            drawGenerators(refobj, col, i);
+            str = refobj.str;
+            edges = refobj.edges;
+            str +='} \n\n';
+        }
+
+        str  += edges + "\n";
+
+        str += "}";
+        return str;
+    }
 
 }
 

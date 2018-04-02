@@ -140,3 +140,7 @@ select[disabled]{
 td.columnGen td{
     padding: 2px 0px;
 }
+
+td.columnGen > * {
+    vertical-align: middle;
+}

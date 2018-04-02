@@ -64,7 +64,7 @@ $("html").ready(function(){
         callback: function (key, options) {
             switch (key){
                 case "Rename":
-                    console.log(i);
+                    let i = datagen.indexOf(this.get(0).__node__);
                     let title = $(this).text();
                     $(this).empty();
                     $(this).append($("<input/>").attr("type", "text").attr("value", title).blur(function(){
@@ -72,13 +72,12 @@ $("html").ready(function(){
                         showModels();
                     }));
                     break;
-                case "Delete":
-                    let index = 0;
-                    index = datagen.indexOf(this.get(0).__node__);
+                case "Delete": {
+                    let index = datagen.indexOf(this.get(0).__node__);
                     if (index > -1) {
                         datagen.splice(index, 1);
                         if (index === currentDataGen)
-                            currentDataGen = (index == 0) ? 0 : (index-1);
+                            currentDataGen = (index === 0) ? 0 : (index - 1);
                         else if (index < currentDataGen)
                             currentDataGen--;
                     }
@@ -86,13 +85,19 @@ $("html").ready(function(){
                     showModels();
                     showGenerators();
                     break;
+                }
+                case "exportDot": {
+                    console.log(this.get(0).__node__.exportDot());
+                    break;
+                }
                 default:
-                    console.log();
+                    console.log("nenhum");
             }
         },
         items: {
             "Rename": {name: "Rename"},
             "Delete": {name: "Delete"},
+            "exportDot": {name: "Export .DOT File"}
         }
     });
 
@@ -315,7 +320,72 @@ function addGenerator(){
 
 /*Desenha na tela principal as colunas e seus respectivos geradores baseados nos dados armazendos no array datagen*/
 function showGenerators(){
-    let active_gen_chip;
+    function displayGens($tdGen, generator, active_gen_chip){
+        let generators = [];
+        generator.getFullGenerator(generators);
+
+        for(let gen of generators){
+            if (gen instanceof DataGen.superTypes.SwitchCaseFunction){
+                let $switchGenTable = $("<table/>");
+                let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
+                if(gen === activeGenerator)
+                    active_gen_chip.obj = $chip.addClass("active-md-chip");
+                $chip.get(0).__node__ = gen;
+                $tdGen.append($chip);
+
+                let $switchGenTr;
+                let flag = false;
+                let listOfGenSwitchFunction = gen.listOfGenerators;
+                for (let c in listOfGenSwitchFunction){
+                    if(listOfGenSwitchFunction.hasOwnProperty(c)){
+                        $switchGenTr = $("<tr/>");
+                        if (!flag){
+                            $switchGenTr.append($("<td/>").attr("rowspan", Object.keys(listOfGenSwitchFunction).length).append($chip));
+                            flag = true;
+                        }
+                        $switchGenTr.append($("<td/>").text(c));
+                        let $td = $("<td/>").addClass("columnGen");
+
+                        displayGens($td, listOfGenSwitchFunction[c], active_gen_chip);
+                        // let generators2 = [];
+                        // listOfGenSwitchFunction[c].getFullGenerator(generators2);
+                        // for(let gen2 of generators2){
+                        //     let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen2.order + "-" + gen2.name);
+                        //     if(gen2 === activeGenerator)
+                        //         active_gen_chip.obj = $chip.addClass("active-md-chip");
+                        //     $chip.get(0).__node__ = gen2;
+                        //     $td.append($chip);
+                        // }
+                        //
+                        // $switchGenTr.append($td.append($("<span/>")
+                        //     .addClass("btnGenerator btnAddGen icon icon-plus-circled"))
+                        // ).append($td.append($("<span/>")
+                        //     .addClass("btnGenerator btnRemoveGen icon icon-trash"))
+                        // );
+                        $switchGenTr.append($td);
+                        $switchGenTable.append($switchGenTr);
+                    }
+                }
+                $tdGen.append($("<div/>").css("display","inline-block").append($switchGenTable));
+                break;
+            }else{
+                let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
+                if(gen === activeGenerator)
+                    active_gen_chip.obj = $chip.addClass("active-md-chip");
+                $chip.get(0).__node__ = gen;
+                $tdGen.append($chip);
+            }
+        }
+
+        $tdGen.append($("<span/>")
+            .addClass("btnGenerator btnAddGen icon icon-plus-circled")
+        ).append($("<span/>")
+            .addClass("btnGenerator btnRemoveGen icon icon-trash")
+        );
+    }
+
+
+    let active_gen_chip = {};
     let $tbody = $("#tbody").empty();
     if (datagen.length > 0){
         for(let i = 0; i < datagen[currentDataGen].columns.length; i++){
@@ -327,66 +397,12 @@ function showGenerators(){
                 .append($("<td/>").text(datagen[currentDataGen].columns[i].name).addClass("columnName"))
                 .append($("<td/>").text(datagen[currentDataGen].columns[i].type).addClass("columnType"))
             );
-            let generators = [];
+
             let $tdGen = $("<td/>").addClass("columnGen");
 
-            datagen[currentDataGen].columns[i].generator.getFullGenerator(generators);
-            let counter = 0;
+            //chama a função recursiva de desenho.
+            displayGens($tdGen, datagen[currentDataGen].columns[i].generator, active_gen_chip);
 
-            // FILHOS DO CATEGORICO
-            if (datagen[currentDataGen].columns[i].generator instanceof DataGen.superTypes.SwitchCaseFunction){
-                let $switchGenTable = $("<table/>");
-                let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(generators[0].order + "-" + generators[0].name);
-                if(generators[0] === activeGenerator)
-                    active_gen_chip = $chip.addClass("active-md-chip");
-                $chip.get(0).__node__ = generators[0];
-                $tdGen.append($chip);
-
-                let $switchGenTr;
-                let flag = false;
-                for (let c in datagen[currentDataGen].columns[i].generator.listOfGenerators){
-                    $switchGenTr = $("<tr/>");
-                    if (!flag){
-                        $switchGenTr.append($("<td/>").attr("rowspan", Object.keys(datagen[currentDataGen].columns[i].generator.listOfGenerators).length).append($chip));
-                        flag = true;
-                    }
-                    $switchGenTr.append($("<td/>").text(c));
-                    let generators2 = [];
-                    datagen[currentDataGen].columns[i].generator.listOfGenerators[c].getFullGenerator(generators2);
-                    let counter = 0;
-                    for(let gen of generators2){
-                        let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
-                        if(gen === activeGenerator)
-                            active_gen_chip = $chip.addClass("active-md-chip");
-                        $chip.get(0).__node__ = gen;
-                        $switchGenTr.append($("<td/>").append($chip));
-                        counter++;
-                    }
-
-                    $switchGenTr.append($("<span/>")
-                        .addClass("btnGenerator btnAddGen icon icon-plus-circled")
-                    ).append($("<span/>")
-                        .addClass("btnGenerator btnRemoveGen icon icon-trash")
-                    );
-                    $switchGenTable.append($switchGenTr);
-                }
-                $tdGen.append($switchGenTable);
-            }// END FILHOS DO CATEGORICO
-            else{
-                for(let gen of generators){
-                    let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
-                    if(gen === activeGenerator)
-                        active_gen_chip = $chip.addClass("active-md-chip");
-                    $chip.get(0).__node__ = gen;
-                    $tdGen.append($chip);
-                    counter++;
-                }
-                $tdGen.append($("<span/>")
-                    .addClass("btnGenerator btnAddGen icon icon-plus-circled")
-                ).append($("<span/>")
-                    .addClass("btnGenerator btnRemoveGen icon icon-trash")
-                );
-            }
 
             $tr.append($tdGen);
 
@@ -402,7 +418,7 @@ function showGenerators(){
         //TODO: alertar sobre erro de referência para o usuário.
         console.log(e);
     }
-    return active_gen_chip;
+    return active_gen_chip.obj;
 }
 
 /*putGeneratorOptions
@@ -483,12 +499,12 @@ function configGenProps(){
             let $input = $("<select/>")
                 .addClass("form-control")
                 .addClass("smallInput")
-                .attr("value", generator[p.variableName])
                 .attr("id", "input_"+p.variableName)
                 .attr("data-variable", p.variableName)
                 .attr("data-type", p.type);
             for(let opt of p.options)
                 $input.append($("<option/>").attr("value", opt).text(opt));
+            $input.val(generator[p.variableName]);
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input));
 
