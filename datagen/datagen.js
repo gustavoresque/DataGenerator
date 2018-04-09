@@ -696,7 +696,7 @@ class PoissonTimeGenerator extends Generator{
 
     copy(){
         // initTime, timeMask, interval, intervalUnit,lambda
-        let newGen = new FixedTimeGenerator(this.initTime, this.timeMask, this.interval, this.intervalUnit, this.lambda);
+        let newGen = new PoissonTimeGenerator(this.initTime, this.timeMask, this.interval, this.intervalUnit, this.lambda);
         //TODO: mover a adição do gerador filho para a superclasse.
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
