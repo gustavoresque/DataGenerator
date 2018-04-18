@@ -106,6 +106,14 @@ $("html").ready(function(){
         $(this).empty();
         $(this).append($("<input/>").attr("type", "text").attr("value", title).blur(function(){
             let cor = $(this).val();
+            for (let i = 0; i < datagen[currentDataGen].columns.length; i++){
+                if (cor === datagen[currentDataGen].columns[i].name){
+                    $(this).parent().parent().get(0).__node__.name = title;
+                    $(this).parent().text(title);
+                    alert("Dimension name already exists");
+                    return;
+                }
+            }
             $(this).parent().parent().get(0).__node__.name = cor;
             $(this).parent().text(cor);
         }));

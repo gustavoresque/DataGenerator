@@ -21,7 +21,7 @@
             padding-left: 2px;
             text-align: left;
         }
-        button{
+        .btn{
             position: absolute;
             bottom: 15px;
             right: 25px;
@@ -154,43 +154,74 @@
 
     <script>
         let ipc = require('electron').ipcRenderer;
+        let DataGen = require("../datagen/datagen.js");
+
         let obj = {};
         let dtg = {};
+        let dimensionsInserted = [];
+        let datagenInfos = "";
         ipc.on('receive-datagen', function(event, arg){
-            console.log(arg);
-            /*let model = $("<ul/>");
-            for (let i = 0; i < arg.columns.length; i++){
-                let col = arg.columns[i];
-                console.log(col.generator);
-                model.append($("<li/>").text(col.name));
-            }
-            $(".directory-list").append($("<li/>").text(arg.name).append(model));
-
-
-            var allFolders = $(".directory-list li > ul");
-            allFolders.each(function() {
-
-                var folderAndName = $(this).parent();
-                folderAndName.addClass("folder");
-
-                var backupOfThisFolder = $(this);
-                $(this).remove();
-                folderAndName.wrapInner("<a href='#' />");
-                folderAndName.append(backupOfThisFolder);
-
-                folderAndName.find("a").click(function(e) {
-                    $(this).siblings("ul").slideToggle("slow");
-                    e.preventDefault();
-                });
-
-            });*/
+            datagenInfos = arg;
+            updateInfos();
         });
+
+        function updateInfos(){
+            dtg = new DataGen();
+            dtg.columns.length = 0;
+            dtg.importModel(datagenInfos);
+            let $option, flag = false;
+            $("#dimensionList").empty();
+            for (let i = 0; i < dtg.columns.length; i++){
+                for (let j = 0; j < dimensionsInserted.length; j++){
+                    if (dtg.columns[i].name === dimensionsInserted[j].name){
+                        flag = true;
+                        break;
+                    }
+                }
+                if (flag){
+                    flag = false;
+                }else{
+                    $option = $("<option/>").text(dtg.columns[i].name);
+                    $("#dimensionList").append($option);
+                }
+            }
+
+            let ulDimensions = $("#ulDimensionsConfigTb").empty();
+            for (let i = 0; i < dimensionsInserted.length; i++){
+                let dimen = $("<li/>");
+                dimen.append($("<p/>").text(dimensionsInserted[i].name));
+
+                let generators = [];
+                dimensionsInserted[i].generator.getFullGenerator(generators);
+
+                let gens = $("<ul/>");
+                for(let gen of generators){
+                    gens.append($("<li/>").append($("<p/>").text(gen.name)));
+                    let attrJq = $("<ul/>");
+                    for (let j = 0; j < gen.getGenParams().length; j++){
+                        attrJq.append($("<li/>").append($("<p/>").text(gen.getGenParams()[j].name)));
+                    }
+                    gens.append(attrJq);
+                }
+                dimen.append(gens);
+                ulDimensions.append(dimen);
+            }
+        }
+
+        function addDimension() {
+            for (let i = 0; i < dtg.columns.length; i++) {
+                if (dtg.columns[i].name === $("#dimensionList").val()){
+                    dimensionsInserted.push(dtg.columns[i]);
+                    updateInfos();
+                    return;
+                }
+            }
+        }
         ipc.on('configure-datagen', (event, arg) => {
             obj = arg;
             for(let attr in obj){
                 if(obj.hasOwnProperty(attr)){
                     let $ele = $("#"+attr);
-                    //console.log($ele.get(0),obj[attr]);
                     if($ele.is("[type=checkbox]")){
                         $ele.get(0).checked = obj[attr];
                     }else{
@@ -200,11 +231,16 @@
             }
         });
         $(document).ready(function(){
+            $("td")
+                .css("padding-left", function (index) {
+                    return 10 * parseInt($(this).data("indent")) + "px";
+                });
+
             $("input, select").on("change blur", function(){
                 let $t = $(this);
                 obj[$t.attr("id")] = $t.is("[type=checkbox]") ? $t.is(":checked") : ($t.is("[type=number]") ? parseInt($t.val()) : $t.val());
             });
-            $("button").click(function () {
+            $(".btn").click(function () {
                 if($(this).is(".btn-primary")){
                     ipc.send('change-datagen', obj);
                 }else{
@@ -222,7 +258,6 @@
                 $("#content div").hide();
                 $("#content div:nth-child("+indice+")").show();
                 if (indice === 2){
-                    console.log("Aqui foi");
                     ipc.send('call-datagen');
                 }
             });
@@ -286,36 +321,11 @@
                     </tr>
                 </table>
             </div>
-            <div class="conteudo">
-                <ul class="directory-list">
-                    <!--<li>assets
-                        <ul>
-                            <li>css
-                                <ul>
-                                    <li>typography.css</li>
-                                    <li>layout.css</li>
-                                    <li>modules.css</li>
-                                    <li>states.css</li>
-                                    <li>theme.css</li>
-                                </ul>
-                            </li>
-                            <li>js
-                                <ul>
-                                    <li>custom.js</li>
-                                    <li>jquery.js</li>
-                                </ul>
-                            </li>
-                            <li>images
-                                <ul>
-                                    <li>logo.svg</li>
-                                    <li>arrow-sprite.svg</li>
-                                    <li>social-sprite.svg</li>
-                                </ul>
-                            </li>
-                            <li>functions.php</li>
-                        </ul>
-                    </li>-->
-                </ul>
+            <div class="conteudo" style="overflow-y: scroll">
+                <label>Dimensions</label>
+                <select id="dimensionList"></select>
+                <button onclick="addDimension()">Add</button>
+                <ul id="ulDimensionsConfigTb"></ul>
             </div>
         </div>
     </div>

@@ -1742,6 +1742,7 @@ function copyAttrs(source, target, context){
                         for(let genObj of source[attr][attr2]){
                             //Resolve os filhos
                             let gen1 = new (DataGen.listOfGens[genObj.name])();
+                            console.log(target[attr][attr2]);
                             if(target[attr][attr2]) {
                                 target[attr][attr2].addGenerator(gen1);
                                 // gen1.parent = target;
@@ -1897,7 +1898,7 @@ class DataGen {
             }
             model.generator[i].generator = fullGenNames;
         }
-        console.log(JSON.stringify(model));
+        //console.log(JSON.stringify(model));
         return JSON.stringify(model);
     }
 
@@ -1931,8 +1932,6 @@ class DataGen {
             this.columns.push(col);
             generator.parent = col;
         }
-        console.log("import");
-        console.log(this);
     }
 
     exportDot(){

@@ -98,7 +98,7 @@ function createWindow () {
         visWindow.once('ready-to-show', () => {
             visWindow.show();
             visWindow.webContents.send('add-vis', visType);
-            mainWindow.webContents.send('update-sampledata')
+            mainWindow.webContents.send('update-sampledata');
         });
     };
 
