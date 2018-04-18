@@ -215,62 +215,6 @@ class MissingValue extends Generator{
     }
 }
 
-class CounterGenerator extends Generator{
-
-    constructor(generator, operator, begin, step){
-        super("Counter Generator", generator, operator);
-        this.begin = begin || 0;
-        this.step = step || 1;
-        this.count = this.begin;
-        // this.count -= this.step;
-    }
-
-    generate(){
-        let value = this.count;
-        this.count+=this.step;
-        return super.generate(value);
-    }
-
-    reset(){
-        this.count = this.begin;
-        super.reset();
-    }
-
-    getGenParams(){
-        return [
-            {
-                shortName: "Begin",
-                variableName: "begin",
-                name: "Begin Number",
-                type: "number"
-            },
-            {
-                shortName: "Step",
-                variableName: "step",
-                name: "Step",
-                type: "number"
-            }
-        ];
-    }
-
-    getModel(){
-        let model = super.getModel();
-        model.begin = this.begin;
-        model.step = this.step;
-        return model;
-    }
-
-    copy(){
-        let newGen = new CounterGenerator();
-        newGen.begin = this.begin;
-        newGen.step = this.step;
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
-        return newGen;
-    }
-}
-
 class RandomUniformGenerator extends Generator{
     constructor(generator, operator, min, max, disc){
         super("Uniform Generator", generator, operator);
@@ -1610,6 +1554,176 @@ class TimeLapsFunction extends SwitchCaseFunction{
     }
 }
 
+class Sequence extends Generator{
+    constructor(name, begin, step){
+        super(name);
+        this.begin = begin || 0;
+        this.step = step || 1;
+        this.count = this.begin;
+    }
+
+    reset(){
+        this.count = this.begin;
+        super.reset();
+    }
+
+    getGenParams(){
+        return [
+            {
+                shortName: "Begin",
+                variableName: "begin",
+                name: "Begin Number",
+                type: "number"
+            },
+            {
+                shortName: "Step",
+                variableName: "step",
+                name: "Step",
+                type: "number"
+            }
+        ];
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.begin = this.begin;
+        model.step = this.step;
+        return model;
+    }
+}
+
+class CounterGenerator extends Sequence{
+
+    constructor(begin, step){
+        super("Counter Generator", begin, step);
+    }
+
+    generate(){
+        let value = this.count;
+        this.count+=this.step;
+        return super.generate(value);
+    }
+
+    copy(){
+        let newGen = new CounterGenerator(this.begin, this.step);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+}
+
+class SinusoidalSequence extends Sequence{
+
+    constructor(begin, step, a, b, c){
+        super("Sinusoidal Sequence", begin || 0, step || Math.PI/16);
+        this.a = a || 1;
+        this.b = b || 1;
+        this.c = c || 0;
+    }
+
+    generate(){
+        let value = this.a*Math.sin(this.count*this.b + this.c);
+        this.count+=this.step;
+        return super.generate(value);
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push({
+                shortName: "a",
+                variableName: "a",
+                name: "Amplitude",
+                type: "number"
+            },
+            {
+                shortName: "b",
+                variableName: "b",
+                name: "Frequency",
+                type: "number"
+            },
+            {
+                shortName: "c",
+                variableName: "c",
+                name: "Phase",
+                type: "number"
+            });
+
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.begin = this.begin;
+        model.step = this.step;
+        return model;
+    }
+
+    copy(){
+        let newGen = new SinusoidalSequence(this.begin, this.step, this.a, this.b, this.c);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+}
+
+class SinusoidalSequence extends Sequence{
+
+    constructor(begin, step, a, b, c){
+        super("Sinusoidal Sequence", begin || 0, step || Math.PI/16);
+        this.a = a || 1;
+        this.b = b || 1;
+        this.c = c || 0;
+    }
+
+    generate(){
+        let value = this.a*Math.sin(this.count*this.b + this.c);
+        this.count+=this.step;
+        return super.generate(value);
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push({
+                shortName: "a",
+                variableName: "a",
+                name: "Amplitude",
+                type: "number"
+            },
+            {
+                shortName: "b",
+                variableName: "b",
+                name: "Frequency",
+                type: "number"
+            },
+            {
+                shortName: "c",
+                variableName: "c",
+                name: "Phase",
+                type: "number"
+            });
+
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.begin = this.begin;
+        model.step = this.step;
+        return model;
+    }
+
+    copy(){
+        let newGen = new SinusoidalSequence(this.begin, this.step, this.a, this.b, this.c);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+}
+
+
 
 ///--------------------------  Gerenciador de Colunas e Geração da base total. ----------------------------------------
 
@@ -1914,6 +2028,7 @@ DataGen.listOfGens = {
     'Constant Value': ConstantValue,
     'Missing Value': MissingValue,
     'Counter Generator': CounterGenerator,
+    'Sinusoidal Sequence': SinusoidalSequence,
     'Fixed Time Generator': FixedTimeGenerator,
     'Poisson Time Generator': PoissonTimeGenerator,
     'Uniform Generator': RandomUniformGenerator,
@@ -1949,7 +2064,8 @@ DataGen.listOfGensForNoise = {
 DataGen.superTypes = {
     Generator,
     Function,
-    SwitchCaseFunction
+    SwitchCaseFunction,
+    Sequence
 };
 
 //var datagen = new DataGen();
