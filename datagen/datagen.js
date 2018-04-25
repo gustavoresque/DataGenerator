@@ -1668,17 +1668,17 @@ class SinusoidalSequence extends Sequence{
     }
 }
 
-class SinusoidalSequence extends Sequence{
+class CustomSequence extends Sequence{
 
-    constructor(begin, step, a, b, c){
-        super("Sinusoidal Sequence", begin || 0, step || Math.PI/16);
-        this.a = a || 1;
-        this.b = b || 1;
-        this.c = c || 0;
+    constructor(begin, step, sent){
+        super("Custom Sequence", begin || 0, step || 1);
+        this.sentence = sent || "";
+        this.auxiliary = 0;
     }
 
     generate(){
-        let value = this.a*Math.sin(this.count*this.b + this.c);
+        let value = 0;
+        eval(this.sentence);
         this.count+=this.step;
         return super.generate(value);
     }
@@ -1686,22 +1686,10 @@ class SinusoidalSequence extends Sequence{
     getGenParams(){
         let params = super.getGenParams();
         params.push({
-                shortName: "a",
-                variableName: "a",
-                name: "Amplitude",
-                type: "number"
-            },
-            {
-                shortName: "b",
-                variableName: "b",
-                name: "Frequency",
-                type: "number"
-            },
-            {
-                shortName: "c",
-                variableName: "c",
-                name: "Phase",
-                type: "number"
+                shortName: "Sentence",
+                variableName: "sentence",
+                name: "Sentence",
+                type: "string"
             });
 
         return params;
@@ -1709,13 +1697,12 @@ class SinusoidalSequence extends Sequence{
 
     getModel(){
         let model = super.getModel();
-        model.begin = this.begin;
-        model.step = this.step;
+        model.sentence = this.sentence;
         return model;
     }
 
     copy(){
-        let newGen = new SinusoidalSequence(this.begin, this.step, this.a, this.b, this.c);
+        let newGen = new CustomSequence(this.begin, this.step, this.sentence);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -2027,7 +2014,6 @@ DataGen.listOfGens = {
     'Constant Value': ConstantValue,
     'Missing Value': MissingValue,
     'Counter Generator': CounterGenerator,
-    'Sinusoidal Sequence': SinusoidalSequence,
     'Fixed Time Generator': FixedTimeGenerator,
     'Poisson Time Generator': PoissonTimeGenerator,
     'Uniform Generator': RandomUniformGenerator,
@@ -2049,7 +2035,9 @@ DataGen.listOfGens = {
     'Logarithm Function': LogarithmFunction,
     'Sinusoidal Function': SinusoidalFunction,
     'Categorical Function': CategoricalFunction,
-    'TimeLaps Function': TimeLapsFunction
+    'TimeLaps Function': TimeLapsFunction,
+    'Sinusoidal Sequence': SinusoidalSequence,
+    'Custom Sequence': CustomSequence
 };
 
 DataGen.listOfGensForNoise = {
