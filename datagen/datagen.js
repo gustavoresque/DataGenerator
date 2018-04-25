@@ -1667,18 +1667,54 @@ class SinusoidalSequence extends Sequence{
         return newGen;
     }
 }
-
+var auxiliary = 0;
 class CustomSequence extends Sequence{
 
     constructor(begin, step, sent){
         super("Custom Sequence", begin || 0, step || 1);
         this.sentence = sent || "";
-        this.auxiliary = 0;
     }
 
     generate(){
         let value = 0;
-        eval(this.sentence);
+        //eval(this.sentence);
+        let str = "value=";
+
+        for (let i = 0; i < this.sentence.length; i++){
+            if (this.sentence[i] === 'x'){
+                if (this.count === 0)
+                    str += "this.begin";
+                else
+                    str += "this.lastGenerated";
+            }else if(this.sentence[i] === 'n'){
+                str += "this.step";
+            }else if (this.sentence[i] === '(' ||
+                    this.sentence[i] === ')' ||
+                    this.sentence[i] === '+' ||
+                    this.sentence[i] === '-' ||
+                    this.sentence[i] === '*' ||
+                    this.sentence[i] === '/' ||
+                    !isNaN(this.sentence[i])){
+                str += this.sentence[i];
+            }else if (this.sentence[i] === 'M' && this.sentence[i+1] === 'a' && this.sentence[i+2] === 't' && this.sentence[i+3] === 'h' && this.sentence[i+4] === '.'){
+                str += "Math.";
+                let j = 0;
+                for (j = i+5; this.sentence[j] !== '('; j++){
+                    str += this.sentence[j];
+                }
+                i = j-1;
+            }
+            else{
+                str = '';
+                break;
+            }
+        }
+        str += ";";
+        if (str[str.length-1] === ";"){
+            console.log(str);
+            eval(str);
+        }
+
         this.count+=this.step;
         return super.generate(value);
     }
