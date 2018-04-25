@@ -52,6 +52,7 @@
 
     <script>
         let ipc = require('electron').ipcRenderer;
+        // let vis = require("@labvis-ufpa/vistechlib");
 
         let addVis = (visName, parentElement) => {
             let pc = new vis[visName](parentElement);

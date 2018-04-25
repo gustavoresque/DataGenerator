@@ -22,12 +22,13 @@
     "electron-builder": "^20.8.1"
   },
   "dependencies": {
+    "@labvis-ufpa/vistechlib": "^1.0.2",
     "asar": "^0.14.3",
     "d3": "^4.13.0",
     "electron-packager": "^12.0.1",
     "jquery": "^3.3.1",
-    "json2csv": "^4.0.2",
-    "moment": "^2.21.0",
+    "json2csv": "^4.1.2",
+    "moment": "^2.22.1",
     "randgen": "^0.1.0"
   }
 }
