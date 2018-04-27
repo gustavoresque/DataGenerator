@@ -986,6 +986,84 @@ class RandomCategorical extends Generator {
     }
 }
 
+class RandomCategoricalQtt extends Generator {
+    constructor(generator,operator,array,number) {
+        super("Categorical Quantity",generator,operator);
+        this.array = array || ["Banana", "Apple", "Orange"];
+        this.quantity = [3,5];
+        this.counterQtt = [];
+        for (let a in this.array){
+            this.counterQtt.push(0);
+        }
+    }
+
+    generate() {
+        let result =  this.generator ? parseInt(super.generate(0)) : -1;
+        if(isNaN(result) || result >= this.array.length || result < 0){
+            let pos = 0;
+            do{
+                pos = Math.floor(Math.random() * this.array.length);
+            }while(this.quantity[pos] && ((this.counterQtt[pos] >= this.quantity[pos])))
+
+            this.lastGenerated = this.array[pos];
+            this.counterQtt[pos] = this.counterQtt[pos] + 1;
+        } else{
+            do{
+                result = Math.floor(Math.random() * this.array.length);
+            }while(this.quantity[result] && (this.counterQtt[result] >= this.quantity[result]))
+
+            this.lastGenerated = this.array[result];
+            this.counterQtt[result] = this.counterQtt[result] + 1;
+        }
+
+        return this.lastGenerated;
+    }
+
+    reset(){
+        this.counterQtt = [];
+        for (let a in this.array){
+            this.counterQtt.push(0);
+        }
+        super.reset();
+    }
+
+    getGenParams() {
+        return [
+            {
+                shortName: "List",
+                variableName: "array",
+                name: "List of Categories",
+                type: "array"
+            },
+            {
+                shortName: "Quantity",
+                variableName: "quantity",
+                name: "Quantities for each category",
+                type: "numarray"
+            }
+        ];
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.array = this.array;
+        return model;
+    }
+
+    getReturnedType(){
+        return "Categorical";
+    }
+
+    copy(){
+        let newGen = new RandomCategorical();
+        newGen.array = this.array;
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+}
+
 class RandomWeightedCategorical extends Generator {
     constructor(generator,operator,array,weights) {
         super("Weighted Categorical",generator,operator);
@@ -2064,6 +2142,7 @@ DataGen.listOfGens = {
     'MinMax': MinMax,
     'Weighted Categorical': RandomWeightedCategorical,
     'Categorical': RandomCategorical,
+    'Categorical Quantity': RandomCategoricalQtt,
     'Linear Function': LinearFunction,
     'Quadratic Function': QuadraticFunction,
     'Polynomial Function': PolynomialFunction,
