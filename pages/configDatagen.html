@@ -86,6 +86,11 @@
             padding-top:5px;
             background:#999;
         }
+
+        span.focus{
+            border-color: #6db3fd;
+            box-shadow: 3px 3px 0 #6db3fd, -3px -3px 0 #6db3fd, -3px 3px 0 #6db3fd, 3px -3px 0 #6db3fd;
+        }
         /* The list style
         -------------------------------------------------------------- */
 
@@ -117,6 +122,9 @@
             color: #000;
         }
 
+        .conteudo{
+            width: 100%;
+        }
 
         /* The icons
         -------------------------------------------------------------- */
@@ -141,6 +149,7 @@
             background-position: center top;
             background-size: 75% auto;
         }
+
     </style>
 
     <script>
@@ -157,75 +166,45 @@
         let DataGen = require("../datagen/datagen.js");
 
         let obj = {};
+        let iterator = {};
         let dtg = {};
         let dimensionsInserted = [];
         let datagenInfos = "";
-        ipc.on('receive-datagen', function(event, arg){
-            datagenInfos = arg;
-            updateInfos();
-        });
 
-        function updateInfos(){
-            dtg = new DataGen();
-            dtg.columns.length = 0;
-            dtg.importModel(datagenInfos);
-            let $option, flag = false;
-            $("#dimensionList").empty();
-            for (let i = 0; i < dtg.columns.length; i++){
-                for (let j = 0; j < dimensionsInserted.length; j++){
-                    if (dtg.columns[i].name === dimensionsInserted[j].name){
-                        flag = true;
-                        break;
-                    }
-                }
-                if (flag){
-                    flag = false;
-                }else{
-                    $option = $("<option/>").text(dtg.columns[i].name);
-                    $("#dimensionList").append($option);
-                }
-            }
-
-            let ulDimensions = $("#ulDimensionsConfigTb").empty();
-            for (let i = 0; i < dimensionsInserted.length; i++){
-                let dimen = $("<li/>");
-                dimen.append($("<p/>").text(dimensionsInserted[i].name));
-
-                let generators = [];
-                dimensionsInserted[i].generator.getFullGenerator(generators);
-
-                let gens = $("<ul/>");
-                for(let gen of generators){
-                    gens.append($("<li/>").append($("<p/>").text(gen.name)));
-                    let attrJq = $("<ul/>");
-                    for (let j = 0; j < gen.getGenParams().length; j++){
-                        attrJq.append($("<li/>").append($("<p/>").text(gen.getGenParams()[j].name)));
-                    }
-                    gens.append(attrJq);
-                }
-                dimen.append(gens);
-                ulDimensions.append(dimen);
-            }
-        }
-
-        function addDimension() {
-            for (let i = 0; i < dtg.columns.length; i++) {
-                if (dtg.columns[i].name === $("#dimensionList").val()){
-                    dimensionsInserted.push(dtg.columns[i]);
-                    updateInfos();
-                    return;
-                }
-            }
-        }
         ipc.on('configure-datagen', (event, arg) => {
             obj = arg;
             for(let attr in obj){
                 if(obj.hasOwnProperty(attr)){
-                    let $ele = $("#"+attr);
-                    if($ele.is("[type=checkbox]")){
-                        $ele.get(0).checked = obj[attr];
+                    if(attr === "iterator"){
+                        for(let attrIt in obj.iterator) {
+                            let $ele = $("#" + attrIt);
+                            if ($ele.is("[type=checkbox]")) {
+                                $ele.get(0).checked = obj.iterator[attrIt];
+                                if(obj.iterator[attrIt])
+                                    $ele.change();
+                            } else if (attrIt === "generatorIt"){
+                                $("#generatorIt_desc").text(obj.iterator.generatorIt.modelName+
+                                    " > "+obj.iterator.generatorIt.colName+
+                                    " > "+obj.iterator.generatorIt.geName);
+                                $("#generatorIt").val(obj.iterator.generatorIt);
+
+                                let $params = $("#parameterIt").empty();
+                                for(let p of obj.iterator.generatorIt.params){
+                                    if(p.type === "number")
+                                        $params.append($("<option/>").attr("value", p.variableName).text(p.name));
+                                }
+
+                            }else{
+                                $ele.val(obj.iterator[attrIt]);
+                            }
+                        }
                     }else{
-                        $ele.val(obj[attr]);
+                        let $ele = $("#"+attr);
+                        if($ele.is("[type=checkbox]")){
+                            $ele.get(0).checked = obj[attr];
+                        }else{
+                            $ele.val(obj[attr]);
+                        }
                     }
                 }
             }
@@ -236,100 +215,175 @@
                     return 10 * parseInt($(this).data("indent")) + "px";
                 });
 
-            $("input, select").on("change blur", function(){
+            $(".general input, .general select").on("change blur", function(){
                 let $t = $(this);
                 obj[$t.attr("id")] = $t.is("[type=checkbox]") ? $t.is(":checked") : ($t.is("[type=number]") ? parseInt($t.val()) : $t.val());
             });
+            $(".parameterIt input, .parameterIt select").on("change blur", function(){
+                let $t = $(this);
+                if(!obj.iterator)
+                    obj.iterator = {};
+                obj.iterator[$t.attr("id")] = $t.is("[type=checkbox]") ?
+                    $t.is(":checked") : ($t.is("[type=number]") ?
+                        parseInt($t.val()) : $t.is("#generatorIt") ?
+                            JSON.parse($t.val()) : $t.val());
+            });
             $(".btn").click(function () {
                 if($(this).is(".btn-primary")){
+                    if(!$("#hasIt").is(":checked")){
+                        obj.iterator = undefined;
+                    }
                     ipc.send('change-datagen', obj);
                 }else{
                     ipc.send('change-datagen', false);
                 }
             });
 
-            $("#content div:nth-child(1)").show();
-            $(".abas li:first div").addClass("selected");
-            $(".aba").click(function(){
-                $(".aba").removeClass("selected");
-                $(this).addClass("selected");
-                var indice = $(this).parent().index();
-                indice++;
-                $("#content div").hide();
-                $("#content div:nth-child("+indice+")").show();
-                if (indice === 2){
-                    ipc.send('call-datagen');
+            $(".nav-group-item").click(function(){
+                $(".nav-group-item").removeClass("active");
+                $(this).addClass("active");
+                let index = $(".configType .nav-group-item").index(this);
+                $(".conteudo").hide();
+                $($(".conteudo").get(index)).show();
+            });
+            $(".conteudo").hide();
+            $($(".conteudo").get($(".configType .nav-group-item").index(".active"))).show();
+
+
+
+            $("#hasIt").change(function () {
+                if($(this).is(":checked")){
+                    $(".parameterIt input[type=number], .parameterIt select").removeAttr("disabled").css("opacity","1");
+                    $("span.form-control").css("opacity","1");
+                }else{
+                    $(".parameterIt input[type=number], .parameterIt select").attr("disabled","disabled").css("opacity","0.5");
+                    $("span.form-control").css("opacity","0.5");
                 }
             });
+            
+            $(".parameterIt").on("drop",function(evt){
+                evt.preventDefault();
+                evt.stopPropagation();
 
-            $(".aba").hover(
-                function(){$(this).addClass("ativa")},
-                function(){$(this).removeClass("ativa")}
-            );
+                //{modelID, modelName, colID, colName, genID, genModel, params}
+                let msg = evt.originalEvent.dataTransfer.getData("text");
+                let objs = JSON.parse(msg);
+
+                $("#generatorIt_desc").removeClass("focus")
+                    .text(objs.modelName+" > "+objs.colName+" > "+objs.genModel.name);
+
+                let generatorIt = $("#generatorIt");
+                generatorIt.val(msg);
+
+                let $params = $("#parameterIt").empty();
+                for(let p of objs.params){
+                    if(p.type === "number")
+                        $params.append($("<option/>").attr("value", p.variableName).text(p.name));
+                }
+                let $hasIt = $("#hasIt");
+                $hasIt.get(0).checked = true;
+
+                //Faz com que esses campos atualizem o valor de obj.
+                $hasIt.change();
+                generatorIt.change();
+
+            }).on("dragover", function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                $("#generatorIt_desc").addClass("focus");
+            }).on("dragleave", function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                $("#generatorIt_desc").removeClass("focus");
+            });
+
+            $(".parameterIt input[type=number], .parameterIt select").attr("disabled","disabled").css("opacity","0.5");
+            $("span.form-control").css("opacity","0.5");
+
+            ipc.send("call-datagen");
+
         });
     </script>
     <!--<script src="../photon-0.1.2-dist/template-app/js/menu.js" charset="utf-8"></script>-->
 </head>
 <body>
-    <div class="TabControl">
-        <div id="headerTab">
-            <ul class="abas">
-                <li>
-                    <div class="aba">
-                        <span>Tab 1</span>
-                    </div>
-                </li>
-                <li>
-                    <div class="aba">
-                        <span>Tab 2</span>
-                    </div>
-                </li>
-            </ul>
-        </div>
-        <div id="content">
-            <div class="conteudo">
-                <table>
-                    <tr>
-                        <td><label for="n_lines">Number of Lines</label></td>
-                        <td><input id="n_lines" type="number" class="form-control"></td>
-                    </tr>
+<div class="pane-group">
+    <div class="pane pane-sm sidebar">
+        <nav class="nav-group configType">
+            <!--<h5 class="nav-group-title">Favorites</h5>-->
+            <span class="nav-group-item active">General</span>
+            <span class="nav-group-item">Parameter Iterator</span>
+        </nav>
+    </div>
+        <div class="conteudo general">
+            <table>
+                <tr>
+                    <td><label for="n_lines">Number of Lines</label></td>
+                    <td><input id="n_lines" type="number" class="form-control"></td>
+                </tr>
 
-                    <tr>
-                        <td>
-                            <label for="save_as">Save as</label>
-                        </td>
-                        <td>
-                            <select id="save_as" class="form-control">
-                                <option value="csv">CSV</option>
-                                <option value="tsv">TSV</option>
-                                <option value="json">JSON</option>
-                                <option value="sql">SQL</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <label for="header">Header</label>
-                        </td>
-                        <td><input id="header" type="checkbox" class="form-control"></td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <label for="header_type">Header Type</label>
-                        </td>
-                        <td><input id="header_type" type="checkbox" class="form-control"></td>
-                    </tr>
-                </table>
-            </div>
-            <div class="conteudo" style="overflow-y: scroll">
-                <label>Dimensions</label>
-                <select id="dimensionList"></select>
-                <button onclick="addDimension()">Add</button>
-                <ul id="ulDimensionsConfigTb"></ul>
-            </div>
+                <tr>
+                    <td>
+                        <label for="save_as">Save as</label>
+                    </td>
+                    <td>
+                        <select id="save_as" class="form-control">
+                            <option value="csv">CSV</option>
+                            <option value="tsv">TSV</option>
+                            <option value="json">JSON</option>
+                            <option value="sql">SQL</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="header">Header</label>
+                    </td>
+                    <td><input id="header" type="checkbox" class="form-control"></td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="header_type">Header Type</label>
+                    </td>
+                    <td><input id="header_type" type="checkbox" class="form-control"></td>
+                </tr>
+            </table>
+        </div>
+        <div class="conteudo parameterIt">
+            <table>
+                <tr>
+                    <td>
+                        <label for="hasIt">Active</label>
+                    </td>
+                    <td><input id="hasIt" type="checkbox" class="form-control"></td>
+                </tr>
+                <tr>
+                    <td><label for="numberIt">Number of Iterations</label></td>
+                    <td><input id="numberIt" type="number" class="form-control"></td>
+                </tr>
+                <tr>
+                    <td><label for="beginIt">Begin</label></td>
+                    <td><input id="beginIt" type="number" class="form-control"></td>
+                </tr>
+                <tr>
+                    <td><label for="stepIt">Step</label></td>
+                    <td><input id="stepIt" type="number" class="form-control"></td>
+                </tr>
+                <tr>
+                    <td><label for="generatorIt">Generator</label></td>
+                    <td><span id="generatorIt_desc" class="form-control">Drag and Drop a generator here!</span><input id="generatorIt" type="hidden"></td>
+                </tr>
+                <tr>
+                    <td><label for="parameterIt">Parameter</label></td>
+                    <td>
+                        <select id="parameterIt" class="form-control">
+                        </select>
+                    </td>
+                </tr>
+
+            </table>
         </div>
     </div>
-
     <button id="btnCancel" class="btn btn-negative">Cancel</button>
     <button id="btnConfirm" class="btn btn-primary">Confirm</button>
 

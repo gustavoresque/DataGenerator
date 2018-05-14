@@ -11,6 +11,7 @@ class Generator{
             generator.parent = this;
         this.operator = operator;
         this.order = 0;
+        this.ID = "GEN_"+uniqueID();
     }
 
     addGenerator(gen, order){
@@ -76,9 +77,15 @@ class Generator{
     /*Entrada: generators - Lista com as referências dos geradores alocados neste Generator
      *Pega as referências de todos os Generators dentro deste Generator, de forma recursiva, alocando-as em uma lista*/
     getFullGenerator(generators){
-        generators.push(this);
-        if(this.generator)
-            this.generator.getFullGenerator(generators)
+        if(Array.isArray(generators)){
+            generators.push(this);
+            if(this.generator)
+                this.generator.getFullGenerator(generators)
+        }else{
+            let array = [];
+            this.getFullGenerator(array);
+            return array;
+        }
     }
 
     /*Entrada: sub_value - valor que será combinado com o gerado através (ou não) de um operador
@@ -108,11 +115,18 @@ class Generator{
             this.generator.reset();
     }
 
+    /**
+     * Retorna o genrador com seus parâmetros para ser serializado pelo JSON.stringify().
+     * Ou seja, sem funções e referências a outros objetos.
+     * Este método deve ser sobreposto nas subclasses para persistência das variáveis específicas de cada subtipo
+     * de gerador.
+     *
+     * @returns object - Objeto do gerador pronto para serialização via JSON.stringify().
+     */
     getModel(){
-        let self = this;
         return {
-            name: self.name,
-            order: self.order
+            name: this.name,
+            order: this.order
         }
     }
 
@@ -1714,6 +1728,10 @@ class CustomSequence extends Sequence{
 
 ///--------------------------  Gerenciador de Colunas e Geração da base total. ----------------------------------------
 
+function uniqueID() {
+    return Date.now().toString(36);
+}
+
 function copyAttrs(source, target, context){
     for(let attr in source){
         if(source.hasOwnProperty(attr) && attr !== "name"){
@@ -1751,6 +1769,18 @@ function copyAttrs(source, target, context){
     }
 }
 
+let defaultGenerator = RandomUniformGenerator;
+
+class Column{
+    constructor(name, generator){
+        this.name = name || "Col";
+        this.generator = generator || new defaultGenerator();
+        this.type = this.generator.getReturnedType();
+        this.ID = "COL_"+uniqueID();
+        this.generator.parent = this;
+    }
+}
+
 class DataGen {
 
     constructor () {
@@ -1760,13 +1790,10 @@ class DataGen {
         this.header = true;
         this.header_type = true;
         let defaultGenerator = new RandomUniformGenerator();
-        let column = {
-            name: "Dimension 1",
-            type: defaultGenerator.getReturnedType(),
-            generator: defaultGenerator
-        };
-        defaultGenerator.parent = column;
+        let column = new Column("Dimension 1");
         this.columns = [column];
+        this.iterator = {hasIt:false};
+        this.ID = "MODEL_"+uniqueID();
     }
 
     get configs(){
@@ -1774,7 +1801,8 @@ class DataGen {
             n_lines: this.n_lines,
             save_as: this.save_as,
             header: this.header,
-            header_type: this.header_type
+            header_type: this.header_type,
+            iterator: this.iterator
         }
     }
 
@@ -1783,6 +1811,24 @@ class DataGen {
         if(obj.save_as) this.save_as = obj.save_as;
         if(typeof obj.header === "boolean") this.header = obj.header;
         if(typeof obj.header_type === "boolean") this.header_type = obj.header_type;
+        if(obj.iterator){
+            let found = false;
+            findGen_block: {
+                for (let col of this.columns) {
+                    if (col.ID === obj.iterator.generatorIt.colID) {
+                        for (let gen of col.generator.getFullGenerator()) {
+                            if (gen.ID === obj.iterator.generatorIt.genID) {
+                                obj.iterator.generator = gen;
+                                found = true;
+                                break findGen_block;
+                            }
+                        }
+                    }
+                }
+            }
+            if(found)
+                this.iterator = obj.iterator;
+        }
     }
 
     getColumnsNames(){
@@ -1796,12 +1842,7 @@ class DataGen {
 
     addCollumn(name, type, generator){
         generator = generator || new CounterGenerator();
-        let column = {
-            name: name,
-            type: generator.getReturnedType(),
-            generator: generator
-        };
-        generator.parent = column;
+        let column = new Column("name", generator);
         this.columns.push(column);
     }
 
@@ -1911,13 +1952,8 @@ class DataGen {
             }
 
             generator.reset();
-            let col = {
-                name: model.generator[i].name,
-                type: model.generator[i].type,
-                generator: generator
-            };
+            let col = new Column(model.generator[i].name, generator);
             this.columns.push(col);
-            generator.parent = col;
         }
     }
 
@@ -2007,6 +2043,9 @@ class DataGen {
         str += "}";
         return str;
     }
+
+
+
 
 }
 

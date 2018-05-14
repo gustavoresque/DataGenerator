@@ -35,8 +35,7 @@ function createWindow () {
     ipcMain.on('open-config-datagen-window', (event, arg) => {
         configDatagenWindow = new BrowserWindow({
             parent: mainWindow,
-            modal: true,
-            width: 500,
+            width: 675,
             height: 500,
             show: false,
             resizable: true,
@@ -73,6 +72,7 @@ function createWindow () {
             configDatagenWindow.close();
         }
     });
+
     ipcMain.on('change-datasample', (event, message) => {
         if(message)
             for(let w of visWindows)

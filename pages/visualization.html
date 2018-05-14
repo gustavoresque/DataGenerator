@@ -22,7 +22,6 @@
     <script src="../lib/date/parser.js"></script>
 
     <script src="../lib/layout/partition_layout.js"></script>
-    <script src="../lib/vis/vis.js"></script>
     <script src="../lib/underscore-min.js"></script>
 
 
@@ -52,7 +51,7 @@
 
     <script>
         let ipc = require('electron').ipcRenderer;
-        // let vis = require("@labvis-ufpa/vistechlib");
+        let vis = require("@labvis-ufpa/vistechlib");
 
         let addVis = (visName, parentElement) => {
             let pc = new vis[visName](parentElement);

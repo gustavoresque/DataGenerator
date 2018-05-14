@@ -15,11 +15,18 @@ let ipc = require('electron').ipcRenderer;
 const Json2csvParser = require('json2csv').Parser;
 
 ipc.on('call-datagen', function(event, arg){
-    ipc.send('receive-datagen', datagen[currentDataGen].exportModel());
+    // ipc.send('receive-datagen', activeGenerator.getGenParams());
 });
 ipc.on('change-datagen', function(event, arg){
-    datagen[currentDataGen].configs = arg;
-    //console.log("Hi");
+
+    for(let selectedDatagen of datagen){
+        if(selectedDatagen.ID === arg.iterator.generatorIt.modelID){
+            selectedDatagen.configs = arg;
+            console.log(selectedDatagen.configs);
+            break;
+        }
+    }
+
     //console.log(datagen[currentDataGen].configs);
 });
 ipc.on('update-sampledata', function () {
@@ -326,6 +333,18 @@ function addGenerator(){
     showGenerators();
 }
 
+function dragGenerator(evt){
+    let params = evt.target.__node__.getGenParams();
+    let genID = evt.target.__node__.ID;
+    let genModel = evt.target.__node__.getModel();
+    let modelID = datagen[currentDataGen].ID;
+    let modelName = datagen[currentDataGen].name;
+    let col = $(evt.target).parent().parent().get(0).__node__;
+    let colName = col.name;
+    let colID = col.ID;
+    evt.dataTransfer.setData("text/plain", JSON.stringify({modelID, modelName, colID, colName, genID, genModel, params}));
+}
+
 /*Desenha na tela principal as colunas e seus respectivos geradores baseados nos dados armazendos no array datagen*/
 function showGenerators(){
     function displayGens($tdGen, generator, active_gen_chip){
@@ -335,7 +354,8 @@ function showGenerators(){
         for(let gen of generators){
             if (gen instanceof DataGen.superTypes.SwitchCaseFunction){
                 let $switchGenTable = $("<table/>");
-                let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
+                let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name).attr("draggable","true");
+                $chip.get(0).ondragstart = dragGenerator;
                 if(gen === activeGenerator)
                     active_gen_chip.obj = $chip.addClass("active-md-chip");
                 $chip.get(0).__node__ = gen;
@@ -377,7 +397,8 @@ function showGenerators(){
                 $tdGen.append($("<div/>").css("display","inline-block").append($switchGenTable));
                 break;
             }else{
-                let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name);
+                let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name).attr("draggable","true");
+                $chip.get(0).ondragstart = dragGenerator;
                 if(gen === activeGenerator)
                     active_gen_chip.obj = $chip.addClass("active-md-chip");
                 $chip.get(0).__node__ = gen;
