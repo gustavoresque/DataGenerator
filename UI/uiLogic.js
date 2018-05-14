@@ -306,25 +306,11 @@ function generateDatas(){
 
     dialog.showSaveDialog({title:"Save Data", filters:[filt]}, function(targetPath) {
         if(targetPath){
-            // console.log(targetPath);
-            // let partsOfStr = targetPath.split('\\');
-            // targetPath = "";
-            // for (let i = 0; i < partsOfStr.length; i++) {
-            //     targetPath += partsOfStr[i] + "\\\\";
-            // }
-            // console.log(targetPath);
             fs.writeFile(targetPath, datastr, (err) => {
                 if (err) throw err;
             });
         }
     });
-
-    // if (datagen[currentDataGen].save_as === 'csv')
-    //     exportResultsCSVTSV(data, ";");
-    // else if (datagen[currentDataGen].save_as === 'tsv')
-    //     exportResultsCSVTSV(data, "\t");
-    // else
-    //     exportResultsCSVTSV(data, "\t");
 }
 
 function addGenerator(){
