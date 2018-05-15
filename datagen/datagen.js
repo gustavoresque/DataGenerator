@@ -1958,7 +1958,7 @@ class DataGen {
 
     addCollumn(name, type, generator){
         generator = generator || new CounterGenerator();
-        let column = new Column("name", generator);
+        let column = new Column(name, generator);
         this.columns.push(column);
     }
 

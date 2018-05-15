@@ -718,7 +718,7 @@ function exportResultsCSVTSV(data, separator){
         filt.extensions = ['tsv'];
     }
 
-    dialog.showSaveDialog({title:"Salvar resultados", filters:[filt]}, function(targetPath) {
+    dialog.showSaveDialog({title:"Save Generated DataSet", filters:[filt]}, function(targetPath) {
         if(targetPath){
             let partsOfStr = targetPath.split('\\');
             targetPath = "";
@@ -755,7 +755,7 @@ function exportResultsJSON(data){
 
     let myJSON = JSON.stringify(obj);
 
-    dialog.showSaveDialog({title:"Salvar resultados", filters:[{name: 'JSON', extensions:['json']}]}, function(targetPath) {
+    dialog.showSaveDialog({title:"Save Generated DataSet", filters:[{name: 'JSON', extensions:['json']}]}, function(targetPath) {
         if(targetPath){
             let partsOfStr = targetPath.split('\\');
             targetPath = "";
@@ -768,6 +768,23 @@ function exportResultsJSON(data){
         }
     });
 }
+
+
+function createModelFromDataSet(path){
+
+    console.log(path);
+    fs.readFile(path, "utf-8", (err, data) => {
+        if(!err){
+
+            data
+        }else{
+            alert("Failed to load the dataSet. Verify if it is UTF-8 encoded.")
+        }
+    });
+}
+
+
+
 
 let margin = {top: 30, right: 10, bottom: 10, left: 10},
     width = 960 - margin.left - margin.right,

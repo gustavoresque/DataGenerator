@@ -136,6 +136,21 @@ function createWindow () {
                         });
                         //mainWindow.webContents.executeJavaScript('createExportModel("' + str + '");');
                     }},
+                {type: 'separator'},
+                {
+                    label: 'Import Real DataSet', click (){
+                        dialog.showOpenDialog(mainWindow, {title:"Open DataSet", properties: ['openFile'], filters:[
+                                    {name: 'JSON', extensions:['json']}, {name: 'CSV', extensions:['csv']}, {name: 'TSV', extensions:['tsv']}
+                                ]}, function(targetPath) {
+                                if(targetPath){
+                                    mainWindow.webContents.executeJavaScript('createModelFromDataSet("'+targetPath[0]+'");');
+                                }
+                            }
+                        );
+
+                    }
+                },
+                {type: 'separator'},
                 {role: 'close'}
             ]
         }
