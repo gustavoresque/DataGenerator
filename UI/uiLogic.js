@@ -276,6 +276,39 @@ $("html").ready(function(){
 });
 
 function generateDatas(){
+    let saveas = datagen[currentDataGen].save_as;
+    if(datagen[currentDataGen].configs.iterator.hasIt){
+
+        dialog.showSaveDialog({title:"Save Data", filters:[{name:saveas,extensions: [saveas]}]}, function(targetPath) {
+            if(targetPath){
+
+                let it = datagen[currentDataGen].configs.iterator;
+                console.log(it);
+                let datastr;
+                let prevValue = it.generator[it.parameterIt];
+                it.generator[it.parameterIt] = it.beginIt;
+                for(let i=0;i<it.numberIt; i++){
+                    datastr = generateStringData();
+                    fs.writeFileSync(targetPath.replace(/(.*)(\.\w+)$/g,(match, p1, p2) => { return p1+"["+i+"]"+p2; }), datastr);
+                    it.generator[it.parameterIt] += it.stepIt;
+                }
+                it.generator[it.parameterIt] = prevValue;
+            }
+        });
+    }else{
+        let datastr = generateStringData();
+
+        dialog.showSaveDialog({title:"Save Data", filters:[{name:saveas,extensions: [saveas]}]}, function(targetPath) {
+            if(targetPath){
+                fs.writeFile(targetPath, datastr, (err) => {
+                    if (err) throw err;
+                });
+            }
+        });
+    }
+}
+
+function generateStringData(){
     let data = datagen[currentDataGen].generate();
     let datastr;
     let save_as = datagen[currentDataGen].save_as;
@@ -303,14 +336,7 @@ function generateDatas(){
     }
 
 
-
-    dialog.showSaveDialog({title:"Save Data", filters:[filt]}, function(targetPath) {
-        if(targetPath){
-            fs.writeFile(targetPath, datastr, (err) => {
-                if (err) throw err;
-            });
-        }
-    });
+    return datastr;
 }
 
 function addGenerator(){

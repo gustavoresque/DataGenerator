@@ -1759,6 +1759,8 @@ class SinusoidalSequence extends Sequence{
         return newGen;
     }
 }
+
+//TODO: Precisa dessa variável? Se não, remover...
 var auxiliary = 0;
 class CustomSequence extends Sequence{
 
