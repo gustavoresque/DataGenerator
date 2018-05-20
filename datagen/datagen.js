@@ -906,7 +906,6 @@ class LinearScale extends Generator {
     }
 }
 
-
 class MinMax extends Generator {
     constructor(min, max) {
         super("MinMax");
@@ -953,6 +952,53 @@ class MinMax extends Generator {
         return newGen;
     }
 }
+
+class LowPassFilter extends Generator {
+    constructor(scale) {
+        super("Low-Pass Filter");
+        this.scale = scale || 2;
+    }
+
+    generate() {
+        let lastGenerated = this.lastGenerated;
+        let newValue = super.generate(0);
+        if(lastGenerated) {
+            lastGenerated += (newValue - lastGenerated) / this.scale;
+            this.lastGenerated = lastGenerated;
+        }else {
+            this.lastGenerated = newValue;
+        }
+        return this.lastGenerated;
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "Smooth",
+                variableName: "scale",
+                name: "Smooth Scale",
+                type: "number"
+            }
+        );
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.scale = this.scale;
+        return model;
+    }
+
+    copy(){
+        let newGen = new LowPassFilter(this.scale);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+}
+
 
 class RealDataWrapper extends Generator {
     constructor(data) {
@@ -2231,6 +2277,7 @@ DataGen.listOfGens = {
     'Range Filter': RangeFilter,
     'Linear Scale': LinearScale,
     'MinMax': MinMax,
+    'Low-Pass Filter': LowPassFilter,
     'Weighted Categorical': RandomWeightedCategorical,
     'Categorical': RandomCategorical,
     'Categorical Quantity': RandomCategoricalQtt,
