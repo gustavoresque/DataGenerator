@@ -3,13 +3,11 @@
 let randgen = require("randgen");
 let moment = require("moment");
 
+
 class Generator{
-    constructor(name, generator, operator){
+    constructor(name){
         this.name = name;
-        this.generator = generator;
-        if(generator)
-            generator.parent = this;
-        this.operator = operator;
+        this.operator = defaultOperator;
         this.order = 0;
         this.ID = "GEN_"+uniqueID();
     }
@@ -24,17 +22,7 @@ class Generator{
         }
     }
 
-    // changeGenerator(gen, order){
-    //     if (order === 0)
-    //         return false;
-    //
-    //     if (this.order == (order-1)){
-    //         this.generator = gen;
-    //     }else{
-    //         this.generator.changeGenerator(gen, order);
-    //     }
-    //     return true;
-    // }
+
     changeGenerator(gen){
         gen.order = this.order;
         if (this.parent) {
@@ -93,22 +81,33 @@ class Generator{
      *Recebe um valor que é inserido no operador juntamente com um segundo valor gerado pelo Generator inserido neste.
      *Caso não exista um operador, o valor inserido é somado ao valor gerado e retornado*/
     generate(sub_value){
-        let value = 0;
-        if(this.generator){
-            value  = this.generator.generate();
-
-            if(this.operator){
-                this.lastGenerated = this.operator(sub_value, value);
-                return this.lastGenerated;
-            }
-
+        if(this.generator && this.operator){
+                return this.lastGenerated = this.operator(sub_value, this.generator.generate());
         }
-
-        this.lastGenerated = sub_value + value;
-        return this.lastGenerated;
+        return this.lastGenerated = sub_value;
     }
 
-    getGenParams(){}
+
+
+    getGenParams(){
+        return [
+            {
+                shortName: "Operator",
+                variableName: "accessOperator",
+                name: "The operator between this value and right generator value",
+                type: "options",
+                options: ["sum", "multiply", "modulus", "divide", "subtract"]
+            }
+        ];
+    }
+
+    set accessOperator (operator){
+        this.operator = Generator.Operators[operator];
+    }
+
+    get accessOperator (){
+        return this.operator.name;
+    }
 
     reset(){
         if(this.generator)
@@ -141,8 +140,8 @@ class Generator{
 
 class ConstantValue extends Generator{
 
-    constructor(generator, operator, value){
-        super("Constant Value", generator, operator);
+    constructor(value){
+        super("Constant Value");
         this.value = value || 1;
     }
 
@@ -151,14 +150,16 @@ class ConstantValue extends Generator{
     }
 
     getGenParams(){
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "Value",
                 variableName: "value",
                 name: "The Constant Value",
-                type: "number"
+                type: "number",
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -168,8 +169,7 @@ class ConstantValue extends Generator{
     }
 
     copy(){
-        let newGen = new ConstantValue();
-        newGen.value = this.value;
+        let newGen = new ConstantValue(this.value);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -179,8 +179,8 @@ class ConstantValue extends Generator{
 
 class MissingValue extends Generator{
 
-    constructor(generator, operator, value, probability){
-        super("Missing Value", generator, operator);
+    constructor(value, probability){
+        super("Missing Value");
         this.value = value || "Miss";
         this.probability = probability || 0.1;
     }
@@ -195,7 +195,8 @@ class MissingValue extends Generator{
     }
 
     getGenParams(){
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "Value",
                 variableName: "value",
@@ -208,7 +209,8 @@ class MissingValue extends Generator{
                 name: "Occurrence Probability\n Must be between 0 and 1",
                 type: "number"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -219,9 +221,7 @@ class MissingValue extends Generator{
     }
 
     copy(){
-        let newGen = new MissingValue();
-        newGen.value = this.value;
-        newGen.probability = this.probability;
+        let newGen = new MissingValue(this.value, this.probability);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -230,8 +230,8 @@ class MissingValue extends Generator{
 }
 
 class RandomUniformGenerator extends Generator{
-    constructor(generator, operator, min, max, disc){
-        super("Uniform Generator", generator, operator);
+    constructor(min, max, disc){
+        super("Uniform Generator");
         this.min = min || 0;
         this.max = max || 1;
         this.disc = disc || false;
@@ -243,7 +243,8 @@ class RandomUniformGenerator extends Generator{
     }
 
     getGenParams(){
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "Min",
                 variableName: "min",
@@ -262,7 +263,8 @@ class RandomUniformGenerator extends Generator{
                 name: "Discrete Values",
                 type: "boolean"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -274,10 +276,7 @@ class RandomUniformGenerator extends Generator{
     }
 
     copy(){
-        let newGen = new RandomUniformGenerator();
-        newGen.min = this.min;
-        newGen.max = this.max;
-        newGen.disc = this.disc;
+        let newGen = new RandomUniformGenerator(this.min, this.max, this.disc);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -286,8 +285,8 @@ class RandomUniformGenerator extends Generator{
 }
 
 class RandomGaussianGenerator extends Generator{
-    constructor(generator, operator, mean, std){
-        super("Gaussian Generator", generator, operator);
+    constructor(mean, std){
+        super("Gaussian Generator");
         this.mean = mean || 0;
         this.std = std || 1;
     }
@@ -298,7 +297,8 @@ class RandomGaussianGenerator extends Generator{
     }
 
     getGenParams(){
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "Mean",
                 variableName: "mean",
@@ -311,7 +311,8 @@ class RandomGaussianGenerator extends Generator{
                 name: "Standard Deviation",
                 type: "number"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -322,9 +323,7 @@ class RandomGaussianGenerator extends Generator{
     }
 
     copy(){
-        let newGen = new RandomGaussianGenerator();
-        newGen.mean = this.mean;
-        newGen.std = this.std;
+        let newGen = new RandomGaussianGenerator(this.mean, this.std);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -333,8 +332,8 @@ class RandomGaussianGenerator extends Generator{
 }
 
 class RandomPoissonGenerator extends Generator{
-    constructor(generator, operator, lambda){
-        super("Poisson Generator", generator, operator);
+    constructor(lambda){
+        super("Poisson Generator");
         this.lambda = lambda || 1;
     }
 
@@ -344,14 +343,16 @@ class RandomPoissonGenerator extends Generator{
     }
 
     getGenParams(){
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "Lambda",
                 variableName: "lambda",
                 name: "Lambda",
                 type: "number"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -361,8 +362,7 @@ class RandomPoissonGenerator extends Generator{
     }
 
     copy(){
-        let newGen = new RandomPoissonGenerator();
-        newGen.lambda = this.lambda;
+        let newGen = new RandomPoissonGenerator(this.lambda);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -371,8 +371,8 @@ class RandomPoissonGenerator extends Generator{
 }
 
 class RandomBernoulliGenerator extends Generator{
-    constructor(generator, operator, p){
-        super("Bernoulli Generator", generator, operator);
+    constructor(p){
+        super("Bernoulli Generator");
         this.p = p || 0.5;
     }
 
@@ -382,14 +382,16 @@ class RandomBernoulliGenerator extends Generator{
     }
 
     getGenParams(){
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "P",
                 variableName: "p",
                 name: "Probability",
                 type: "number"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -399,8 +401,7 @@ class RandomBernoulliGenerator extends Generator{
     }
 
     copy(){
-        let newGen = new RandomBernoulliGenerator();
-        newGen.p = this.p;
+        let newGen = new RandomBernoulliGenerator(this.p);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -409,8 +410,8 @@ class RandomBernoulliGenerator extends Generator{
 }
 
 class RandomCauchyGenerator extends Generator{
-    constructor(generator, operator, loc, scale){
-        super("Cauchy Generator", generator, operator);
+    constructor(loc, scale){
+        super("Cauchy Generator");
         this.loc = loc || 0;
         this.scale = scale || 1;
     }
@@ -421,7 +422,8 @@ class RandomCauchyGenerator extends Generator{
     }
 
     getGenParams(){
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "X0",
                 variableName: "loc",
@@ -434,7 +436,8 @@ class RandomCauchyGenerator extends Generator{
                 name: "Scale",
                 type: "number"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -445,9 +448,7 @@ class RandomCauchyGenerator extends Generator{
     }
 
     copy(){
-        let newGen = new RandomCauchyGenerator();
-        newGen.loc = this.loc;
-        newGen.scale = this.scale;
+        let newGen = new RandomCauchyGenerator(this.loc, this.scale);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -501,7 +502,8 @@ class FixedTimeGenerator extends Generator{
     }
 
     getGenParams(){
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "Init",
                 variableName: "accessInitTime",
@@ -520,7 +522,8 @@ class FixedTimeGenerator extends Generator{
                 name: "Time Mask according to Moment.js",
                 type: "string"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -607,7 +610,8 @@ class PoissonTimeGenerator extends Generator{
     }
 
     getGenParams(){
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "Init",
                 variableName: "accessInitTime",
@@ -639,7 +643,8 @@ class PoissonTimeGenerator extends Generator{
                 name: "Expected number of events per interval",
                 type: "number"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -673,8 +678,8 @@ class PoissonTimeGenerator extends Generator{
 }
 
 class RandomConstantNoiseGenerator extends Generator{
-    constructor(generator, operator, probability, value){
-        super("Constant Noise Generator", generator, operator);
+    constructor(probability, value){
+        super("Constant Noise Generator");
         this.probability = probability || 0.3;
         this.value = value || 1;
     }
@@ -688,7 +693,8 @@ class RandomConstantNoiseGenerator extends Generator{
         }
     }
     getGenParams(){
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "Prob",
                 variableName: "probability",
@@ -701,7 +707,8 @@ class RandomConstantNoiseGenerator extends Generator{
                 name: "Constant Value",
                 type: "number"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -712,9 +719,7 @@ class RandomConstantNoiseGenerator extends Generator{
     }
 
     copy(){
-        let newGen = new RandomConstantNoiseGenerator();
-        newGen.probability = this.probability;
-        newGen.value = this.value;
+        let newGen = new RandomConstantNoiseGenerator(this.probability, this.value);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -723,9 +728,9 @@ class RandomConstantNoiseGenerator extends Generator{
 }
 
 class RandomNoiseGenerator extends Generator{
-    constructor(generator, operator, generator2, probability, intensity){
-        super("Noise Generator", generator, operator);
-        this.generator2 = generator2 || new RandomGaussianGenerator();
+    constructor(probability, intensity, generator2){
+        super("Noise Generator");
+        this.generator2 = generator2 || new defaultGenerator();
         this.probability = probability || 0.3;
         this.intensity = intensity || 1;
     }
@@ -739,7 +744,8 @@ class RandomNoiseGenerator extends Generator{
         }
     }
     getGenParams(){
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "Type",
                 variableName: "generator2",
@@ -758,7 +764,8 @@ class RandomNoiseGenerator extends Generator{
                 name: "Intensity",
                 type: "number"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -770,9 +777,7 @@ class RandomNoiseGenerator extends Generator{
     }
 
     copy(){
-        let newGen = new RandomNoiseGenerator();
-        newGen.probability = this.probability;
-        newGen.intensity = this.intensity;
+        let newGen = new RandomNoiseGenerator(this.probability, this.intensity);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -784,8 +789,8 @@ class RandomNoiseGenerator extends Generator{
 }
 
 class RangeFilter extends Generator {
-    constructor(generator, operator, begin, end) {
-        super("Range Filter", generator,operator);
+    constructor(begin, end) {
+        super("Range Filter");
         this.begin = begin;
         this.end = end;
 
@@ -801,7 +806,8 @@ class RangeFilter extends Generator {
     }
 
     getGenParams(){
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "Begin",
                 variableName: "begin",
@@ -814,7 +820,8 @@ class RangeFilter extends Generator {
                 name: "Filter End",
                 type: "number"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -825,9 +832,7 @@ class RangeFilter extends Generator {
     }
 
     copy(){
-        let newGen = new RangeFilter();
-        newGen.begin = this.begin;
-        newGen.end = this.end;
+        let newGen = new RangeFilter(this.begin, this.end);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -836,8 +841,8 @@ class RangeFilter extends Generator {
 }
 
 class LinearScale extends Generator {
-    constructor(generator,operator,minDomain,maxDomain, minRange, maxRange) {
-        super("Linear Scale",generator,operator);
+    constructor(minDomain,maxDomain, minRange, maxRange) {
+        super("Linear Scale");
         this.minDomain = minDomain;
         this.maxDomain = maxDomain;
         this.minRange = minRange;
@@ -852,7 +857,8 @@ class LinearScale extends Generator {
     }
 
     getGenParams() {
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "MinIn",
                 variableName: "minDomain",
@@ -877,7 +883,8 @@ class LinearScale extends Generator {
                 name: "Maximum Range Value",
                 type: "number"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -891,11 +898,7 @@ class LinearScale extends Generator {
     }
 
     copy(){
-        let newGen = new LinearScale();
-        newGen.minDomain = this.minDomain;
-        newGen.maxDomain = this.maxDomain;
-        newGen.minRange = this.minRange;
-        newGen.maxRange = this.maxRange;
+        let newGen = new LinearScale(this.minDomain, this.maxDomain, this.minRange, this.maxRange);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -917,7 +920,8 @@ class MinMax extends Generator {
     }
 
     getGenParams(){
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "Minimum",
                 variableName: "min",
@@ -930,7 +934,8 @@ class MinMax extends Generator {
                 name: "Maximum Value",
                 type: "number"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -964,10 +969,6 @@ class RealDataWrapper extends Generator {
         return super.generate(this.data[i]);
     }
 
-    getGenParams(){
-        return [];
-    }
-
     getModel(){
         let model = super.getModel();
         model.data = this.data;
@@ -992,8 +993,8 @@ class RealDataWrapper extends Generator {
 }
 
 class RandomCategorical extends Generator {
-    constructor(generator,operator,array,number) {
-            super("Categorical",generator,operator);
+    constructor(array) {
+            super("Categorical");
             this.array = array || ["Banana", "Apple", "Orange"];
     }
 
@@ -1009,14 +1010,16 @@ class RandomCategorical extends Generator {
     }
 
     getGenParams() {
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "List",
                 variableName: "array",
                 name: "List of Categories",
                 type: "array"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -1030,8 +1033,7 @@ class RandomCategorical extends Generator {
     }
 
     copy(){
-        let newGen = new RandomCategorical();
-        newGen.array = this.array;
+        let newGen = new RandomCategorical(this.array);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -1040,8 +1042,8 @@ class RandomCategorical extends Generator {
 }
 
 class RandomCategoricalQtt extends Generator {
-    constructor(generator,operator,array,number) {
-        super("Categorical Quantity",generator,operator);
+    constructor(array) {
+        super("Categorical Quantity");
         this.array = array || ["Banana", "Apple", "Orange"];
         this.quantity = [3,5];
         this.counterQtt = [];
@@ -1056,14 +1058,14 @@ class RandomCategoricalQtt extends Generator {
             let pos = 0;
             do{
                 pos = Math.floor(Math.random() * this.array.length);
-            }while(this.quantity[pos] && ((this.counterQtt[pos] >= this.quantity[pos])))
+            }while(this.quantity[pos] && ((this.counterQtt[pos] >= this.quantity[pos])));
 
             this.lastGenerated = this.array[pos];
             this.counterQtt[pos] = this.counterQtt[pos] + 1;
         } else{
             do{
                 result = Math.floor(Math.random() * this.array.length);
-            }while(this.quantity[result] && (this.counterQtt[result] >= this.quantity[result]))
+            }while(this.quantity[result] && (this.counterQtt[result] >= this.quantity[result]));
 
             this.lastGenerated = this.array[result];
             this.counterQtt[result] = this.counterQtt[result] + 1;
@@ -1081,7 +1083,8 @@ class RandomCategoricalQtt extends Generator {
     }
 
     getGenParams() {
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "List",
                 variableName: "array",
@@ -1094,7 +1097,8 @@ class RandomCategoricalQtt extends Generator {
                 name: "Quantities for each category",
                 type: "numarray"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -1108,8 +1112,7 @@ class RandomCategoricalQtt extends Generator {
     }
 
     copy(){
-        let newGen = new RandomCategorical();
-        newGen.array = this.array;
+        let newGen = new RandomCategorical(this.array);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -1118,8 +1121,8 @@ class RandomCategoricalQtt extends Generator {
 }
 
 class RandomWeightedCategorical extends Generator {
-    constructor(generator,operator,array,weights) {
-        super("Weighted Categorical",generator,operator);
+    constructor(array,weights) {
+        super("Weighted Categorical");
         this.array = array || ["Banana", "Apple", "Orange"];
         this.weights = weights || [0.3, 0.2, 0.5];
     }
@@ -1137,7 +1140,8 @@ class RandomWeightedCategorical extends Generator {
     }
 
     getGenParams() {
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "List",
                 variableName: "array",
@@ -1150,7 +1154,8 @@ class RandomWeightedCategorical extends Generator {
                 name: "List of Weights",
                 type: "numarray"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -1165,9 +1170,7 @@ class RandomWeightedCategorical extends Generator {
     }
 
     copy(){
-        let newGen = new RandomWeightedCategorical();
-        newGen.array = this.array;
-        newGen.weights = this.weights;
+        let newGen = new RandomWeightedCategorical(this.array, this.weights);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -1178,8 +1181,8 @@ class RandomWeightedCategorical extends Generator {
 
 class Function extends Generator{
 
-    constructor(name, generator, operator, inputGenerator, inputGenIndex){
-        super(name, generator, operator);
+    constructor(name, inputGenerator, inputGenIndex){
+        super(name);
         this.inputGenerator = inputGenerator;
         this.inputGenIndex = inputGenIndex;
     }
@@ -1194,14 +1197,16 @@ class Function extends Generator{
     }
 
     getGenParams() {
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "Input",
                 variableName: "inputGenerator",
                 name: "Input Column (Previous one)",
                 type: "NumericColumn"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -1216,8 +1221,8 @@ class Function extends Generator{
 }
 
 class LinearFunction extends Function{
-    constructor(generator, operator, inputGenerator, a, b){
-        super("Linear Function", generator, operator, inputGenerator);
+    constructor(a, b, inputGenerator){
+        super("Linear Function", inputGenerator);
         this.a = a || 2;
         this.b = b || 0;
     }
@@ -1251,9 +1256,7 @@ class LinearFunction extends Function{
     }
 
     copy(){
-        let newGen = new LinearFunction();
-        newGen.a = this.a;
-        newGen.b = this.b;
+        let newGen = new LinearFunction(this.a, this.b);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -1262,8 +1265,8 @@ class LinearFunction extends Function{
 }
 
 class QuadraticFunction extends Function{
-    constructor(generator, operator, inputGenerator, a, b, c){
-        super("Quadratic Function", generator, operator, inputGenerator);
+    constructor(a, b, c, inputGenerator){
+        super("Quadratic Function", inputGenerator);
         this.a = a || 1;
         this.b = b || 1;
         this.c = c || 0;
@@ -1305,10 +1308,7 @@ class QuadraticFunction extends Function{
     }
 
     copy(){
-        let newGen = new QuadraticFunction();
-        newGen.a = this.a;
-        newGen.b = this.b;
-        newGen.c = this.c;
+        let newGen = new QuadraticFunction(this.a, this.b, this.c);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -1317,8 +1317,8 @@ class QuadraticFunction extends Function{
 }
 
 class PolynomialFunction extends Function{
-    constructor(generator, operator, inputGenerator, constants){
-        super("Polynomial Function", generator, operator, inputGenerator);
+    constructor(constants, inputGenerator){
+        super("Polynomial Function", inputGenerator);
         this.constants = constants || [1,1,1];
     }
 
@@ -1347,8 +1347,7 @@ class PolynomialFunction extends Function{
     }
 
     copy(){
-        let newGen = new PolynomialFunction();
-        newGen.constants = this.constants;
+        let newGen = new PolynomialFunction(this.constants);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -1357,8 +1356,8 @@ class PolynomialFunction extends Function{
 }
 
 class ExponentialFunction extends Function{
-    constructor(generator, operator, inputGenerator,  a, b){
-        super("Exponential Function", generator, operator, inputGenerator);
+    constructor(a, b, inputGenerator){
+        super("Exponential Function", inputGenerator);
         this.a = a || 2;
         this.b = b || 1;
     }
@@ -1391,9 +1390,7 @@ class ExponentialFunction extends Function{
     }
 
     copy(){
-        let newGen = new ExponentialFunction();
-        newGen.a = this.a;
-        newGen.b = this.b;
+        let newGen = new ExponentialFunction(this.a, this.b);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -1402,8 +1399,8 @@ class ExponentialFunction extends Function{
 }
 
 class LogarithmFunction extends Function{
-    constructor(generator, operator, inputGenerator, base){
-        super("Logarithm Function", generator, operator, inputGenerator);
+    constructor(base, inputGenerator){
+        super("Logarithm Function", inputGenerator);
         this.base = base || Math.E;
     }
 
@@ -1428,8 +1425,7 @@ class LogarithmFunction extends Function{
     }
 
     copy(){
-        let newGen = new LogarithmFunction();
-        newGen.base = this.base;
+        let newGen = new LogarithmFunction(this.base);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -1438,8 +1434,8 @@ class LogarithmFunction extends Function{
 }
 
 class SinusoidalFunction extends Function{
-    constructor(generator, operator, inputGenerator, a, b, c){
-        super("Sinusoidal Function", generator, operator, inputGenerator);
+    constructor(a, b, c, inputGenerator){
+        super("Sinusoidal Function", inputGenerator);
         this.a = a || 1;
         this.b = b || 1;
         this.c = c || 0;
@@ -1481,10 +1477,7 @@ class SinusoidalFunction extends Function{
     }
 
     copy(){
-        let newGen = new SinusoidalFunction();
-        newGen.a = this.a;
-        newGen.b = this.b;
-        newGen.c = this.c;
+        let newGen = new SinusoidalFunction(this.a, this.b, this.c);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -1493,8 +1486,8 @@ class SinusoidalFunction extends Function{
 }
 
 class SwitchCaseFunction extends Function{
-    constructor(name, listOfGenerators, inputGenerator, generator, operator){
-        super(name, generator, operator, inputGenerator);
+    constructor(name, listOfGenerators, inputGenerator){
+        super(name, inputGenerator);
         this.listOfGenerators = listOfGenerators || {};
         this.inputArray = [];
     }
@@ -1568,8 +1561,8 @@ class SwitchCaseFunction extends Function{
 }
 
 class CategoricalFunction extends SwitchCaseFunction{
-    constructor(listOfGenerators, inputGenerator, generator, operator){
-        super("Categorical Function", listOfGenerators, inputGenerator, generator, operator);
+    constructor(listOfGenerators, inputGenerator){
+        super("Categorical Function", listOfGenerators, inputGenerator);
     }
 
     getGenParams() {
@@ -1601,8 +1594,8 @@ class CategoricalFunction extends SwitchCaseFunction{
 }
 
 class TimeLapsFunction extends SwitchCaseFunction{
-    constructor(laps, listOfGenerators, inputGenerator, generator, operator){
-        super("TimeLaps Function", listOfGenerators, inputGenerator, generator, operator);
+    constructor(laps, listOfGenerators, inputGenerator){
+        super("TimeLaps Function", listOfGenerators, inputGenerator);
         this.accessLaps = laps || [];
     }
 
@@ -1699,7 +1692,8 @@ class Sequence extends Generator{
     }
 
     getGenParams(){
-        return [
+        let params = super.getGenParams();
+        params.push(
             {
                 shortName: "Begin",
                 variableName: "begin",
@@ -1712,7 +1706,8 @@ class Sequence extends Generator{
                 name: "Step",
                 type: "number"
             }
-        ];
+        );
+        return params;
     }
 
     getModel(){
@@ -1855,11 +1850,11 @@ class CustomSequence extends Sequence{
     getGenParams(){
         let params = super.getGenParams();
         params.push({
-                shortName: "Sentence",
-                variableName: "sentence",
-                name: "Sentence",
-                type: "string"
-            });
+            shortName: "Sentence",
+            variableName: "sentence",
+            name: "Sentence",
+            type: "string"
+        });
 
         return params;
     }
@@ -1878,6 +1873,22 @@ class CustomSequence extends Sequence{
         return newGen;
     }
 }
+
+
+
+
+Generator.Operators = {
+    "sum": (a,b) => { return a+b; },
+    "multiply": (a,b) => { return a*b; },
+    "modulus": (a,b) => { return a%b; },
+    "divide": (a,b) => { return a/b; },
+    "subtract": (a,b) => { return a-b; }
+};
+Generator.Operators.sum.name = "sum";
+Generator.Operators.multiply.name = "multiply";
+Generator.Operators.modulus.name = "modulus";
+Generator.Operators.divide.name = "divide";
+Generator.Operators.subtract.name = "subtract";
 
 
 
@@ -1925,6 +1936,7 @@ function copyAttrs(source, target, context){
 }
 
 let defaultGenerator = RandomUniformGenerator;
+let defaultOperator = Generator.Operators.sum;
 
 class Column{
     constructor(name, generator){
@@ -1944,13 +1956,10 @@ class DataGen {
         this.save_as = "csv";
         this.header = true;
         this.header_type = true;
-        let defaultGenerator = new RandomUniformGenerator();
         let column = new Column("Dimension 1");
         this.columns = [column];
         this.iterator = {hasIt:false};
         this.ID = "MODEL_"+uniqueID();
-        this.hasRealData = false;
-        this.realDataLength = 0;
     }
 
     get configs(){

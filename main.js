@@ -148,7 +148,6 @@ function createWindow () {
                                 }
                             }
                         );
-
                     }
                 },
                 {type: 'separator'},
