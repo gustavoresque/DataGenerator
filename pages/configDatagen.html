@@ -175,29 +175,32 @@
             obj = arg;
             for(let attr in obj){
                 if(obj.hasOwnProperty(attr)){
-                    if(attr === "iterator"){
-                        for(let attrIt in obj.iterator) {
+                    if(attr === "iterator") {
+                        for (let attrIt in obj.iterator) {
                             let $ele = $("#" + attrIt);
                             if ($ele.is("[type=checkbox]")) {
                                 $ele.get(0).checked = obj.iterator[attrIt];
-                                if(obj.iterator[attrIt])
+                                if (obj.iterator[attrIt])
                                     $ele.change();
-                            } else if (attrIt === "generatorIt"){
-                                $("#generatorIt_desc").text(obj.iterator.generatorIt.modelName+
-                                    " > "+obj.iterator.generatorIt.colName+
-                                    " > "+obj.iterator.generatorIt.geName);
+                            } else if (attrIt === "generatorIt") {
+                                $("#generatorIt_desc").text(obj.iterator.generatorIt.modelName +
+                                    " > " + obj.iterator.generatorIt.colName +
+                                    " > " + obj.iterator.generatorIt.geName);
                                 $("#generatorIt").val(obj.iterator.generatorIt);
 
                                 let $params = $("#parameterIt").empty();
-                                for(let p of obj.iterator.generatorIt.params){
-                                    if(p.type === "number")
+                                for (let p of obj.iterator.generatorIt.params) {
+                                    if (p.type === "number")
                                         $params.append($("<option/>").attr("value", p.variableName).text(p.name));
                                 }
 
-                            }else{
+                            } else {
                                 $ele.val(obj.iterator[attrIt]);
                             }
                         }
+                    }else if(attr === "modelID"){
+                    }else if(attr === "modelName"){
+                        document.title += " ["+obj.modelName+"]"
                     }else{
                         let $ele = $("#"+attr);
                         if($ele.is("[type=checkbox]")){

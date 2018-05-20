@@ -905,11 +905,10 @@ class LinearScale extends Generator {
 
 
 class MinMax extends Generator {
-    constructor(generator, operator, min, max) {
-        super("MinMax", generator,operator);
+    constructor(min, max) {
+        super("MinMax");
         this.min = min || 0;
         this.max = max || 100;
-
     }
 
     generate() {
@@ -942,13 +941,53 @@ class MinMax extends Generator {
     }
 
     copy(){
-        let newGen = new MinMax();
-        newGen.min = this.min;
-        newGen.max = this.max;
+        let newGen = new MinMax(this.min, this.max);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
         return newGen;
+    }
+}
+
+class RealDataWrapper extends Generator {
+    constructor(data) {
+        super("Real Data Wrapper");
+        this.data = data || [];
+        this.length = data.length;
+        this.current = 0;
+    }
+
+    generate() {
+        let i = this.current;
+        this.current++;
+        this.current %= this.length;
+        return super.generate(this.data[i]);
+    }
+
+    getGenParams(){
+        return [];
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.data = this.data;
+        return model;
+    }
+
+    copy(){
+        let newGen = new RealDataWrapper(this.data);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+
+    reset(){
+        this.current = 0;
+    }
+
+    getReturnedType(){
+        return (typeof this.data[0] === "number") ? "Numeric" : "Categorical";
     }
 }
 
@@ -1910,6 +1949,8 @@ class DataGen {
         this.columns = [column];
         this.iterator = {hasIt:false};
         this.ID = "MODEL_"+uniqueID();
+        this.hasRealData = false;
+        this.realDataLength = 0;
     }
 
     get configs(){
@@ -1956,8 +1997,8 @@ class DataGen {
     }
 
 
-    addCollumn(name, type, generator){
-        generator = generator || new CounterGenerator();
+    addCollumn(name, generator){
+        generator = generator || new defaultGenerator();
         let column = new Column(name, generator);
         this.columns.push(column);
     }
@@ -2203,6 +2244,15 @@ DataGen.listOfGensForNoise = {
     'Bernoulli Generator': RandomBernoulliGenerator,
     'Cauchy Generator': RandomCauchyGenerator,
 };
+
+DataGen.listOfGensComplete = {
+    'Real Data Wrapper' : RealDataWrapper
+};
+for(let attr in DataGen.listOfGens){
+    if(DataGen.listOfGens.hasOwnProperty(attr))
+        DataGen.listOfGensComplete[attr] = DataGen.listOfGens[attr];
+}
+
 
 DataGen.superTypes = {
     Generator,

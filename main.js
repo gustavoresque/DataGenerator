@@ -57,6 +57,7 @@ function createWindow () {
             configDatagenWindow.webContents.send('configure-datagen', arg);
         });
     });
+
     ipcMain.on('call-datagen', (event, message) => {
         mainWindow.webContents.send('call-datagen', message);
     });
@@ -143,7 +144,7 @@ function createWindow () {
                                     {name: 'JSON', extensions:['json']}, {name: 'CSV', extensions:['csv']}, {name: 'TSV', extensions:['tsv']}
                                 ]}, function(targetPath) {
                                 if(targetPath){
-                                    mainWindow.webContents.executeJavaScript('createModelFromDataSet("'+targetPath[0]+'");');
+                                    mainWindow.webContents.executeJavaScript('createModelFromDataSet("'+targetPath[0].replace(/\\/g,'\\\\')+'");');
                                 }
                             }
                         );

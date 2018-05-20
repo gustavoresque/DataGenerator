@@ -12,27 +12,27 @@ let collumnsSelected = [];
 let collumnsCopied = [];
 let ipc = require('electron').ipcRenderer;
 
+
 const Json2csvParser = require('json2csv').Parser;
 
 ipc.on('call-datagen', function(event, arg){
     // ipc.send('receive-datagen', activeGenerator.getGenParams());
 });
 ipc.on('change-datagen', function(event, arg){
-
-    for(let selectedDatagen of datagen){
-        if(selectedDatagen.ID === arg.iterator.generatorIt.modelID){
-            selectedDatagen.configs = arg;
-            console.log(selectedDatagen.configs);
+    for(let dtg of datagen){
+        if(dtg.ID === arg.modelID){
+            dtg.configs = arg;
+            console.log( datagen[currentDataGen].configs);
             break;
         }
     }
-
     //console.log(datagen[currentDataGen].configs);
 });
 ipc.on('update-sampledata', function () {
     if(current_sample)
         ipc.send('change-datasample', current_sample);
 });
+
 
 $("html").ready(function(){
     showModels();
@@ -193,7 +193,10 @@ $("html").ready(function(){
     });
 
     $("#btnConfigGeneration").click(function(){
-        ipc.send('open-config-datagen-window', datagen[currentDataGen].configs);
+        let configs = datagen[currentDataGen].configs;
+        configs.modelID = datagen[currentDataGen].ID;
+        configs.modelName = datagen[currentDataGen].name;
+        ipc.send('open-config-datagen-window', configs);
     });
 
     $("#tableCollumn").on("click", "span.btnRemoveGen", function(){
@@ -267,7 +270,7 @@ $("html").ready(function(){
                     newName = collumnsCopied[i].name + '(' + counter + ')';
                 else
                     newName = collumnsCopied[i].name;
-                datagen[currentDataGen].addCollumn(newName, collumnsCopied[i].type, collumnsCopied[i].generator.copy());
+                datagen[currentDataGen].addCollumn(newName, collumnsCopied[i].generator.copy());
             }
             collumnsSelected = [];
             showGenerators();
@@ -340,8 +343,7 @@ function generateStringData(){
 }
 
 function addGenerator(){
-    datagen[currentDataGen].addCollumn("Dimension "+(datagen[currentDataGen].columns.length+1), "Numeric", new UniformGenerator());
-
+    datagen[currentDataGen].addCollumn("Dimension "+(datagen[currentDataGen].columns.length+1));
     showGenerators();
 }
 
@@ -773,12 +775,72 @@ function exportResultsJSON(data){
 function createModelFromDataSet(path){
 
     console.log(path);
-    fs.readFile(path, "utf-8", (err, data) => {
-        if(!err){
 
-            data
+    fs.readFile(path, "utf-8", (err, strdata) => {
+        if(err){
+            alert("Failed to load the dataSet. Verify if it is UTF-8 encoded.");
+            alert(err);
+            // data
         }else{
-            alert("Failed to load the dataSet. Verify if it is UTF-8 encoded.")
+            let data = [];
+            let columns;
+            if(path.endsWith(".csv") || path.endsWith(".tsv")){
+                console.log("Selecionou um CSV", path);
+                let lines;
+                if(strdata.indexOf("\r\n") >= 0){
+                    lines = strdata.split("\r\n");
+                }else{
+                    lines = strdata.split("\n");
+                }
+                for(let i=0;i<lines.length;i++){
+                    lines[i] = lines[i].split(path.endsWith(".csv") ? "," : "\t");
+                }
+                //TODO: pedir para o usuário converter os valores
+
+                for(let i=0;i<lines[0].length;i++){
+                    lines[0][i] = lines[0][i].replace(/^"(.+)"$/g, (m, p1) => { return p1; });
+                }
+                columns = lines[0];
+                for(let i=1;i<lines.length;i++){
+                    data.push({});
+                    for(let j=0;j<lines[i].length;j++){
+                        if(isNaN(+lines[i][j])){
+                            data[data.length-1][lines[0][j]] = lines[i][j];
+                        }else{
+                            data[data.length-1][lines[0][j]] = +lines[i][j];
+                        }
+                    }
+                }
+            }else if(path.endsWith(".json")){
+                console.log("Selecionou um JSON", path);
+                data = JSON.parse(strdata);
+                columns = [];
+                for(let p in data[0]){
+                    if(data[0].hasOwnProperty(p))
+                        columns.push(p);
+                }
+            }
+            console.log(data);
+            console.log(columns);
+
+            let createdDatagen = new DataGen();
+            datagen.push(createdDatagen);
+            currentDataGen = datagen.length-1;
+
+            //Altera as propriedades do Datagen
+            createdDatagen.name = path.slice(path.lastIndexOf("\\")+1, path.lastIndexOf("."));
+            createdDatagen.hasRealData = true;
+            createdDatagen.realDataLength = data.length;
+
+            //Adiciona Colunas com base nos dados Reais.
+            createdDatagen.columns.splice(0,1);
+            for(let c of columns){
+                createdDatagen.addCollumn(c, new DataGen.listOfGensComplete['Real Data Wrapper'](_.pluck(data, c)));
+            }
+
+            showModels();
+            showGenerators();
+
         }
     });
 }
