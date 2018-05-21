@@ -167,6 +167,12 @@ function createWindow () {
 
                 },
                 {
+                    label: 'Bundled Parallel Coordinates',
+                    click(){
+                        funcOpenVisWindow('ParallelBundling')
+                    }
+                },
+                {
                     label: 'Scatterplot Matrix',
                     click(){
                         funcOpenVisWindow('ScatterplotMatrix');
