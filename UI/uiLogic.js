@@ -831,6 +831,8 @@ function createModelFromDataSet(path){
             createdDatagen.name = path.slice(path.lastIndexOf("\\")+1, path.lastIndexOf("."));
             createdDatagen.hasRealData = true;
             createdDatagen.realDataLength = data.length;
+            createdDatagen.n_lines = data.length;
+            createdDatagen.n_sample_lines = data.length;
 
             //Adiciona Colunas com base nos dados Reais.
             createdDatagen.columns.splice(0,1);

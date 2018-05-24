@@ -1999,6 +1999,7 @@ class DataGen {
     constructor () {
         this.name = "Model";
         this.n_lines = 100; // Quantidade de linhas na geração
+        this.n_sample_lines = 100;
         this.save_as = "csv";
         this.header = true;
         this.header_type = true;
@@ -2011,6 +2012,7 @@ class DataGen {
     get configs(){
         return {
             n_lines: this.n_lines,
+            n_sample_lines: this.n_sample_lines,
             save_as: this.save_as,
             header: this.header,
             header_type: this.header_type,
@@ -2020,6 +2022,7 @@ class DataGen {
 
     set configs(obj){
         if(obj.n_lines) this.n_lines = obj.n_lines;
+        if(obj.n_sample_lines) this.n_sample_lines = obj.n_sample_lines;
         if(obj.save_as) this.save_as = obj.save_as;
         if(typeof obj.header === "boolean") this.header = obj.header;
         if(typeof obj.header_type === "boolean") this.header_type = obj.header_type;
@@ -2083,7 +2086,7 @@ class DataGen {
         let lb = this.n_lines;
         let sb = this.save_as;
         let hb = this.header;
-        this.n_lines = 100;
+        this.n_lines = this.n_sample_lines;
         this.save_as = "json";
         this.header = true;
         let sampleData = this.generate();
