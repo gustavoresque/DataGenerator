@@ -1001,9 +1001,11 @@ class LowPassFilter extends Generator {
 
 
 class RealDataWrapper extends Generator {
-    constructor(data) {
+    constructor(data, dataType) {
         super("Real Data Wrapper");
         this.data = data || [];
+        this.dataType = dataType || "Auto";
+
         this.length = data.length;
         this.current = 0;
     }
@@ -1012,17 +1014,19 @@ class RealDataWrapper extends Generator {
         let i = this.current;
         this.current++;
         this.current %= this.length;
-        return super.generate(this.data[i]);
+        return this.dataType === "Auto" ? super.generate(this.data[i]) :
+            this.dataType === "Numeric" ? parseFloat(super.generate(this.data[i])) : ""+super.generate(this.data[i]);
     }
 
     getModel(){
         let model = super.getModel();
         model.data = this.data;
+        model.dataType = this.dataType;
         return model;
     }
 
     copy(){
-        let newGen = new RealDataWrapper(this.data);
+        let newGen = new RealDataWrapper(this.data, this.dataType);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -1034,8 +1038,23 @@ class RealDataWrapper extends Generator {
     }
 
     getReturnedType(){
-        return (typeof this.data[0] === "number") ? "Numeric" : "Categorical";
+        return this.dataType;
     }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "Type",
+                variableName: "dataType",
+                name: "Force a Data Type",
+                type: "options",
+                options: ["Auto", "Numeric", "Categorical"]
+            }
+        );
+        return params;
+    }
+
 }
 
 class RandomCategorical extends Generator {
