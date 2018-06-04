@@ -27,4 +27,4 @@ This application was developed by Laboratório de Visualização, Interação e 
 
 ## License
 
-[Apache 2.0 (Public Domain)](LICENSE.md)
+[Apache 2.0 (Public Domain)](LICENSE)
