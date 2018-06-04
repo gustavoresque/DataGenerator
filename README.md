@@ -1,45 +1,30 @@
-# electron-quick-start
+# DataGenerator
 
-**Clone and run for a quick way to see Electron in action.**
+This is an application for generating synthetic databases for helping the information visualization evaluation. The system aims to create a data model that allows the construction of datasets with a diversity of profiles in a controlled manner. During the data model creation, the user can visualize generated data samples in coordinated visualizations to validate if the data has the desired characteristics. The creator of the model can save it for future experiments or updates and can export it enabling other groups to replicate the experiments easily.
 
-This is a minimal Electron application based on the [Quick Start Guide](http://electron.atom.io/docs/tutorial/quick-start) within the Electron documentation.
-
-**Use this app along with the [Electron API Demos](http://electron.atom.io/#get-started) app for API code examples to help you get started.**
-
-A basic Electron application needs just these files:
-
-- `package.json` - Points to the app's main file and lists its details and dependencies.
-- `main.js` - Starts the app and creates a browser window to render HTML. This is the app's **main process**.
-- `index.html` - A web page to render. This is the app's **renderer process**.
-
-You can learn more about each of these components within the [Quick Start Guide](http://electron.atom.io/docs/tutorial/quick-start).
-
-## To Use
-
-To clone and run this repository you'll need [Git](https://git-scm.com) and [Node.js](https://nodejs.org/en/download/) (which comes with [npm](http://npmjs.com)) installed on your computer. From your command line:
-
-```bash
-# Clone this repository
-git clone https://github.com/electron/electron-quick-start
-# Go into the repository
-cd electron-quick-start
-# Install dependencies
-npm install
-# Run the app
-npm start
+## How to build
+First of all, you have to install the [electron-packager](https://github.com/electron-userland/electron-packager) in globally way running the code below:
 ```
+npm install -g electron-packager
+```
+After that you can run the following codes:
+### Windows
+```
+electron-packager . --overwrite --asar=true --platform=win32 --arch=ia32 --prune=true --out=release-builds --version-string.ProductName="DataGenerator"
+```
+### Linux
+```
+electron-packager . --overwrite --asar=true --platform=linux --arch=x64 --prune=true --out=release-builds --version-string.ProductName="DataGenerator"
+```
+### MacOS
+```
+electron-packager . --overwrite --platform=darwin --arch=x64 --prune=true --out=release-builds --version-string.ProductName="DataGenerator"
+```
+## Team
 
-Note: If you're using Linux Bash for Windows, [see this guide](https://www.howtogeek.com/261575/how-to-run-graphical-linux-desktop-applications-from-windows-10s-bash-shell/) or use `node` from the command prompt.
-
-## Resources for Learning Electron
-
-- [electron.atom.io/docs](http://electron.atom.io/docs) - all of Electron's documentation
-- [electron.atom.io/community/#boilerplates](http://electron.atom.io/community/#boilerplates) - sample starter apps created by the community
-- [electron/electron-quick-start](https://github.com/electron/electron-quick-start) - a very basic starter Electron app
-- [electron/simple-samples](https://github.com/electron/simple-samples) - small applications with ideas for taking them further
-- [electron/electron-api-demos](https://github.com/electron/electron-api-demos) - an Electron app that teaches you how to use Electron
-- [hokein/electron-sample-apps](https://github.com/hokein/electron-sample-apps) - small demo apps for the various Electron APIs
+This application was developed by Laboratório de Visualização, Interação e Sistemas inteligentes (LABVIS) from Universidade Federal do Para (UFPA) since 2018.
+* [Page to Download Application](http://labvis.ufpa.br/datagen)
 
 ## License
 
-[CC0 1.0 (Public Domain)](LICENSE.md)
+[Apache 2.0 (Public Domain)](LICENSE.md)
