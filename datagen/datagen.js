@@ -2283,6 +2283,36 @@ class DataGen {
 
 }
 
+MissingValue.genType = "Accessory";
+RandomNoiseGenerator.genType = "Accessory";
+RandomConstantNoiseGenerator.genType = "Accessory";
+RangeFilter.genType = "Accessory";
+LinearScale.genType = "Accessory";
+MinMax.genType = "Accessory";
+LowPassFilter.genType = "Accessory";
+LinearFunction.genType = "Function";
+QuadraticFunction.genType = "Function";
+PolynomialFunction.genType = "Function";
+ExponentialFunction.genType = "Function";
+LogarithmFunction.genType = "Function";
+SinusoidalFunction.genType = "Function";
+CategoricalFunction.genType = "Function";
+TimeLapsFunction.genType = "Function";
+PoissonTimeGenerator.genType = "Random";
+RandomUniformGenerator.genType = "Random";
+RandomGaussianGenerator.genType = "Random";
+RandomPoissonGenerator.genType = "Random";
+RandomBernoulliGenerator.genType = "Random";
+RandomCauchyGenerator.genType = "Random";
+RandomWeightedCategorical.genType = "Random";
+RandomCategorical.genType = "Random";
+RandomCategoricalQtt.genType = "Random";
+FixedTimeGenerator.genType = "Sequence";
+ConstantValue.genType = "Sequence";
+CounterGenerator.genType = "Sequence";
+SinusoidalSequence.genType = "Sequence";
+CustomSequence.genType = "Sequence";
+
 DataGen.listOfGens = {
     'Constant Value': ConstantValue,
     'Missing Value': MissingValue,

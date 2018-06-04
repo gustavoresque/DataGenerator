@@ -15,26 +15,27 @@
     <script src="../lib/jquery-3.2.1.min.js"></script>
     <script src="../lib/contextMenu/jquery.contextMenu.js"></script>
     <script src="../lib/contextMenu/jquery.ui.position.min.js"></script>
-    <script src="../lib/d3.min.js"></script>
+    <!--<script src="../lib/d3.min.js"></script>-->
     <script>if (window.module) module = window.module;</script>
     <script src="../lib/date/date-en-US.js"></script>
     <script src="../lib/date/core.js"></script>
     <script src="../lib/date/parser.js"></script>
 
     <script src="../lib/layout/partition_layout.js"></script>
-    <script src="../lib/underscore-min.js"></script>
+    <!--<script src="../lib/underscore-min.js"></script>-->
 
 
     <style>
-        svg {
+        svg, text {
             font: 12px MONOSPACE;
+            fill: black;
         }
-        .axis line,
-        .axis path {
-            fill: none;
-            stroke: #000;
-            shape-rendering: crispEdges;
-        }
+        /*.axis line,*/
+        /*.axis path {*/
+            /*fill: none;*/
+            /*stroke: #000;*/
+            /*shape-rendering: crispEdges;*/
+        /*}*/
         .axis text {
             text-shadow: 0 2px 0 #fff, 2px 0 0 #fff, 0 -2px 0 #fff, -2px 0 0 #fff;
         }
@@ -86,6 +87,8 @@
                         }
                     });
                 });
+            // let color = d3.scale.category10();
+            // pc.settings.color = (d) =>{ return color(d["bar_size"])};
         };
 
         ipc.on('add-vis', function(event, arg){

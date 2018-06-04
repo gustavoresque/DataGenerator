@@ -144,3 +144,25 @@ td.columnGen td{
 td.columnGen > * {
     vertical-align: middle;
 }
+
+select#selectGeneratorType > option {
+    -webkit-appearance: button;
+    display: none;
+    z-index: 0;
+    border: 0;
+    box-shadow: 0 0 0;
+    outline: 0;
+    min-width: 0;
+    min-height: 0;
+}
+
+select#selectGeneratorType:focus > option {
+    -webkit-appearance: button;
+    display: none;
+    z-index: 0;
+    border: 0;
+    box-shadow: 0 0 0;
+    outline: 0;
+    min-width: 0;
+    min-height: 0;
+}

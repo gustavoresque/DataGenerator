@@ -5,7 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-packager . --asar"
+    "build": "electron-packager . --overwrite --platform=darwin --arch=x64 --prune=true --out=release-builds"
   },
   "repository": "https://github.com/electron/electron-quick-start",
   "keywords": [
@@ -19,16 +19,16 @@
   "license": "CC0-1.0",
   "devDependencies": {
     "electron": "^1.8.4",
-    "electron-builder": "^20.8.1"
+    "electron-builder": "^20.15.1"
   },
   "dependencies": {
-    "@labvis-ufpa/vistechlib": "^1.0.2",
+    "@labvis-ufpa/vistechlib": "^1.0.10",
     "asar": "^0.14.3",
     "d3": "^4.13.0",
-    "electron-packager": "^12.0.1",
+    "electron-packager": "^12.1.0",
     "jquery": "^3.3.1",
-    "json2csv": "^4.1.2",
-    "moment": "^2.22.1",
+    "json2csv": "^4.1.3",
+    "moment": "^2.22.2",
     "randgen": "^0.1.0"
   }
 }

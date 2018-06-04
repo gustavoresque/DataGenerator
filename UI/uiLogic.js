@@ -175,17 +175,26 @@ $("html").ready(function(){
 
     $("#tableCollumn").on("mousedown", "div.md-chip", configGenProps);
 
-    $("#selectGeneratorType").on("change blur", function(){
-        let nameNewGenerator = $(this).val();
-        let newGen = new (DataGen.listOfGens[nameNewGenerator])();
-        //substitui o gerador na estrutura.
 
-        this.__node__.changeGenerator(newGen);
-        activeGenerator = newGen;
+    $.contextMenu({
+        selector: '#selectGeneratorType',
+        trigger: 'none',
+        callback: function (key) {
+            let nameNewGenerator = key;
+            console.log(key);
+            let newGen = new (DataGen.listOfGens[nameNewGenerator])();
+            //substitui o gerador na estrutura.
+            this[0].__node__.changeGenerator(newGen);
+            activeGenerator = newGen;
 
-        let $active_chip = showGenerators();
-        configGenProps.apply($active_chip.get(0));
-        datagen[currentDataGen].resetAll();
+            let $active_chip = showGenerators();
+            configGenProps.apply($active_chip.get(0));
+            datagen[currentDataGen].resetAll();
+        },
+        items: configureMenuOfGens()
+    });
+    $("#selectGeneratorType").on("click", function(e){
+        $(this).contextMenu();
     });
 
     $("#rowsQtInput").blur(function(){
@@ -986,4 +995,19 @@ function brush() {
             return extents[i][0] <= d[p] && d[p] <= extents[i][1];
         }) ? null : "none";
     });
+}
+
+function configureMenuOfGens(){
+    let types = ["Sequence", "Random", "Function", "Accessory"];
+    let menuObj = {};
+
+    for(let t of types){
+        menuObj[t] = {name: t, items: {}};
+    }
+
+    for(let prop in DataGen.listOfGens){
+        menuObj[DataGen.listOfGens[prop].genType].items[prop] = {};
+        menuObj[DataGen.listOfGens[prop].genType].items[prop].name = prop;
+    }
+    return menuObj;
 }
