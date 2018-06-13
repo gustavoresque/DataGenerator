@@ -245,6 +245,7 @@ $("html").ready(function(){
     });
 
     $("#tableCollumn").on("change", "input.checkboxSelectColumn", function(){
+        console.log("Testando um dois tres");
         let col = $(this).parent().parent().get(0).__node__;
         let i = collumnsSelected.indexOf(col);
         if ($(this).is(':checked')){
@@ -436,15 +437,21 @@ function showGenerators(){
         );
     }
 
-
     let active_gen_chip = {};
     let $tbody = $("#tbody").empty();
     if (datagen.length > 0){
         for(let i = 0; i < datagen[currentDataGen].columns.length; i++){
             let $tr = $("<tr/>");
             datagen[currentDataGen].columns[i].type = datagen[currentDataGen].columns[i].generator.getReturnedType();
+            let c = false;
+            for (let y = 0; y < collumnsSelected.length; y++){
+                if (datagen[currentDataGen].columns[i].name === collumnsSelected[y].name){
+                    c = true;
+                }
+            }
+
             $tbody.append($tr
-                .append($("<td/>").append($("<input/>").attr("type", "checkbox").addClass("checkboxSelectColumn")))
+                .append($("<td/>").append($("<input/>").attr("type", "checkbox").prop("checked", c).addClass("checkboxSelectColumn")))
                 .append($("<td/>").text(i+1).addClass("tdIndex"))
                 .append($("<td/>").text(datagen[currentDataGen].columns[i].name).addClass("columnName"))
                 .append($("<td/>").text(datagen[currentDataGen].columns[i].type).addClass("columnType"))
