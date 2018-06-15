@@ -286,6 +286,8 @@ $("html").ready(function(){
             showGenerators();
         }
     });
+
+    dragAndDropGens();
 });
 
 function generateDatas(){
@@ -369,6 +371,28 @@ function dragGenerator(evt){
     evt.dataTransfer.setData("text/plain", JSON.stringify({modelID, modelName, colID, colName, genID, genModel, params}));
 }
 
+function dragAndDropGens(){
+    $(".columnGen").on("drop",function(event){
+        event.preventDefault();
+        event.stopPropagation();
+
+        // console.log(event.target.__node__);
+    }).on("dragover", function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        var x = event.pageX - $(event.target).offset().left;
+        var y = event.pageY - $(event.target).offset().top;
+        // console.log(x + "  ||  " + y + "  ||  " + $(event.target).width());
+        if (x < $(event.target).width()/2)
+            console.log("Left");
+        else
+            console.log("Right");
+    }).on("dragleave", function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+    });
+}
+
 /*Desenha na tela principal as colunas e seus respectivos geradores baseados nos dados armazendos no array datagen*/
 function showGenerators(){
     function displayGens($tdGen, generator, active_gen_chip){
@@ -399,21 +423,6 @@ function showGenerators(){
                         let $td = $("<td/>").addClass("columnGen");
 
                         displayGens($td, listOfGenSwitchFunction[c], active_gen_chip);
-                        // let generators2 = [];
-                        // listOfGenSwitchFunction[c].getFullGenerator(generators2);
-                        // for(let gen2 of generators2){
-                        //     let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen2.order + "-" + gen2.name);
-                        //     if(gen2 === activeGenerator)
-                        //         active_gen_chip.obj = $chip.addClass("active-md-chip");
-                        //     $chip.get(0).__node__ = gen2;
-                        //     $td.append($chip);
-                        // }
-                        //
-                        // $switchGenTr.append($td.append($("<span/>")
-                        //     .addClass("btnGenerator btnAddGen icon icon-plus-circled"))
-                        // ).append($td.append($("<span/>")
-                        //     .addClass("btnGenerator btnRemoveGen icon icon-trash"))
-                        // );
                         $switchGenTr.append($td);
                         $switchGenTable.append($switchGenTr);
                     }
@@ -462,12 +471,13 @@ function showGenerators(){
             //chama a função recursiva de desenho.
             displayGens($tdGen, datagen[currentDataGen].columns[i].generator, active_gen_chip);
 
-
             $tr.append($tdGen);
 
             $tr.get(0).__node__ = datagen[currentDataGen].columns[i];
             $tr.append($("<td/>").addClass("btnGenerator btnRemoveColumn icon icon-trash"));
         }
+
+        dragAndDropGens();
     }
     try{
         current_sample = datagen[currentDataGen].generateSample();
