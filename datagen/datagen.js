@@ -38,6 +38,7 @@ class Generator{
             this.generator = gen;
             gen.generator = aux;
         }else{
+            gen.generator = null;
             this.generator = gen;
         }
         this.generator.sumOrder();
