@@ -372,24 +372,38 @@ function dragGenerator(evt){
 }
 
 function dragAndDropGens(){
-    $(".columnGen").on("drop",function(event){
+    let temp = {};
+    $(".md-chip").on("drop",function(event){
         event.preventDefault();
         event.stopPropagation();
 
-        // console.log(event.target.__node__);
+        var x = event.pageX - $(event.target).offset().left;
+        // var y = event.pageY - $(event.target).offset().top;
+
+        if (x < $(event.target).width()/2){
+            if (event.target.__node__.order > 0){// Adiciona no parent
+                if(temp)
+                    event.target.__node__.parent.insertGenerator(temp);
+            }
+            else{// Adiciona no mesmo
+                if(temp)
+                    event.target.__node__.insertGenerator(temp);
+            }
+        }
+        else{// Adiciona no mesmo
+            if(temp)
+                event.target.__node__.insertGenerator(temp);
+        }
+        showGenerators();
     }).on("dragover", function(event) {
         event.preventDefault();
         event.stopPropagation();
-        var x = event.pageX - $(event.target).offset().left;
-        var y = event.pageY - $(event.target).offset().top;
-        // console.log(x + "  ||  " + y + "  ||  " + $(event.target).width());
-        if (x < $(event.target).width()/2)
-            console.log("Left");
-        else
-            console.log("Right");
     }).on("dragleave", function(event) {
         event.preventDefault();
         event.stopPropagation();
+    }).on("dragstart", function(event){
+        event.stopPropagation();
+        temp = event.target.__node__.copy();
     });
 }
 

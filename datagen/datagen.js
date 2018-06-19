@@ -22,6 +22,26 @@ class Generator{
         }
     }
 
+    sumOrder(){
+        this.order++;
+        if (this.generator) this.generator.sumOrder();
+    }
+
+    insertGenerator(gen){
+        gen.order = this.order;
+
+        if (this.generator){
+            this.generator.parent = gen;
+            gen.parent = this;
+
+            let aux = this.generator;
+            this.generator = gen;
+            gen.generator = aux;
+        }else{
+            this.generator = gen;
+        }
+        this.generator.sumOrder();
+    }
 
     changeGenerator(gen){
         gen.order = this.order;
