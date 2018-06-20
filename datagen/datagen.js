@@ -23,7 +23,9 @@ class Generator{
     }
 
     sumOrder(){
-        this.order++;
+        if (this.order > 0){
+            this.order = this.parent.order + 1;
+        }
         if (this.generator) this.generator.sumOrder();
     }
 
@@ -136,7 +138,7 @@ class Generator{
     }
 
     /**
-     * Retorna o genrador com seus parâmetros para ser serializado pelo JSON.stringify().
+     * Retorna o gerador com seus parâmetros para ser serializado pelo JSON.stringify().
      * Ou seja, sem funções e referências a outros objetos.
      * Este método deve ser sobreposto nas subclasses para persistência das variáveis específicas de cada subtipo
      * de gerador.

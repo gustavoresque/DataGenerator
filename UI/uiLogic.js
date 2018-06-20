@@ -372,28 +372,35 @@ function dragGenerator(evt){
 }
 
 function dragAndDropGens(){
-    let temp = {};
+    let dragged = {};
     $(".md-chip").on("drop",function(event){
         event.preventDefault();
         event.stopPropagation();
 
-        var x = event.pageX - $(event.target).offset().left;
-        // var y = event.pageY - $(event.target).offset().top;
+        let p = dragged.parent;
 
-        if (x < $(event.target).width()/2){
-            if (event.target.__node__.order > 0){// Adiciona no parent
-                if(temp)
-                    event.target.__node__.parent.insertGenerator(temp);
-            }
-            else{// Adiciona no mesmo
-                if(temp)
-                    event.target.__node__.insertGenerator(temp);
-            }
+        if (dragged.generator){
+            dragged.parent.generator = dragged.generator;
+            dragged.generator.parent = dragged.parent;
         }
-        else{// Adiciona no mesmo
-            if(temp)
-                event.target.__node__.insertGenerator(temp);
+        else{
+            dragged.parent.generator = null;
         }
+
+        if (event.target.__node__.generator){
+            dragged.parent = event.target.__node__;
+            event.target.__node__.generator.parent = dragged;
+
+            dragged.generator = event.target.__node__.generator;
+            event.target.__node__.generator = dragged;
+        }else{
+            event.target.__node__.generator = dragged;
+            dragged.parent = event.target.__node__;
+            dragged.generator = null;
+        }
+        event.target.__node__.sumOrder();
+        p.sumOrder();
+
         showGenerators();
     }).on("dragover", function(event) {
         event.preventDefault();
@@ -403,7 +410,7 @@ function dragAndDropGens(){
         event.stopPropagation();
     }).on("dragstart", function(event){
         event.stopPropagation();
-        temp = event.target.__node__.copy();
+        dragged = event.target.__node__;
     });
 }
 
