@@ -16,6 +16,7 @@ const fs = require('fs');
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow, visWindows = [];
+let visDimensionWindow;
 
 
 
@@ -81,6 +82,15 @@ function createWindow () {
     });
     ipcMain.on('update-sampledata', function () {
         mainWindow.webContents.send('update-sampledata');
+    });
+
+    ipcMain.on('generator-model', function () {
+        mainWindow.webContents.send('update-sampledata');
+    });
+
+    ipcMain.on('receive-dimension-generator', (event, message) => {
+        if (message)
+            console.log(message);
     });
 
     let funcOpenVisWindow = (visType) => {
@@ -160,29 +170,46 @@ function createWindow () {
             label: 'Visualize',
             submenu: [
                 {
-                    label: 'Parallel Coordinates',
-                    click(){
-                        funcOpenVisWindow('ParallelCoordinates');
-                    }
+                    label: "Sample",
+                    submenu: [
+                        {
+                            label: 'Parallel Coordinates',
+                            click(){ funcOpenVisWindow('ParallelCoordinates'); }
+                        },
+                        {
+                            label: 'Bundled Parallel Coordinates',
+                            click(){ funcOpenVisWindow('ParallelBundling'); }
+                        },
+                        {
+                            label: 'Scatterplot Matrix',
+                            click(){ funcOpenVisWindow('ScatterplotMatrix'); }
+                        },
+                        {
+                            label: 'Beeswarm Plot',
+                            click(){ funcOpenVisWindow('BeeswarmPlot'); }
+                        }
+                    ]
+                },
+                {
+                    label: "Dimension",
+                    submenu: [
+                        {
+                            label: 'Histogram Cascade',
+                            click(){
+                                visDimensionWindow = new BrowserWindow({width: 900, height: 600, show: false,});
+                                visDimensionWindow.loadURL(url.format({
+                                    pathname: path.join(__dirname, 'pages/visDimension.html'),
+                                    protocol: 'file:',
+                                    slashes: true
+                                }));
+                                visDimensionWindow.on('closed', function () {
+                                    visDimensionWindow = undefined;
+                                });
+                                mainWindow.webContents.send('getDataModel');
 
-                },
-                {
-                    label: 'Bundled Parallel Coordinates',
-                    click(){
-                        funcOpenVisWindow('ParallelBundling')
-                    }
-                },
-                {
-                    label: 'Scatterplot Matrix',
-                    click(){
-                        funcOpenVisWindow('ScatterplotMatrix');
-                    }
-                },
-                {
-                    label: 'Beeswarm Plot',
-                    click(){
-                        funcOpenVisWindow('BeeswarmPlot');
-                    }
+                            }
+                        }
+                    ]
                 }
             ]
         }

@@ -115,7 +115,7 @@ class Generator{
     }
 
     /**
-     * Retorna o genrador com seus parâmetros para ser serializado pelo JSON.stringify().
+     * Retorna o gerador com seus parâmetros para ser serializado pelo JSON.stringify().
      * Ou seja, sem funções e referências a outros objetos.
      * Este método deve ser sobreposto nas subclasses para persistência das variáveis específicas de cada subtipo
      * de gerador.
@@ -843,10 +843,10 @@ class RangeFilter extends Generator {
 class LinearScale extends Generator {
     constructor(minDomain,maxDomain, minRange, maxRange) {
         super("Linear Scale");
-        this.minDomain = minDomain;
-        this.maxDomain = maxDomain;
-        this.minRange = minRange;
-        this.maxRange = maxRange;
+        this.minDomain = minDomain | 0;
+        this.maxDomain = maxDomain | 100;
+        this.minRange = minRange | 0;
+        this.maxRange = maxRange | 1;
     }
 
     generate() {
