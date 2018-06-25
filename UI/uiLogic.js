@@ -377,14 +377,19 @@ function dragAndDropGens(){
         event.preventDefault();
         event.stopPropagation();
 
-        let p = dragged.parent;
-
         if (dragged.generator){
             dragged.parent.generator = dragged.generator;
             dragged.generator.parent = dragged.parent;
+            dragged.generator.sumOrder();
         }
         else{
-            dragged.parent.generator = null;
+            if (dragged.parent.ID.substring(0,3) === "COL"){
+                let newGen = new DataGen.listOfGens["Uniform Generator"]();
+                newGen.parent = dragged.parent;
+                dragged.parent.generator = newGen;
+            }else{
+                dragged.parent.generator = null;
+            }
         }
 
         if (event.target.__node__.generator){
@@ -399,7 +404,6 @@ function dragAndDropGens(){
             dragged.generator = null;
         }
         event.target.__node__.sumOrder();
-        p.sumOrder();
 
         showGenerators();
     }).on("dragover", function(event) {
