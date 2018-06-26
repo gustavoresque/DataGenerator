@@ -999,6 +999,41 @@ class LowPassFilter extends Generator {
     }
 }
 
+class NoRepeat extends Generator {
+    constructor() {
+        super("No Repeat");
+        this.values = [];
+    }
+
+    generate() {
+        let newValue = super.generate(0);
+        while(this.values.indexOf(newValue) >= 0)
+            newValue = super.generate(0);
+
+        this.values.push(newValue);
+        return newValue;
+    }
+
+    copy(){
+        let newGen = new NoRepeat();
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+
+    reset(){
+        super.reset();
+        this.values = [];
+    }
+
+    getReturnedType(){
+        if(this.generator)
+            return this.generator.getReturnedType();
+        return super.getReturnedType();
+    }
+
+}
 
 class RealDataWrapper extends Generator {
     constructor(data, dataType) {
@@ -2290,6 +2325,7 @@ RangeFilter.genType = "Accessory";
 LinearScale.genType = "Accessory";
 MinMax.genType = "Accessory";
 LowPassFilter.genType = "Accessory";
+NoRepeat.genType = "Accessory";
 LinearFunction.genType = "Function";
 QuadraticFunction.genType = "Function";
 PolynomialFunction.genType = "Function";
@@ -2328,6 +2364,7 @@ DataGen.listOfGens = {
     'Constant Noise Generator': RandomConstantNoiseGenerator,
     'Range Filter': RangeFilter,
     'Linear Scale': LinearScale,
+    'No Repeat': NoRepeat,
     'MinMax': MinMax,
     'Low-Pass Filter': LowPassFilter,
     'Weighted Categorical': RandomWeightedCategorical,
