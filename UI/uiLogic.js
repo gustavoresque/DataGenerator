@@ -258,6 +258,7 @@ $("html").ready(function(){
     });
 
     $("#tableCollumn").on("change", "input.checkboxSelectColumn", function(){
+        console.log("Testando um dois tres");
         let col = $(this).parent().parent().get(0).__node__;
         let i = collumnsSelected.indexOf(col);
         if ($(this).is(':checked')){
@@ -298,6 +299,8 @@ $("html").ready(function(){
             showGenerators();
         }
     });
+
+    dragAndDropGens();
 });
 
 function generateDatas(){
@@ -381,6 +384,53 @@ function dragGenerator(evt){
     evt.dataTransfer.setData("text/plain", JSON.stringify({modelID, modelName, colID, colName, genID, genModel, params}));
 }
 
+function dragAndDropGens(){
+    let dragged = {};
+    $(".md-chip").on("drop",function(event){
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (dragged.generator){
+            dragged.parent.generator = dragged.generator;
+            dragged.generator.parent = dragged.parent;
+            dragged.generator.sumOrder();
+        }
+        else{
+            if (dragged.parent.ID.substring(0,3) === "COL"){
+                let newGen = new DataGen.listOfGens["Uniform Generator"]();
+                newGen.parent = dragged.parent;
+                dragged.parent.generator = newGen;
+            }else{
+                dragged.parent.generator = null;
+            }
+        }
+
+        if (event.target.__node__.generator){
+            dragged.parent = event.target.__node__;
+            event.target.__node__.generator.parent = dragged;
+
+            dragged.generator = event.target.__node__.generator;
+            event.target.__node__.generator = dragged;
+        }else{
+            event.target.__node__.generator = dragged;
+            dragged.parent = event.target.__node__;
+            dragged.generator = null;
+        }
+        event.target.__node__.sumOrder();
+
+        showGenerators();
+    }).on("dragover", function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }).on("dragleave", function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }).on("dragstart", function(event){
+        event.stopPropagation();
+        dragged = event.target.__node__;
+    });
+}
+
 /*Desenha na tela principal as colunas e seus respectivos geradores baseados nos dados armazendos no array datagen*/
 function showGenerators(){
     function displayGens($tdGen, generator, active_gen_chip){
@@ -411,21 +461,6 @@ function showGenerators(){
                         let $td = $("<td/>").addClass("columnGen");
 
                         displayGens($td, listOfGenSwitchFunction[c], active_gen_chip);
-                        // let generators2 = [];
-                        // listOfGenSwitchFunction[c].getFullGenerator(generators2);
-                        // for(let gen2 of generators2){
-                        //     let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen2.order + "-" + gen2.name);
-                        //     if(gen2 === activeGenerator)
-                        //         active_gen_chip.obj = $chip.addClass("active-md-chip");
-                        //     $chip.get(0).__node__ = gen2;
-                        //     $td.append($chip);
-                        // }
-                        //
-                        // $switchGenTr.append($td.append($("<span/>")
-                        //     .addClass("btnGenerator btnAddGen icon icon-plus-circled"))
-                        // ).append($td.append($("<span/>")
-                        //     .addClass("btnGenerator btnRemoveGen icon icon-trash"))
-                        // );
                         $switchGenTr.append($td);
                         $switchGenTable.append($switchGenTr);
                     }
@@ -449,15 +484,21 @@ function showGenerators(){
         );
     }
 
-
     let active_gen_chip = {};
     let $tbody = $("#tbody").empty();
     if (datagen.length > 0){
         for(let i = 0; i < datagen[currentDataGen].columns.length; i++){
             let $tr = $("<tr/>");
             datagen[currentDataGen].columns[i].type = datagen[currentDataGen].columns[i].generator.getReturnedType();
+            let c = false;
+            for (let y = 0; y < collumnsSelected.length; y++){
+                if (datagen[currentDataGen].columns[i].name === collumnsSelected[y].name){
+                    c = true;
+                }
+            }
+
             $tbody.append($tr
-                .append($("<td/>").append($("<input/>").attr("type", "checkbox").addClass("checkboxSelectColumn")))
+                .append($("<td/>").append($("<input/>").attr("type", "checkbox").prop("checked", c).addClass("checkboxSelectColumn")))
                 .append($("<td/>").text(i+1).addClass("tdIndex"))
                 .append($("<td/>").text(datagen[currentDataGen].columns[i].name).addClass("columnName"))
                 .append($("<td/>").text(datagen[currentDataGen].columns[i].type).addClass("columnType"))
@@ -468,12 +509,13 @@ function showGenerators(){
             //chama a função recursiva de desenho.
             displayGens($tdGen, datagen[currentDataGen].columns[i].generator, active_gen_chip);
 
-
             $tr.append($tdGen);
 
             $tr.get(0).__node__ = datagen[currentDataGen].columns[i];
             $tr.append($("<td/>").addClass("btnGenerator btnRemoveColumn icon icon-trash"));
         }
+
+        dragAndDropGens();
     }
     try{
         current_sample = datagen[currentDataGen].generateSample();
