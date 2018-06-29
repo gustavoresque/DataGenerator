@@ -108,6 +108,14 @@ $("html").ready(function(){
                 }
                 case "exportDot": {
                     console.log(this.get(0).__node__.exportDot());
+                    let datastr = this.get(0).__node__.exportDot();
+                    dialog.showSaveDialog({title:"Save Data", filters:[{name:"Graph",extensions:["dot"]}]}, function(targetPath) {
+                        if(targetPath){
+                            fs.writeFile(targetPath, datastr, (err) => {
+                                if (err) throw err;
+                            });
+                        }
+                    });
                     break;
                 }
                 default:
