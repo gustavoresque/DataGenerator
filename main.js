@@ -15,7 +15,7 @@ const fs = require('fs');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let mainWindow, visWindows = [];
+let mainWindow, visWindows = [], visDimenWindows = [];
 let visDimensionWindow;
 
 
@@ -90,8 +90,27 @@ function createWindow () {
 
     ipcMain.on('receive-dimension-generator', (event, message) => {
         if (message)
-            console.log(message);
+            funcOpenVisDimenWindow(message);
     });
+
+    let funcOpenVisDimenWindow = (message) => {
+        let visDimenWindow = new BrowserWindow({width: 900, height: 600, show: false,});
+        visDimenWindows.push(visDimenWindow);
+        visDimenWindow.loadURL(url.format({
+            pathname: path.join(__dirname, 'pages/visDimension.html'),
+            protocol: 'file:',
+            slashes: true
+        }));
+        visDimenWindow.on('closed', function () {
+            let i = visDimenWindows.indexOf(visDimenWindow);
+            visDimenWindows.splice(i,1);
+            visDimenWindow = undefined;
+        });
+        visDimenWindow.once('ready-to-show', () => {
+            visDimenWindow.show();
+            visDimenWindow.webContents.send('update-dimen-data', message);
+        });
+    };
 
     let funcOpenVisWindow = (visType) => {
         let visWindow = new BrowserWindow({width: 900, height: 600, show: false,});

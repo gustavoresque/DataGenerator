@@ -60,8 +60,6 @@ class Generator{
             gen.generator.parent = gen;
 
         if(gen.parent instanceof SwitchCaseFunction){
-            console.log("parent", gen.parent);
-            console.log("gen", gen);
             for(let cat in gen.parent.listOfGenerators){
                 if(gen.parent.listOfGenerators.hasOwnProperty(cat) && gen.parent.listOfGenerators[cat] === this)
                     gen.parent.listOfGenerators[cat] = gen;
@@ -1692,7 +1690,7 @@ class CategoricalFunction extends SwitchCaseFunction{
 
     getGenParams() {
         let params = super.getGenParams();
-        params[0].type = "CategoricalColumn";
+        params[1].type = "CategoricalColumn";
         return params;
     }
 
@@ -1772,7 +1770,7 @@ class TimeLapsFunction extends SwitchCaseFunction{
 
     getGenParams() {
         let params = super.getGenParams();
-        params[0].type = "TimeColumn";
+        params[1].type = "TimeColumn";
         params.push({
             shortName: "Laps",
             variableName: "accessLaps",

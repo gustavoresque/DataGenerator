@@ -6,5 +6,15 @@
 </head>
 <body>
 
+
+    <script>
+        let ipc = require('electron').ipcRenderer;
+        let DataGen = require("../datagen/datagen.js");
+        
+        console.log(DataGen);
+        ipc.on('update-dimen-data', (event, arg) => {
+            console.log(event, JSON.parse(arg));
+        });
+    </script>
 </body>
 </html>
