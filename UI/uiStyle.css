@@ -155,7 +155,6 @@ select#selectGeneratorType > option {
     min-width: 0;
     min-height: 0;
 }
-
 select#selectGeneratorType:focus > option {
     -webkit-appearance: button;
     display: none;
@@ -165,4 +164,25 @@ select#selectGeneratorType:focus > option {
     outline: 0;
     min-width: 0;
     min-height: 0;
+}
+
+/* The Modal (background) */
+.modal {
+    display: none;  /*Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    padding-top: 100px; /* Location of the box */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(254,254,254,0.7); /* Black w/ opacity */
+}
+
+/* Modal Content */
+.modal-content {
+    margin: auto;
+    padding-top: 230px;
+    width: 0%;
 }
