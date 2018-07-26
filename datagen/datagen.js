@@ -2025,7 +2025,7 @@ function copyAttrs(source, target, context){
     for(let attr in source){
         if(source.hasOwnProperty(attr) && attr !== "name"){
             if(attr === "generator2"){
-                target[attr] = new (DataGen.listOfGens[source[attr]])();
+                target[attr] = new (DataGen.listOfGens[source[attr].name])();
             }else if(attr === "inputGenIndex") {
                 target.inputGenerator = context.columns[source[attr]].generator;
                 target[attr] = source[attr];
