@@ -148,7 +148,8 @@ class Generator{
     getModel(){
         return {
             name: this.name,
-            order: this.order
+            order: this.order,
+            ID: this.ID
         }
     }
 
@@ -157,6 +158,10 @@ class Generator{
     }
 
     copy(){
+
+    }
+
+    getEstimatedRange(){
 
     }
 }
@@ -197,6 +202,10 @@ class ConstantValue extends Generator{
             newGen.addGenerator(this.generator.copy(), this.order);
         }
         return newGen;
+    }
+
+    getEstimatedRange(){
+        return [this.value];
     }
 }
 
@@ -2018,7 +2027,7 @@ Generator.Operators.subtract.name = "subtract";
 ///--------------------------  Gerenciador de Colunas e Geração da base total. ----------------------------------------
 
 function uniqueID() {
-    return Date.now().toString(36);
+    return (Math.random()*Date.now()/Math.random()).toString(36);
 }
 
 function copyAttrs(source, target, context){
@@ -2206,14 +2215,17 @@ class DataGen {
             generator: []
         };
         for(let i=0; i<this.columns.length; i++){
+            console.log(this.columns[i].ID);
             model.generator.push({
                 name: this.columns[i].name,
                 type: this.columns[i].type,
+                ID: this.columns[i].ID
             });
             let fullGenerator = [];
             let fullGenNames = [];
             this.columns[i].generator.getFullGenerator(fullGenerator);
             for(let gen of fullGenerator){
+                console.log(gen.getModel());
                 fullGenNames.push(gen.getModel());
             }
             model.generator[i].generator = fullGenNames;
@@ -2223,9 +2235,12 @@ class DataGen {
     }
 
     //TODO: resolver funções e ruido.
-    importModel(model_str){
+    importModel(model_str, resetColumns){
         let model = JSON.parse(model_str);
         this.name = model.name;
+
+        if(resetColumns)
+            this.columns = [];
 
         for(let i=0; i<model.generator.length; i++){
 
@@ -2245,6 +2260,7 @@ class DataGen {
 
             generator.reset();
             let col = new Column(model.generator[i].name, generator);
+            col.ID = model.generator[i].ID;
             this.columns.push(col);
         }
     }

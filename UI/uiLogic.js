@@ -20,16 +20,18 @@ ipc.on('call-datagen', function(event, arg){
 });
 ipc.on('getDataModel', function(event, arg){
     // ipc.send('receive-datagen', activeGenerator.getGenParams());
-    if(collumnsSelected[0]){
-        let fullGenerator = collumnsSelected[0].generator.getFullGenerator();
-        let fullGenModels = [];
-        for(let gen of fullGenerator){
-            fullGenModels.push(gen.getModel());
-        }
-        ipc.send('receive-dimension-generator', JSON.stringify(fullGenModels));
-    }else{
-        alert("Please, Select a Dimension.")
-    }
+    ipc.send('receive-dimension-generator', datagen[currentDataGen].exportModel());
+
+    // if(collumnsSelected[0]){
+    //     let fullGenerator = collumnsSelected[0].generator.getFullGenerator();
+    //     let fullGenModels = [];
+    //     for(let gen of fullGenerator){
+    //         fullGenModels.push(gen.getModel());
+    //     }
+    //     ipc.send('receive-dimension-generator', JSON.stringify(fullGenModels));
+    // }else{
+    //     alert("Please, Select a Dimension.")
+    // }
 });
 ipc.on('change-datagen', function(event, arg){
     for(let dtg of datagen){
