@@ -313,44 +313,69 @@ $("html").ready(function(){
     dragAndDropGens();
 });
 
+let modal = document.getElementById('myModal');
+
 function generateDatas(){
-    let saveas = datagen[currentDataGen].save_as;
-    if(datagen[currentDataGen].configs.iterator.hasIt){
+    try {
+        modal.style.display = "block";
+        let saveas = datagen[currentDataGen].save_as;
+        if (datagen[currentDataGen].configs.iterator.hasIt) {
+            dialog.showSaveDialog({
+                title: "Save Data",
+                filters: [{name: saveas, extensions: [saveas]}]
+            }, function (targetPath) {
+                if (targetPath) {
+                    let it = datagen[currentDataGen].configs.iterator;
+                    console.log(it);
+                    let datastr;
+                    let prevValue = it.generator[it.parameterIt];
+                    it.generator[it.parameterIt] = it.beginIt;
+                    for (let i = 0; i < it.numberIt; i++) {
+                        datastr = generateStringData();
+                        fs.writeFileSync(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
+                            return p1 + "[" + i + "]" + p2;
+                        }), datastr);
+                        it.generator[it.parameterIt] += it.stepIt;
+                    }
+                    it.generator[it.parameterIt] = prevValue;
 
-        dialog.showSaveDialog({title:"Save Data", filters:[{name:saveas,extensions: [saveas]}]}, function(targetPath) {
-            if(targetPath){
-
-                let it = datagen[currentDataGen].configs.iterator;
-                console.log(it);
-                let datastr;
-                let prevValue = it.generator[it.parameterIt];
-                it.generator[it.parameterIt] = it.beginIt;
-                for(let i=0;i<it.numberIt; i++){
-                    datastr = generateStringData();
-                    fs.writeFileSync(targetPath.replace(/(.*)(\.\w+)$/g,(match, p1, p2) => { return p1+"["+i+"]"+p2; }), datastr);
-                    it.generator[it.parameterIt] += it.stepIt;
+                    modal.style.display = "none";
                 }
-                it.generator[it.parameterIt] = prevValue;
-            }
-        });
-    }else{
-        let datastr = generateStringData();
+            });
+        } else {
+            let datastr = generateStringData();
 
-        dialog.showSaveDialog({title:"Save Data", filters:[{name:saveas,extensions: [saveas]}]}, function(targetPath) {
-            if(targetPath){
-                fs.writeFile(targetPath, datastr, (err) => {
-                    if (err) throw err;
-                });
-            }
-        });
+            dialog.showSaveDialog({
+                title: "Save Data",
+                filters: [{name: saveas, extensions: [saveas]}]
+            }, function (targetPath) {
+                if (targetPath) {
+                    fs.writeFile(targetPath, datastr, (err) => {
+                        if (err) throw err;
+                    });
+
+                    alert('Saved data');
+                }
+
+                modal.style.display = "none";
+            });
+        }
+    }catch (e) {
+        console.log(e);
+        alert('Some problem happened!!! Verify generators properties.\n' +
+            'Tips:\n' +
+            '     * Be sure that Input Property of Function Generators isn\'t null ');
+
+        modal.style.display = "none";
     }
 }
 
 function generateStringData(){
-    let data = datagen[currentDataGen].generate();
-    let datastr;
     let save_as = datagen[currentDataGen].save_as;
+    let datastr;
     let filt = {};
+
+    let data = datagen[currentDataGen].generate();
 
     if(save_as === "json"){
         filt.name = "json";
@@ -369,11 +394,8 @@ function generateStringData(){
         }
 
         json2csvParser.opts.header = datagen[currentDataGen].header;
-
         datastr = json2csvParser.parse(data);
     }
-
-
     return datastr;
 }
 
@@ -619,8 +641,9 @@ function configGenProps(){
                 .attr("id", "input_"+p.variableName)
                 .attr("data-variable", p.variableName)
                 .attr("data-type", p.type);
-            for(let opt of p.options)
+            for(let opt of p.options){
                 $input.append($("<option/>").attr("value", opt).text(opt));
+            }
             $input.val(generator[p.variableName]);
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input));

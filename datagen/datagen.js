@@ -105,7 +105,7 @@ class Generator{
      *Caso não exista um operador, o valor inserido é somado ao valor gerado e retornado*/
     generate(sub_value){
         if(this.generator && this.operator){
-                return this.lastGenerated = this.operator(sub_value, this.generator.generate());
+            return this.lastGenerated = this.operator(sub_value, this.generator.generate());
         }
         return this.lastGenerated = sub_value;
     }
@@ -119,7 +119,7 @@ class Generator{
                 variableName: "accessOperator",
                 name: "The operator between this value and right generator value",
                 type: "options",
-                options: ["sum", "multiply", "modulus", "divide", "subtract"]
+                options: ["sum", "multiply", "modulus", "divide", "subtract", "none"]
             }
         ];
     }
@@ -2014,13 +2014,16 @@ Generator.Operators = {
     "multiply": (a,b) => { return a*b; },
     "modulus": (a,b) => { return a%b; },
     "divide": (a,b) => { return a/b; },
-    "subtract": (a,b) => { return a-b; }
+    "subtract": (a,b) => { return a-b; },
+    "none": (a,b) => { return b; }
+
 };
 Generator.Operators.sum.name = "sum";
 Generator.Operators.multiply.name = "multiply";
 Generator.Operators.modulus.name = "modulus";
 Generator.Operators.divide.name = "divide";
 Generator.Operators.subtract.name = "subtract";
+Generator.Operators.none.name = "none";
 
 
 
@@ -2034,7 +2037,7 @@ function copyAttrs(source, target, context){
     for(let attr in source){
         if(source.hasOwnProperty(attr) && attr !== "name"){
             if(attr === "generator2"){
-                target[attr] = new (DataGen.listOfGens[source[attr]])();
+                target[attr] = new (DataGen.listOfGens[source[attr].name])();
             }else if(attr === "inputGenIndex") {
                 target.inputGenerator = context.columns[source[attr]].generator;
                 target[attr] = source[attr];
