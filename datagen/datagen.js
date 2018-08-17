@@ -148,8 +148,7 @@ class Generator{
     getModel(){
         return {
             name: this.name,
-            order: this.order,
-            ID: this.ID
+            order: this.order
         }
     }
 
@@ -158,10 +157,6 @@ class Generator{
     }
 
     copy(){
-
-    }
-
-    getEstimatedRange(){
 
     }
 }
@@ -202,10 +197,6 @@ class ConstantValue extends Generator{
             newGen.addGenerator(this.generator.copy(), this.order);
         }
         return newGen;
-    }
-
-    getEstimatedRange(){
-        return [this.value];
     }
 }
 
@@ -2030,7 +2021,7 @@ Generator.Operators.none.name = "none";
 ///--------------------------  Gerenciador de Colunas e Geração da base total. ----------------------------------------
 
 function uniqueID() {
-    return (Math.random()*Date.now()/Math.random()).toString(36);
+    return Date.now().toString(36);
 }
 
 function copyAttrs(source, target, context){
@@ -2080,6 +2071,7 @@ class Column{
         this.type = this.generator.getReturnedType();
         this.ID = "COL_"+uniqueID();
         this.generator.parent = this;
+        this.checked = true;
     }
 }
 
@@ -2093,6 +2085,7 @@ class DataGen {
         this.header = true;
         this.header_type = true;
         let column = new Column("Dimension 1");
+        collumnsSelected.push(column);
         this.columns = [column];
         this.iterator = {hasIt:false};
         this.ID = "MODEL_"+uniqueID();
@@ -2135,18 +2128,27 @@ class DataGen {
         }
     }
 
-    getColumnsNames(){
+    getColumnsNames(a=undefined){
         let names = [];
         for(let col of this.columns){
-            names.push(col.name);
+            if(a==undefined) {names.push(col.name);}
+            else {
+                for (let i = 0; i< collumnsSelected.length;i++) {
+                    if(col.name == collumnsSelected[i].name) {
+                        names.push(col.name);
+                        break;
+                    }
+                }
+
+            }
         }
         return names;
     }
 
-
     addCollumn(name, generator){
         generator = generator || new defaultGenerator();
         let column = new Column(name, generator);
+        collumnsSelected.push(column);
         this.columns.push(column);
     }
 
@@ -2185,23 +2187,23 @@ class DataGen {
         return sampleData;
     }
 
-    generate (){
+    generate () {
         let data = [];
-        if(this.save_as === "json" && !this.header){
-            for (let i = 0; i < this.n_lines; i++){
-                data.push([]);
-                for (let j = 0; j < this.columns.length; j++){
-                    data[i].push(this.columns[j].generator.generate());
-                }
-            }
-        }else{
-            for (let i = 0; i < this.n_lines; i++){
-                data.push({});
-                for (let j = 0; j < this.columns.length; j++){
-                    data[i][this.columns[j].name] = this.columns[j].generator.generate();
+
+        for (let i = 0; i < this.n_lines; i++) {
+            data.push(this.save_as === "json" && !this.header ? [] : {})
+            let unCheckCollumns = collumnsSelected.length === 0 ? this.columns : collumnsSelected; //Verificar se as colunas estão checadas.
+            for (let j = 0; j < collumnsSelected.length; j++) {
+                if (this.save_as === "json" && !this.header) {
+                    data[i].push(collumnsSelected[j].generator.generate());
+                } else {
+
+                    data[i][collumnsSelected[j].name] = collumnsSelected[j].generator.generate();
                 }
             }
         }
+
+
         this.resetAll();
         return data;
     }
@@ -2218,17 +2220,14 @@ class DataGen {
             generator: []
         };
         for(let i=0; i<this.columns.length; i++){
-            console.log(this.columns[i].ID);
             model.generator.push({
                 name: this.columns[i].name,
                 type: this.columns[i].type,
-                ID: this.columns[i].ID
             });
             let fullGenerator = [];
             let fullGenNames = [];
             this.columns[i].generator.getFullGenerator(fullGenerator);
             for(let gen of fullGenerator){
-                console.log(gen.getModel());
                 fullGenNames.push(gen.getModel());
             }
             model.generator[i].generator = fullGenNames;
@@ -2238,12 +2237,9 @@ class DataGen {
     }
 
     //TODO: resolver funções e ruido.
-    importModel(model_str, resetColumns){
+    importModel(model_str){
         let model = JSON.parse(model_str);
         this.name = model.name;
-
-        if(resetColumns)
-            this.columns = [];
 
         for(let i=0; i<model.generator.length; i++){
 
@@ -2263,7 +2259,6 @@ class DataGen {
 
             generator.reset();
             let col = new Column(model.generator[i].name, generator);
-            col.ID = model.generator[i].ID;
             this.columns.push(col);
         }
     }
