@@ -4,12 +4,13 @@ const dialog = electron.dialog;
 
 let DataGen = require("./datagen/datagen.js");
 let UniformGenerator = DataGen.listOfGens['Uniform Generator'];
-let datagen = [new DataGen()];
 let currentDataGen = 0;
 let current_sample;
 let activeGenerator;
 let collumnsSelected = [];
+let collumnsNotSelected = [];
 let collumnsCopied = [];
+let datagen = [new DataGen()];
 let ipc = require('electron').ipcRenderer;
 
 
@@ -20,18 +21,16 @@ ipc.on('call-datagen', function(event, arg){
 });
 ipc.on('getDataModel', function(event, arg){
     // ipc.send('receive-datagen', activeGenerator.getGenParams());
-    ipc.send('receive-dimension-generator', datagen[currentDataGen].exportModel());
-
-    // if(collumnsSelected[0]){
-    //     let fullGenerator = collumnsSelected[0].generator.getFullGenerator();
-    //     let fullGenModels = [];
-    //     for(let gen of fullGenerator){
-    //         fullGenModels.push(gen.getModel());
-    //     }
-    //     ipc.send('receive-dimension-generator', JSON.stringify(fullGenModels));
-    // }else{
-    //     alert("Please, Select a Dimension.")
-    // }
+    if(collumnsSelected[0]){
+        let fullGenerator = collumnsSelected[0].generator.getFullGenerator();
+        let fullGenModels = [];
+        for(let gen of fullGenerator){
+            fullGenModels.push(gen.getModel());
+        }
+        ipc.send('receive-dimension-generator', JSON.stringify(fullGenModels));
+    }else{
+        alert("Please, Select a Dimension.")
+    }
 });
 ipc.on('change-datagen', function(event, arg){
     for(let dtg of datagen){
@@ -268,18 +267,27 @@ $("html").ready(function(){
     });
 
     $("#tableCollumn").on("change", "input.checkboxSelectColumn", function(){
-        console.log("Testando um dois tres");
+        //console.log("Testando um dois tres");
         let col = $(this).parent().parent().get(0).__node__;
-        let i = collumnsSelected.indexOf(col);
-        if ($(this).is(':checked')){
+        let i = collumnsNotSelected.indexOf(col);
+        let j = collumnsSelected.indexOf(col);
+        if (!$(this).is(':checked')){
             if (i === -1){
-                collumnsSelected.push(col);
+                collumnsNotSelected.push(col);
+            }
+            if (j !== -1) {
+                collumnsSelected.splice(j,1);
             }
         }
-        else if (i !== -1){
-            collumnsSelected.splice(i,1);
-        }
+        else
+            if (i !== -1){
+                collumnsNotSelected.splice(i,1);
+            }
+            if (j === -1) {
+                collumnsSelected.push(col);
+            }
     });
+
 
     $(document).keydown(function(e) {
         if (e.keyCode == 67 && e.ctrlKey) {// CRTL + C
@@ -316,6 +324,10 @@ $("html").ready(function(){
 let modal = document.getElementById('myModal');
 
 function generateDatas(){
+    if(collumnsSelected.length === 0) {
+        alert('You selected nothing!');
+        return undefined;
+    }
     try {
         modal.style.display = "block";
         let saveas = datagen[currentDataGen].save_as;
@@ -326,7 +338,6 @@ function generateDatas(){
             }, function (targetPath) {
                 if (targetPath) {
                     let it = datagen[currentDataGen].configs.iterator;
-                    console.log(it);
                     let datastr;
                     let prevValue = it.generator[it.parameterIt];
                     it.generator[it.parameterIt] = it.beginIt;
@@ -360,6 +371,7 @@ function generateDatas(){
                 modal.style.display = "none";
             });
         }
+
     }catch (e) {
         console.log(e);
         alert('Some problem happened!!! Verify generators properties.\n' +
@@ -382,8 +394,7 @@ function generateStringData(){
         filt.extensions = ['json'];
         datastr = JSON.stringify(data);
     }else if(save_as === "csv" || save_as === "tsv"){
-        let json2csvParser = new Json2csvParser({ fields: datagen[currentDataGen].getColumnsNames() });
-        console.log(json2csvParser);
+        let json2csvParser = new Json2csvParser({ fields: datagen[currentDataGen].getColumnsNames("SelectedOnly") });
         if(save_as === "csv"){
             filt.name = "csv";
             filt.extensions = ['csv'];
@@ -392,8 +403,8 @@ function generateStringData(){
             filt.name = "tsv";
             filt.extensions = ['tsv'];
         }
-
         json2csvParser.opts.header = datagen[currentDataGen].header;
+
         datastr = json2csvParser.parse(data);
     }
     return datastr;
@@ -522,15 +533,15 @@ function showGenerators(){
         for(let i = 0; i < datagen[currentDataGen].columns.length; i++){
             let $tr = $("<tr/>");
             datagen[currentDataGen].columns[i].type = datagen[currentDataGen].columns[i].generator.getReturnedType();
-            let c = false;
-            for (let y = 0; y < collumnsSelected.length; y++){
-                if (datagen[currentDataGen].columns[i].name === collumnsSelected[y].name){
-                    c = true;
+            let c = true;
+            for (let y = 0; y < collumnsNotSelected.length; y++){
+                if (datagen[currentDataGen].columns[i].name === collumnsNotSelected[y].name){
+                    c = false
                 }
             }
 
             $tbody.append($tr
-                .append($("<td/>").append($("<input/>").attr("type", "checkbox").prop("checked", c).addClass("checkboxSelectColumn")))
+                .append($("<td/>").append($("<input/>").attr("type", "checkbox").prop("checked",c).addClass("checkboxSelectColumn")))
                 .append($("<td/>").text(i+1).addClass("tdIndex"))
                 .append($("<td/>").text(datagen[currentDataGen].columns[i].name).addClass("columnName"))
                 .append($("<td/>").text(datagen[currentDataGen].columns[i].type).addClass("columnType"))
@@ -917,8 +928,6 @@ function createModelFromDataSet(path){
                         columns.push(p);
                 }
             }
-            console.log(data);
-            console.log(columns);
 
             let createdDatagen = new DataGen();
             datagen.push(createdDatagen);
