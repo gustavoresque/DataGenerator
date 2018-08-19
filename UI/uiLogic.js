@@ -203,7 +203,6 @@ $("html").ready(function(){
         trigger: 'none',
         callback: function (key) {
             let nameNewGenerator = key;
-            console.log(key);
             let newGen = new (DataGen.listOfGens[nameNewGenerator])();
             //substitui o gerador na estrutura.
             this[0].__node__.changeGenerator(newGen);

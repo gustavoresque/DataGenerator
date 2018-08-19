@@ -1616,6 +1616,8 @@ class SwitchCaseFunction extends Function{
     }
 
     reset(){
+        //Sempre que ocorre um reset, o switchCaseFunction avalia a lista de input para verificar se essa lista possui valores novos.
+        //Se possui valores a mais, são incluidos RandomUniformGenerators, caso possua um input a menos esse é removido.
         if (!this.inputGenerator)
             return;
         let auxgen = new RandomUniformGenerator();
@@ -1623,9 +1625,13 @@ class SwitchCaseFunction extends Function{
         auxgen.parent = this;
 
         let attrs = [];
-        for(let attr in this.listOfGenerators)
-            if(this.listOfGenerators.hasOwnProperty(attr))
+        for(let attr in this.listOfGenerators){
+            if(this.listOfGenerators.hasOwnProperty(attr)){
+                //Todos os geradores são resetados aqui.
+                this.listOfGenerators[attr].reset();
                 attrs.push(attr);
+            }
+        }
         for(let i=0; i<this.inputArray.length; i++){
             if(!(this.listOfGenerators[this.inputArray[i]])) {
                 let gen = new RandomUniformGenerator();
