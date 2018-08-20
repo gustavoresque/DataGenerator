@@ -7,7 +7,10 @@ let moment = require("moment");
 class Generator{
     constructor(name){
         this.name = name;
-        this.operator = defaultOperator;
+        if(this instanceof SwitchCaseFunction)
+            this.operator = Generator.Operators.none;
+        else
+            this.operator = defaultOperator;
         this.order = 0;
         this.ID = "GEN_"+uniqueID();
     }
