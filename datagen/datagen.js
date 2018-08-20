@@ -2041,24 +2041,22 @@ function copyAttrs(source, target, context){
             }else if(attr === "listOfGenerators") {
                 target[attr] = {};
                 for(let attr2 in source[attr]){
-                    if(source[attr].hasOwnProperty(attr2))
-                        for(let genObj of source[attr][attr2]){
+                    if(source[attr].hasOwnProperty(attr2)) {
+                        for (let genObj of source[attr][attr2]) {
                             //Resolve os filhos
                             let gen1 = new (DataGen.listOfGens[genObj.name])();
-                            console.log(target[attr][attr2]);
-                            if(target[attr][attr2]) {
+
+                            if (target[attr][attr2]) {
                                 target[attr][attr2].addGenerator(gen1);
                                 // gen1.parent = target;
-                            }else {
+                            } else {
                                 target[attr][attr2] = gen1;
                                 target[attr][attr2].parent = target;
                             }
-                            //Copia os atributos desse filho.
-                            for (let t in genObj){
-                                if(genObj.hasOwnProperty(t))
-                                    gen1[t] = genObj[t];
-                            }
+                            copyAttrs(genObj, gen1, context);
+
                         }
+                    }
                 }
             }else{
                 target[attr] = source[attr];
@@ -2257,10 +2255,14 @@ class DataGen {
                     let newgen = new selectedGenerator();
                     generator.addGenerator(newgen);
                     copyAttrs(model.generator[i].generator[j], newgen, this);
+
+
+
                 }else{
                     generator = new selectedGenerator();
                     copyAttrs(model.generator[i].generator[j], generator, this);
                 }
+
             }
 
             generator.reset();
