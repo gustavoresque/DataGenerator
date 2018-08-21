@@ -2100,6 +2100,7 @@ class DataGen {
         this.header = true;
         this.header_type = true;
         let column = new Column("Dimension 1");
+        collumnsSelected.push(column);
         this.columns = [column];
         this.iterator = {hasIt:false};
         this.ID = "MODEL_"+uniqueID();
@@ -2142,10 +2143,18 @@ class DataGen {
         }
     }
 
-    getColumnsNames(){
+    getColumnsNames(a=undefined){
         let names = [];
         for(let col of this.columns){
-            names.push(col.name);
+            if(a==undefined) {names.push(col.name);}
+            else {
+                for (let i = 0; i< collumnsSelected.length;i++) {
+                    if(col.name == collumnsSelected[i].name) {
+                        names.push(col.name);
+                        break;
+                    }
+                }
+            }
         }
         return names;
     }
@@ -2154,6 +2163,7 @@ class DataGen {
     addCollumn(name, generator){
         generator = generator || new defaultGenerator();
         let column = new Column(name, generator);
+        collumnsSelected.push(column);
         this.columns.push(column);
     }
 
@@ -2194,18 +2204,14 @@ class DataGen {
 
     generate (){
         let data = [];
-        if(this.save_as === "json" && !this.header){
-            for (let i = 0; i < this.n_lines; i++){
-                data.push([]);
-                for (let j = 0; j < this.columns.length; j++){
-                    data[i].push(this.columns[j].generator.generate());
-                }
-            }
-        }else{
-            for (let i = 0; i < this.n_lines; i++){
-                data.push({});
-                for (let j = 0; j < this.columns.length; j++){
-                    data[i][this.columns[j].name] = this.columns[j].generator.generate();
+        for (let i = 0; i < this.n_lines; i++) {
+            data.push(this.save_as === "json" && !this.header ? [] : {})
+            let unCheckCollumns = collumnsSelected.length === 0 ? this.columns : collumnsSelected; //Verificar se as colunas estão checadas.
+            for (let j = 0; j < collumnsSelected.length; j++) {
+                if (this.save_as === "json" && !this.header) {
+                    data[i].push(collumnsSelected[j].generator.generate());
+                } else {
+                    data[i][collumnsSelected[j].name] = collumnsSelected[j].generator.generate();
                 }
             }
         }
