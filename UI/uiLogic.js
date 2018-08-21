@@ -773,11 +773,11 @@ function createExportModel (path) {
     });
 }
 
-function createImportModel (data) {
+function createImportModel (modelName, data) {
     let dg = new DataGen();
     dg.columns = [];
     dg.importModel(data);
-    dg.name = "Model " + datagen.length;
+    dg.name = modelName;
     datagen.push(dg);
     let pos = (datagen.length-1);
     currentDataGen = pos;

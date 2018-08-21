@@ -147,13 +147,14 @@ function createWindow () {
                         if(pathFile){
                             fs.readFile(pathFile.toString(), 'utf8', (err, data) => {
                                 if (err) throw err;
-                                mainWindow.webContents.executeJavaScript("createImportModel('"+ data +"');");
+                                let name = pathFile.toString().split('\\')[pathFile.toString().split('\\').length-1];
+                                mainWindow.webContents.executeJavaScript("createImportModel('"+ name.split('.')[0] +"','"+ data +"');");
                             });
                         }
                         //mainWindow.webContents.executeJavaScript('createImportModel("'+ str +'");');
                     }},
                 {label: 'Export Model', click (){
-                        dialog.showSaveDialog({title:"Salvar modelo"}, function(targetPath) {
+                        dialog.showSaveDialog({title:"Salvar modelo", filters:[{name: 'json', extensions: ['json']}]}, function(targetPath) {
                             if(targetPath){
                                 let partsOfStr = targetPath.split('\\');
                                 targetPath = "";
