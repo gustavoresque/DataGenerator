@@ -4,14 +4,12 @@ const dialog = electron.dialog;
 
 let DataGen = require("./datagen/datagen.js");
 let UniformGenerator = DataGen.listOfGens['Uniform Generator'];
-
+let datagen = [new DataGen()];
 let currentDataGen = 0;
 let current_sample;
 let activeGenerator;
 let collumnsSelected = [];
-let collumnsNotSelected = [];
 let collumnsCopied = [];
-let datagen = [new DataGen()];
 let ipc = require('electron').ipcRenderer;
 
 
@@ -271,22 +269,14 @@ $("html").ready(function(){
     $("#tableCollumn").on("change", "input.checkboxSelectColumn", function(){
         console.log("Testando um dois tres");
         let col = $(this).parent().parent().get(0).__node__;
-        let i = collumnsNotSelected.indexOf(col);
-        let j = collumnsSelected.indexOf(col);
-        if (!$(this).is(':checked')){
+        let i = collumnsSelected.indexOf(col);
+        if ($(this).is(':checked')){
             if (i === -1){
-                collumnsNotSelected.push(col);
-            }
-            if (j !== -1) {
-                collumnsSelected.splice(j,1);
+                collumnsSelected.push(col);
             }
         }
-        else
-        if (i !== -1){
-            collumnsNotSelected.splice(i,1);
-        }
-        if (j === -1) {
-            collumnsSelected.push(col);
+        else if (i !== -1){
+            collumnsSelected.splice(i,1);
         }
     });
 
@@ -325,10 +315,6 @@ $("html").ready(function(){
 let modal = document.getElementById('myModal');
 
 function generateDatas(){
-    if(collumnsSelected.length === 0) {
-        alert('You selected nothing!');
-        return undefined;
-    }
     try {
         modal.style.display = "block";
         let saveas = datagen[currentDataGen].save_as;
@@ -395,7 +381,7 @@ function generateStringData(){
         filt.extensions = ['json'];
         datastr = JSON.stringify(data);
     }else if(save_as === "csv" || save_as === "tsv"){
-        let json2csvParser = new Json2csvParser({ fields: datagen[currentDataGen].getColumnsNames("SelectedOnly") });
+        let json2csvParser = new Json2csvParser({ fields: datagen[currentDataGen].getColumnsNames() });
         console.log(json2csvParser);
         if(save_as === "csv"){
             filt.name = "csv";
@@ -535,10 +521,10 @@ function showGenerators(){
         for(let i = 0; i < datagen[currentDataGen].columns.length; i++){
             let $tr = $("<tr/>");
             datagen[currentDataGen].columns[i].type = datagen[currentDataGen].columns[i].generator.getReturnedType();
-            let c = true;
-            for (let y = 0; y < collumnsNotSelected.length; y++){
-                if (datagen[currentDataGen].columns[i].name === collumnsNotSelected[y].name){
-                    c = false;
+            let c = false;
+            for (let y = 0; y < collumnsSelected.length; y++){
+                if (datagen[currentDataGen].columns[i].name === collumnsSelected[y].name){
+                    c = true;
                 }
             }
 
