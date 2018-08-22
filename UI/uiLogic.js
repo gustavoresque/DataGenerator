@@ -271,11 +271,13 @@ $("html").ready(function(){
         let col = $(this).parent().parent().get(0).__node__;
         let i = collumnsSelected.indexOf(col);
         if ($(this).is(':checked')){
+            //TODO: colocar o filtro em outro componente gráfico.
+            col.display = true;
             if (i === -1){
                 collumnsSelected.push(col);
             }
-        }
-        else if (i !== -1){
+        } else if (i !== -1){
+            col.display = false;
             collumnsSelected.splice(i,1);
         }
     });

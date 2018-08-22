@@ -2087,6 +2087,7 @@ class Column{
         this.type = this.generator.getReturnedType();
         this.ID = "COL_"+uniqueID();
         this.generator.parent = this;
+        this.display = true; //Variável utilizada para filtrar a dimensão de dados.
     }
 }
 
@@ -2205,7 +2206,8 @@ class DataGen {
             for (let i = 0; i < this.n_lines; i++){
                 data.push({});
                 for (let j = 0; j < this.columns.length; j++){
-                    data[i][this.columns[j].name] = this.columns[j].generator.generate();
+                    if(this.columns[j].display)
+                        data[i][this.columns[j].name] = this.columns[j].generator.generate();
                 }
             }
         }
