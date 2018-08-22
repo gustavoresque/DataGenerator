@@ -21,6 +21,7 @@ let visDimensionWindow;
 
 
 function createWindow () {
+
   // Create the browser window.
   mainWindow = new BrowserWindow({width: 900, height: 600});
   mainWindow.maximize();
@@ -133,121 +134,127 @@ function createWindow () {
     };
 
     const menu = new Menu();
-    menu.append(new MenuItem(
-        {
-            label: 'File',
-            submenu: [
-                {label: 'New Model', click (){
-                        mainWindow.webContents.executeJavaScript('createNewModel();');
-                    }},
-                {label: 'Import Model', click (){
-                        let pathFile = dialog.showOpenDialog(mainWindow, {
-                            properties: ['openFile']
-                        });
-                        if(pathFile){
-                            fs.readFile(pathFile.toString(), 'utf8', (err, data) => {
-                                if (err) throw err;
-                                let name = pathFile.toString().split('\\')[pathFile.toString().split('\\').length-1];
-                                mainWindow.webContents.executeJavaScript("createImportModel('"+ name.split('.')[0] +"','"+ data +"');");
-                            });
-                        }
-                        //mainWindow.webContents.executeJavaScript('createImportModel("'+ str +'");');
-                    }},
-                {label: 'Export Model', click (){
-                        dialog.showSaveDialog({title:"Salvar modelo", filters:[{name: 'json', extensions: ['json']}]}, function(targetPath) {
-                            if(targetPath){
-                                let partsOfStr = targetPath.split('\\');
-                                targetPath = "";
-                                for (let i = 0; i < partsOfStr.length; i++){
-                                    targetPath += partsOfStr[i] + "\\\\";
-                                }
-                                console.log(targetPath);
-                                mainWindow.webContents.executeJavaScript("createExportModel('" + targetPath + "');");
-                            }
-                        });
-                        //mainWindow.webContents.executeJavaScript('createExportModel("' + str + '");');
-                    }},
-                {type: 'separator'},
-                {
-                    label: 'Import Real DataSet', click (){
-                        dialog.showOpenDialog(mainWindow, {title:"Open DataSet", properties: ['openFile'], filters:[
-                                    {name: 'JSON', extensions:['json']}, {name: 'CSV', extensions:['csv']}, {name: 'TSV', extensions:['tsv']}
-                                ]}, function(targetPath) {
-                                if(targetPath){
-                                    mainWindow.webContents.executeJavaScript('createModelFromDataSet("'+targetPath[0].replace(/\\/g,'\\\\')+'");');
-                                }
-                            }
-                        );
-                    }
-                },
-                {type: 'separator'},
-                {role: 'close'}
-            ]
-        }
-    ));
-    menu.append(new MenuItem(
-        {
-            label: 'Visualize',
-            submenu: [
-                {
-                    label: "Sample",
-                    submenu: [
-                        {
-                            label: 'Parallel Coordinates',
-                            click(){ funcOpenVisWindow('ParallelCoordinates'); }
-                        },
-                        {
-                            label: 'Bundled Parallel Coordinates',
-                            click(){ funcOpenVisWindow('ParallelBundling'); }
-                        },
-                        {
-                            label: 'Scatterplot Matrix',
-                            click(){ funcOpenVisWindow('ScatterplotMatrix'); }
-                        },
-                        {
-                            label: 'Beeswarm Plot',
-                            click(){ funcOpenVisWindow('BeeswarmPlot'); }
-                        }
-                    ]
-                },
-                {
-                    label: "Dimension",
-                    submenu: [
-                        {
-                            label: 'Histogram Cascade',
-                            click(){
-                                visDimensionWindow = new BrowserWindow({width: 900, height: 600, show: false,});
-                                visDimensionWindow.loadURL(url.format({
-                                    pathname: path.join(__dirname, 'pages/visDimension.html'),
-                                    protocol: 'file:',
-                                    slashes: true
-                                }));
-                                visDimensionWindow.on('closed', function () {
-                                    visDimensionWindow = undefined;
-                                });
-                                mainWindow.webContents.send('getDataModel');
 
+    const menuTemplateFile = {
+        label: 'File',
+        submenu: [
+            {label: 'New Model', click (){
+                    mainWindow.webContents.executeJavaScript('createNewModel();');
+                }},
+            {label: 'Import Model', click (){
+                    let pathFile = dialog.showOpenDialog(mainWindow, {
+                        properties: ['openFile']
+                    });
+                    if(pathFile){
+                        fs.readFile(pathFile.toString(), 'utf8', (err, data) => {
+                            if (err) throw err;
+                            let name = pathFile.toString().split('\\')[pathFile.toString().split('\\').length-1];
+                            mainWindow.webContents.executeJavaScript("createImportModel('"+ name.split('.')[0] +"','"+ data +"');");
+                        });
+                    }
+                    //mainWindow.webContents.executeJavaScript('createImportModel("'+ str +'");');
+                }},
+            {label: 'Export Model', click (){
+                    dialog.showSaveDialog({title:"Salvar modelo", filters:[{name: 'json', extensions: ['json']}]}, function(targetPath) {
+                        if(targetPath){
+                            let partsOfStr = targetPath.split('\\');
+                            targetPath = "";
+                            for (let i = 0; i < partsOfStr.length; i++){
+                                targetPath += partsOfStr[i] + "\\\\";
+                            }
+                            console.log(targetPath);
+                            mainWindow.webContents.executeJavaScript("createExportModel('" + targetPath + "');");
+                        }
+                    });
+                    //mainWindow.webContents.executeJavaScript('createExportModel("' + str + '");');
+                }},
+            {type: 'separator'},
+            {
+                label: 'Import Real DataSet', click (){
+                    dialog.showOpenDialog(mainWindow, {title:"Open DataSet", properties: ['openFile'], filters:[
+                                {name: 'JSON', extensions:['json']}, {name: 'CSV', extensions:['csv']}, {name: 'TSV', extensions:['tsv']}
+                            ]}, function(targetPath) {
+                            if(targetPath){
+                                mainWindow.webContents.executeJavaScript('createModelFromDataSet("'+targetPath[0].replace(/\\/g,'\\\\')+'");');
                             }
                         }
-                    ]
+                    );
                 }
-            ]
-        }
-    ));
-    menu.append(new MenuItem(
-        {
-            label: 'Debug',
-            submenu: [
-                {
-                    label: 'Toggle Developer Tools',
-                    accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
-                    click (item, focusedWindow) {
-                        if (focusedWindow) focusedWindow.webContents.toggleDevTools()
+            },
+            {type: 'separator'},
+            {role: 'close'}
+        ]
+    };
+
+    const menuTemplateVisualize = {
+        label: 'Visualize',
+        submenu: [
+            {
+                label: "Sample",
+                submenu: [
+                    {
+                        label: 'Parallel Coordinates',
+                        click(){ funcOpenVisWindow('ParallelCoordinates'); }
+                    },
+                    {
+                        label: 'Bundled Parallel Coordinates',
+                        click(){ funcOpenVisWindow('ParallelBundling'); }
+                    },
+                    {
+                        label: 'Scatterplot Matrix',
+                        click(){ funcOpenVisWindow('ScatterplotMatrix'); }
+                    },
+                    {
+                        label: 'Beeswarm Plot',
+                        click(){ funcOpenVisWindow('BeeswarmPlot'); }
                     }
+                ]
+            },
+            {
+                label: "Dimension",
+                submenu: [
+                    {
+                        label: 'Histogram Cascade',
+                        click(){
+                            visDimensionWindow = new BrowserWindow({width: 900, height: 600, show: false,});
+                            visDimensionWindow.loadURL(url.format({
+                                pathname: path.join(__dirname, 'pages/visDimension.html'),
+                                protocol: 'file:',
+                                slashes: true
+                            }));
+                            visDimensionWindow.on('closed', function () {
+                                visDimensionWindow = undefined;
+                            });
+                            mainWindow.webContents.send('getDataModel');
+
+                        }
+                    }
+                ]
+            }
+        ]
+    };
+
+    const menuTemplateDebug = {
+        label: 'Debug',
+        submenu: [
+            {
+                label: 'Toggle Developer Tools',
+                accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
+                click (item, focusedWindow) {
+                    if (focusedWindow) focusedWindow.webContents.toggleDevTools()
                 }
-            ]
-        }
-    ));
+            }
+        ]
+    };
+
+    //Work on Mac.
+    const menuTemplate = [menuTemplateFile, menuTemplateVisualize, menuTemplateDebug];
+    Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
+
+    //Work on Windows.
+    menu.append(new MenuItem(menuTemplateFile));
+    menu.append(new MenuItem(menuTemplateVisualize));
+    menu.append(new MenuItem(menuTemplateDebug));
     mainWindow.setMenu(menu);
 
   // Open the DevTools.
