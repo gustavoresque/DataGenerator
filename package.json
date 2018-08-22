@@ -19,15 +19,15 @@
   "license": "CC0-1.0",
   "devDependencies": {
     "electron": "^1.8.4",
-    "electron-builder": "^20.15.1"
+    "electron-builder": "^20.28.2"
   },
   "dependencies": {
-    "@labvis-ufpa/vistechlib": "^1.0.10",
+    "@labvis-ufpa/vistechlib": "^1.0.12",
     "asar": "^0.14.3",
     "d3": "^4.13.0",
-    "electron-packager": "^12.1.0",
+    "electron-packager": "^12.1.1",
     "jquery": "^3.3.1",
-    "json2csv": "^4.1.3",
+    "json2csv": "^4.2.1",
     "moment": "^2.22.2",
     "randgen": "^0.1.0"
   }
