@@ -7,6 +7,10 @@ First of all, you have to install the [electron-packager](https://github.com/ele
 ```
 npm install -g electron-packager
 ```
+You can run the application locally running the code below:
+```
+npm install start
+```
 After that you can run the following codes:
 ### Windows
 ```
