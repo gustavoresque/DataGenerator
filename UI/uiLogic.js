@@ -12,6 +12,10 @@ let collumnsSelected = [];
 let collumnsCopied = [];
 let ipc = require('electron').ipcRenderer;
 
+let vis = require("@labvis-ufpa/vistechlib");
+
+let pc;
+
 
 const Json2csvParser = require('json2csv').Parser;
 
@@ -312,6 +316,7 @@ $("html").ready(function(){
     });
 
     dragAndDropGens();
+
 });
 
 let modal = document.getElementById('myModal');
@@ -403,6 +408,7 @@ function generateStringData(){
 function addGenerator(){
     datagen[currentDataGen].addCollumn("Dimension "+(datagen[currentDataGen].columns.length+1));
     showGenerators();
+
 }
 
 function dragGenerator(evt){
@@ -945,37 +951,17 @@ function createModelFromDataSet(path){
     });
 }
 
+function preview(data2){
 
+    if(pc === undefined) {
+        pc = new vis["ParallelCoordinates"]($("#previewCanvas").get(0));
+    }
+    pc.data(data2);
+    pc.redraw();
 
-
-let margin = {top: 30, right: 10, bottom: 10, left: 10},
-    width = 960 - margin.left - margin.right,
-    height = 200 - margin.top - margin.bottom;
-
-
-
-let line = d3.svg.line(),
-    axis = d3.svg.axis().orient("left"),
-    background,
-    foreground;
-
-let svg = d3.select(".canvas").append("svg")
-    .attr("width", "100%")//width + margin.left + margin.right)
-    .attr("height", "100%");//height + margin.top + margin.bottom)
-let g1 = svg.append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-console.log();
-
-let x = d3.scale.ordinal().rangePoints([50, $(svg[0][0]).width()-50], 0),
-    y = {},
-    dragging = {};
-
-function preview(data){
-
-
+    /*
     $(g1[0][0]).empty();
-    
+
     // Extract the list of dimensions and create a scale for each.
     x.domain(dimensions = d3.keys(data[0]).filter(function(d) {
         let scale = isNaN(+data[0][d]) ?
@@ -1055,6 +1041,8 @@ function preview(data){
         .selectAll("rect")
         .attr("x", -8)
         .attr("width", 16);
+    */
+
 }
 
 function position(d) {
