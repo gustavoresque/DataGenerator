@@ -148,6 +148,7 @@ $("html").ready(function(){
                     return;
                 }
             }
+            $('#comboBoxPreview option:contains('+title+')').text(cor).val(cor); //Change the option name according with dimension name.
             $(this).parent().parent().get(0).__node__.name = cor;
             $(this).parent().text(cor);
         }));
@@ -408,7 +409,6 @@ function generateStringData(){
 function addGenerator(){
     datagen[currentDataGen].addCollumn("Dimension "+(datagen[currentDataGen].columns.length+1));
     showGenerators();
-
 }
 
 function dragGenerator(evt){
@@ -951,13 +951,66 @@ function createModelFromDataSet(path){
     });
 }
 
-function preview(data2){
+//Redraw the options on preview's comboBox.
+function optionsPreview() {
+    $("#comboBoxPreview").empty();
+    for(let col of datagen[currentDataGen].columns) {
+        $('#comboBoxPreview').append($('<option>', {value:col.name, text:col.name}));
+    }
+}
+let selectColumnPreview = "Dimension 1"; //Inicialize according the first columns's name.
 
+$('#comboBoxPreview').change(() => {
+    selectColumnPreview = $("#comboBoxPreview").val();
+    showGenerators(); //Redraw the preview;
+    $("#comboBoxPreview").val(selectColumnPreview); //Because the preview is redrawn, the chosen option is lost. This line recover the choice.
+
+});
+
+function preview(data2){
+    //console.log(data2);
     if(pc === undefined) {
         pc = new vis["ParallelCoordinates"]($("#previewCanvas").get(0));
     }
+
     pc.data(data2);
     pc.redraw();
+
+    let counterData2 = 0; //Count each data.
+    let typeCol; //Type Numeric or Categorical.
+    let arrayCategorical; //Collect the nomes from Categorical array.
+    let arrayCategoricalColors = ['red', 'mediumseagreen', 'steelblue', 'gold', 'chocolate', 'magenta'];
+
+    optionsPreview(); //Call the function for a redrawing.
+
+    for(let col of datagen[currentDataGen].columns) {
+        if(col.name == selectColumnPreview) {
+            typeCol = col.type;
+            if(col.type == "Categorical") arrayCategorical = col.generator.array;
+            break;
+        }
+    }
+    //Color the lines.
+    for(let dat of data2) {
+        //TODO: refatorar!
+        let v = dat[selectColumnPreview]; //Dimension value.
+
+        switch(typeCol) {
+            case "Categorical":
+                pc.foreground.selectAll('path.data[data-index="'+counterData2+'"]')
+                    .style("stroke", arrayCategoricalColors[arrayCategorical.indexOf(v)]);
+                break;
+            case "Numeric":
+                let red = Math.round(255*v);
+                let blue = Math.round(255*(1-v));
+                pc.foreground.selectAll('path.data[data-index="'+counterData2+'"]')
+                    .style("stroke", 'rgb('+red+',0,'+blue+')');
+                break;
+                //The Time is a mix of Numeric (100 colors needed) with Categorical (it can't calculate by the value)
+                //Still is needed the logic for this.
+        }
+        counterData2++;
+    }
 
     /*
     $(g1[0][0]).empty();
