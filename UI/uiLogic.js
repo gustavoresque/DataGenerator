@@ -962,7 +962,7 @@ let selectColumnPreview = "Dimension 1"; //Inicialize according the first column
 
 $('#comboBoxPreview').change(() => {
     selectColumnPreview = $("#comboBoxPreview").val();
-    showGenerators(); //Redraw the preview;
+    showGenerators(); //To redraw the preview;
     $("#comboBoxPreview").val(selectColumnPreview); //Because the preview is redrawn, the chosen option is lost. This line recover the choice.
 
 });
@@ -973,44 +973,48 @@ function preview(data2){
         pc = new vis["ParallelCoordinates"]($("#previewCanvas").get(0));
     }
 
+    //Set the data into ParallelCoordinates, so it is able to appear on preview.
     pc.data(data2);
     pc.redraw();
 
-    let counterData2 = 0; //Count each data.
-    let typeCol; //Type Numeric or Categorical.
-    let arrayCategorical; //Collect the nomes from Categorical array.
-    let arrayCategoricalColors = ['red', 'mediumseagreen', 'steelblue', 'gold', 'chocolate', 'magenta'];
+    let scaleFunction;
+    let range; //range of colors.
 
-    optionsPreview(); //Call the function for a redrawing.
+    optionsPreview(); //Call the function for a comboBox options redrawing.
 
+    //Set configs according to the dimension type.
     for(let col of datagen[currentDataGen].columns) {
         if(col.name == selectColumnPreview) {
-            typeCol = col.type;
-            if(col.type == "Categorical") arrayCategorical = col.generator.array;
+            switch(col.type) {
+                case "Categorical":
+                    scaleFunction = d3.scaleOrdinal();
+                    range = d3.schemeCategory10;
+                    break;
+                case "Numeric":
+                    scaleFunction = d3.scaleLinear();
+                    range = ["blue", "red"];
+                    break;
+            }
             break;
         }
     }
-    //Color the lines.
-    for(let dat of data2) {
-        //TODO: refatorar!
-        let v = dat[selectColumnPreview]; //Dimension value.
 
-        switch(typeCol) {
-            case "Categorical":
-                pc.foreground.selectAll('path.data[data-index="'+counterData2+'"]')
-                    .style("stroke", arrayCategoricalColors[arrayCategorical.indexOf(v)]);
-                break;
-            case "Numeric":
-                let red = Math.round(255*v);
-                let blue = Math.round(255*(1-v));
-                pc.foreground.selectAll('path.data[data-index="'+counterData2+'"]')
-                    .style("stroke", 'rgb('+red+',0,'+blue+')');
-                break;
-                //The Time is a mix of Numeric (100 colors needed) with Categorical (it can't calculate by the value)
-                //Still is needed the logic for this.
-        }
-        counterData2++;
-    }
+
+    //Get the chosen dimension values to calculate the domain.
+    /*This is necessary because data2 is a object of objects, so there is no way to use Object.values() for exemple*/
+    let dataArray = [];
+    data2.forEach(function(item){
+        dataArray.push(item[selectColumnPreview]);
+    });
+
+    //Set the coloration logic.
+    let scale = scaleFunction.domain(d3.extent(dataArray)).range(range);
+
+    //Color each line.
+    pc.foreground.selectAll('path')
+        .style("stroke",(d) => {
+            return scale(d[selectColumnPreview]);
+        });
 
     /*
     $(g1[0][0]).empty();
