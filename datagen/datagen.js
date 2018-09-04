@@ -2104,6 +2104,7 @@ class DataGen {
         this.columns = [column];
         this.iterator = {hasIt:false};
         this.ID = "MODEL_"+uniqueID();
+        this.columnsCounter = 1; //If delete a not last column, the new colum will the same name as the last but one column and this make the preview have a bug.
     }
 
     get configs(){
@@ -2151,6 +2152,13 @@ class DataGen {
         return names;
     }
 
+    getAvaliableColumnsNames() {
+        let names = [];
+        for(let col of this.columns){
+            if(col.display) names.push(col.name);
+        }
+        return names;
+    }
 
     addCollumn(name, generator){
         generator = generator || new defaultGenerator();

@@ -186,3 +186,8 @@ select#selectGeneratorType:focus > option {
     padding-top: 230px;
     width: 0%;
 }
+/*Filter icon in index.html*/
+.fa-filter,.fa-filter-slash {
+    margin-top: 5px;
+    padding-right: 0;
+}

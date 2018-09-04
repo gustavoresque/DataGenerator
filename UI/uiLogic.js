@@ -60,6 +60,11 @@ $("html").ready(function(){
         showGenerators();
     });
 
+    //The color lines became gray on resizing, so the reload solve the problem.
+    $(window).on("resize", "", () => {
+        showGenerators();
+    })
+
     $("#hidePreview").on("click", "", function(e){
         $(".previewPanel").hide();
     });
@@ -246,12 +251,27 @@ $("html").ready(function(){
     $("#tableCollumn").on("click", "span.btnAddGen", function(){
         let l = $(this).parent().find("div.md-chip").length-1;
         $(this).parent().find("div.md-chip").get(l).__node__.addGenerator(new UniformGenerator());
-
         showGenerators();
     });
 
     $("#tableCollumn").on("click", "td.btnRemoveColumn", function(){
         datagen[currentDataGen].removeCollumn(parseInt($(this).parent().find(".tdIndex").text()) - 1);
+        showGenerators();
+    });
+
+    $("#tableCollumn").on("click", "td.btnFilter", function(){
+        //Get the selected dimension.
+        let colu = datagen[currentDataGen].columns[parseInt($(this).parent().find(".tdIndex").text()) - 1];
+        colu.display = colu.display == true ? false : true;
+        //If the dimension selected to filter were the current dimension on preview, the color lines in preview would be black.
+        if(colu.name == selectColumnPreview) {
+            for(let col of datagen[currentDataGen].columns){
+                if(col.display) {
+                    selectColumnPreview = col.name;
+                    break;
+                }
+            }
+        }
         showGenerators();
     });
 
@@ -389,7 +409,7 @@ function generateStringData(){
         filt.extensions = ['json'];
         datastr = JSON.stringify(data);
     }else if(save_as === "csv" || save_as === "tsv"){
-        let json2csvParser = new Json2csvParser({ fields: datagen[currentDataGen].getColumnsNames() });
+        let json2csvParser = new Json2csvParser({ fields: datagen[currentDataGen].getAvaliableColumnsNames() });
         console.log(json2csvParser);
         if(save_as === "csv"){
             filt.name = "csv";
@@ -407,7 +427,7 @@ function generateStringData(){
 }
 
 function addGenerator(){
-    datagen[currentDataGen].addCollumn("Dimension "+(datagen[currentDataGen].columns.length+1));
+    datagen[currentDataGen].addCollumn("Dimension "+(++datagen[currentDataGen].columnsCounter));
     showGenerators();
 }
 
@@ -550,10 +570,14 @@ function showGenerators(){
 
             $tr.append($tdGen);
 
+            let slash = datagen[currentDataGen].columns[i].display == false ? "-slash": "";
+
+            $tr.append($("<td/>").addClass("btnGenerator btnFilter fa fa-filter"+slash+" fa-lg"));
+
             $tr.get(0).__node__ = datagen[currentDataGen].columns[i];
             $tr.append($("<td/>").addClass("btnGenerator btnRemoveColumn icon icon-trash"));
         }
-
+        
         dragAndDropGens();
     }
     try{
@@ -955,7 +979,8 @@ function createModelFromDataSet(path){
 function optionsPreview() {
     $("#comboBoxPreview").empty();
     for(let col of datagen[currentDataGen].columns) {
-        $('#comboBoxPreview').append($('<option>', {value:col.name, text:col.name}));
+        if(col.display)
+            $('#comboBoxPreview').append($('<option>', {value:col.name, text:col.name}));
     }
 }
 let selectColumnPreview = "Dimension 1"; //Inicialize according the first columns's name.
