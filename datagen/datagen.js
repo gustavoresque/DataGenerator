@@ -2201,26 +2201,75 @@ class DataGen {
         return sampleData;
     }
 
-    generate (){
+    generate () {
         let data = [];
-        if(this.save_as === "json" && !this.header){
-            for (let i = 0; i < this.n_lines; i++){
-                data.push([]);
-                for (let j = 0; j < this.columns.length; j++){
-                    data[i].push(this.columns[j].generator.generate());
-                }
-            }
-        }else{
-            for (let i = 0; i < this.n_lines; i++){
-                data.push({});
-                for (let j = 0; j < this.columns.length; j++){
-                    if(this.columns[j].display)
+        for (let i = 0; i < this.n_lines; i++){
+            data.push( this.save_as === "json" && !this.header ? [] : {});
+            for (let j = 0; j < this.columns.length; j++){
+                if(this.columns[j].display) {
+                    if(this.save_as === "json" && !this.header){
+                        data[i].push(this.columns[j].generator.generate());
+                    } else {
                         data[i][this.columns[j].name] = this.columns[j].generator.generate();
+                    }
                 }
             }
         }
         this.resetAll();
         return data;
+    }
+    generateStream(file) {
+        const fs = require('fs');
+        let varSeparator =  this.save_as === "csv" ? ',' : '\t';
+        let writeStream  = fs.createWriteStream(file);
+        writeStream.write('[');
+
+        const csvWriter = require('csv-write-stream')
+        let writer = csvWriter({separator: varSeparator});
+
+
+        writer.pipe(fs.createWriteStream(file));
+
+        for (let i = 0; i < this.n_lines; i++) {
+            let data = !this.header ? [] : {};
+            for (let j = 0; j < this.columns.length; j++){
+                if(this.columns[j].display) {
+                    if(!this.header){
+                        data.push(this.columns[j].generator.generate());
+                    } else {
+                        data[this.columns[j].name] = this.columns[j].generator.generate();
+                    }
+                }
+            }
+            switch(this.save_as) { //In-for
+                case "json":
+                    writeStream.write(JSON.stringify(data)+(i == this.n_lines -1 ? '' : ','));
+                    break;
+                case "csv":
+                case "tsv":
+                    writer.write(data);
+                    break;
+            }
+        }
+
+        switch(this.save_as) {//Pós-for
+            case "json":
+                writeStream.end(']');
+                break;
+            case "csv":
+            case "tsv":
+                writer.end();
+                break;
+        }
+
+        writeStream.on('finish', () => {
+            alert('Data Saved');
+        });
+        writer.on('finish', () => {
+            alert('Data Saved');
+        });
+
+        this.resetAll();
     }
 
     resetAll (){

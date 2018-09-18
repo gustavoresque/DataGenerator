@@ -351,40 +351,29 @@ function generateDatas(){
                 title: "Save Data",
                 filters: [{name: saveas, extensions: [saveas]}]
             }, function (targetPath) {
+                modal.style.display = "none";
                 if (targetPath) {
                     let it = datagen[currentDataGen].configs.iterator;
-                    console.log(it);
-                    let datastr;
                     let prevValue = it.generator[it.parameterIt];
                     it.generator[it.parameterIt] = it.beginIt;
                     for (let i = 0; i < it.numberIt; i++) {
-                        datastr = generateStringData();
-                        fs.writeFileSync(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
+                        datagen[currentDataGen].generateStream(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
                             return p1 + "[" + i + "]" + p2;
-                        }), datastr);
+                        }));
                         it.generator[it.parameterIt] += it.stepIt;
                     }
                     it.generator[it.parameterIt] = prevValue;
-
-                    modal.style.display = "none";
                 }
             });
         } else {
-            let datastr = generateStringData();
-
             dialog.showSaveDialog({
                 title: "Save Data",
                 filters: [{name: saveas, extensions: [saveas]}]
             }, function (targetPath) {
-                if (targetPath) {
-                    fs.writeFile(targetPath, datastr, (err) => {
-                        if (err) throw err;
-                    });
-
-                    alert('Saved data');
-                }
-
                 modal.style.display = "none";
+                if (targetPath) {
+                    datagen[currentDataGen].generateStream(targetPath);
+                }
             });
         }
     }catch (e) {
@@ -395,35 +384,6 @@ function generateDatas(){
 
         modal.style.display = "none";
     }
-}
-
-function generateStringData(){
-    let save_as = datagen[currentDataGen].save_as;
-    let datastr;
-    let filt = {};
-
-    let data = datagen[currentDataGen].generate();
-
-    if(save_as === "json"){
-        filt.name = "json";
-        filt.extensions = ['json'];
-        datastr = JSON.stringify(data);
-    }else if(save_as === "csv" || save_as === "tsv"){
-        let json2csvParser = new Json2csvParser({ fields: datagen[currentDataGen].getAvaliableColumnsNames() });
-        console.log(json2csvParser);
-        if(save_as === "csv"){
-            filt.name = "csv";
-            filt.extensions = ['csv'];
-        }else{
-            json2csvParser.opts.delimiter = "\t";
-            filt.name = "tsv";
-            filt.extensions = ['tsv'];
-        }
-
-        json2csvParser.opts.header = datagen[currentDataGen].header;
-        datastr = json2csvParser.parse(data);
-    }
-    return datastr;
 }
 
 function addGenerator(){
@@ -577,7 +537,7 @@ function showGenerators(){
             $tr.get(0).__node__ = datagen[currentDataGen].columns[i];
             $tr.append($("<td/>").addClass("btnGenerator btnRemoveColumn icon icon-trash"));
         }
-        
+
         dragAndDropGens();
     }
     try{

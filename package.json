@@ -24,6 +24,7 @@
   "dependencies": {
     "@labvis-ufpa/vistechlib": "^1.0.12",
     "asar": "^0.14.3",
+    "csv-write-stream": "^2.0.0",
     "d3": "^4.13.0",
     "electron-packager": "^12.1.1",
     "fontawesome-actions": "^0.17.0",
