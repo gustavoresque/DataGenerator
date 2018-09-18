@@ -2288,7 +2288,8 @@ class DataGen {
             model.generator.push({
                 name: this.columns[i].name,
                 type: this.columns[i].type,
-                ID: this.columns[i].ID
+                ID: this.columns[i].ID,
+                display: this.columns[i].display
             });
             let fullGenerator = [];
             let fullGenNames = [];
@@ -2334,6 +2335,7 @@ class DataGen {
             generator.reset();
             let col = new Column(model.generator[i].name, generator);
             col.ID = model.generator[i].ID;
+            col.display = model.generator[i].display;
             this.columns.push(col);
         }
     }

@@ -160,9 +160,9 @@ function createWindow () {
                             let partsOfStr = targetPath.split('\\');
                             targetPath = "";
                             for (let i = 0; i < partsOfStr.length; i++){
-                                targetPath += partsOfStr[i] + "\\\\";
+                                let backslash = i == partsOfStr.length - 1 ? "" : "\\\\";
+                                targetPath += partsOfStr[i] + backslash;
                             }
-                            console.log(targetPath);
                             mainWindow.webContents.executeJavaScript("createExportModel('" + targetPath + "');");
                         }
                     });

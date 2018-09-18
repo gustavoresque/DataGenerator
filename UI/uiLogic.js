@@ -763,6 +763,7 @@ function createExportModel (path) {
     fs.writeFile(path, datagen[currentDataGen].exportModel(), (err) => {
         if (err) throw err;
     });
+    alert('Model Exported Successfully!');
 }
 
 function createImportModel (modelName, data) {
