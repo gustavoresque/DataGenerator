@@ -1734,6 +1734,86 @@ class CategoricalFunction extends SwitchCaseFunction{
     }
 }
 
+class PiecewiseFunction extends SwitchCaseFunction{
+    constructor(intervals, listOfGenerators, inputGenerator){
+        super("Piecewise Function", listOfGenerators, inputGenerator);
+        this.intervals = intervals || [0];
+    }
+
+    get accessIntervals(){
+        return this.intervals;
+    }
+
+    set accessIntervals(intervals){
+        this.intervals = intervals;
+        this.reset();
+    }
+
+    getGenParams() {
+        let params = super.getGenParams();
+        params.push({
+            shortName: "Intervals",
+            variableName: "accessIntervals",
+            name: "List of Intervals to define the sub-fuctions",
+            type: "array"
+        });
+        return params;
+    }
+
+    transform(x){
+        for(let interval of this.intervals){
+            if(x <= interval){
+                this.generator = this.listOfGenerators["<= "+interval];
+                return 0;
+            }
+        }
+        if(this.intervals.length > 0)
+            this.generator = this.listOfGenerators["> "+this.intervals[this.intervals.length-1]];
+        return 0;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.intervals = this.intervals;
+        return model;
+    }
+
+    reset(){
+        this.inputArray = [];
+
+        if (!this.inputGenerator)
+            return;
+
+        //Caso não tenha nenhum intervalo definido ele cria uma função para qualquer condição.
+        if(this.intervals.length === 0){
+            this.inputArray = ["any condition"];
+            super.reset();
+            return;
+        }
+
+        for(let interval of this.intervals){
+            this.inputArray.push("<= "+interval);
+        }
+        this.inputArray.push("> "+this.intervals[this.intervals.length-1]);
+        super.reset();
+    }
+
+
+    copy(){
+        let newList = {};
+        //Copia a lista de Geradores
+        for(let prop in this.listOfGenerators)
+            if(this.listOfGenerators.hasOwnProperty(prop))
+                newList[prop] = this.listOfGenerators[prop].copy();
+        // laps, timeMask, listOfGenerators, inputGenerator, generator, operator
+        let newGen = new PiecewiseFunction(this.intervals, newList, this.inputGenerator);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+}
+
 class TimeLapsFunction extends SwitchCaseFunction{
     constructor(laps, listOfGenerators, inputGenerator){
         super("TimeLaps Function", listOfGenerators, inputGenerator);
@@ -2447,6 +2527,7 @@ ExponentialFunction.genType = "Function";
 LogarithmFunction.genType = "Function";
 SinusoidalFunction.genType = "Function";
 CategoricalFunction.genType = "Function";
+PiecewiseFunction.genType = "Function";
 TimeLapsFunction.genType = "Function";
 PoissonTimeGenerator.genType = "Random";
 RandomUniformGenerator.genType = "Random";
@@ -2491,6 +2572,7 @@ DataGen.listOfGens = {
     'Logarithm Function': LogarithmFunction,
     'Sinusoidal Function': SinusoidalFunction,
     'Categorical Function': CategoricalFunction,
+    'Piecewise Function': PiecewiseFunction,
     'TimeLaps Function': TimeLapsFunction,
     'Sinusoidal Sequence': SinusoidalSequence,
     'Custom Sequence': CustomSequence
