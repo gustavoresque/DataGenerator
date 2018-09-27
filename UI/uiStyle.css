@@ -191,3 +191,10 @@ select#selectGeneratorType:focus > option {
     margin-top: 5px;
     padding-right: 0;
 }
+#percentage-modal{
+    margin: 40px auto 0 auto;
+    font-size: 200%;
+    height: 20px;
+    width: 100px;
+    color: blue;
+}

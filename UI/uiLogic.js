@@ -372,7 +372,16 @@ function generateDatas(){
             }, function (targetPath) {
                 modal.style.display = "none";
                 if (targetPath) {
-                    datagen[currentDataGen].generateStream(targetPath);
+                    //datagen[currentDataGen].generateStream(targetPath);
+
+                    let datagenBackup = jQuery.extend(true, {}, datagen);
+
+                    console.log(datagenBackup);
+
+                    setTimeout(() => {
+                        datagenBackup[currentDataGen].generateStream(targetPath)
+                    },100);
+                    //$("#percentage-modal").text(String(startVar/datagen[currentDataGen].n_lines)+"%")
                 }
             });
         }
@@ -546,7 +555,12 @@ function showGenerators(){
         ipc.send('change-datasample', current_sample);
     }catch (e){
         //TODO: alertar sobre erro de referência para o usuário.
+        switch (e) {
+            case 'Please, insert a sentence.':
+                alert(e);
+        }
         console.log(e);
+
     }
     return active_gen_chip.obj;
 }

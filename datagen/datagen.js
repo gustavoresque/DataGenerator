@@ -1941,13 +1941,14 @@ class CustomSequence extends Sequence{
 
     constructor(begin, step, sent){
         super("Custom Sequence", begin || 0, step || 1);
-        this.sentence = sent || "";
+        this.sentence = sent || "a";
     }
-
     generate(){
         let value = 0;
         //eval(this.sentence);
         let str = "value=";
+
+        if(this.sentence == "") { throw "Please, insert a sentence."}
 
         for (let i = 0; i < this.sentence.length; i++){
             if (this.sentence[i] === 'x'){
@@ -1979,6 +1980,7 @@ class CustomSequence extends Sequence{
             }
         }
         str += ";";
+
         if (str[str.length-1] === ";"){
             console.log(str);
             eval(str);
@@ -2218,7 +2220,9 @@ class DataGen {
         this.resetAll();
         return data;
     }
+
     generateStream(file) {
+        console.log("Jairo");
         const fs = require('fs');
         let varSeparator =  this.save_as === "csv" ? ',' : '\t';
         let writeStream  = fs.createWriteStream(file);
@@ -2250,6 +2254,7 @@ class DataGen {
                     writer.write(data);
                     break;
             }
+            //if(i%1000 == 0) $("#percentage-modal").text(String(i/this.n_lines)+'%');
         }
 
         switch(this.save_as) {//Pós-for
