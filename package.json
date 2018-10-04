@@ -19,7 +19,7 @@
   "license": "CC0-1.0",
   "devDependencies": {
     "electron": "^1.8.8",
-    "electron-builder": "^20.28.3"
+    "electron-builder": "^20.28.4"
   },
   "dependencies": {
     "@labvis-ufpa/vistechlib": "^1.0.16",

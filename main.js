@@ -220,7 +220,7 @@ function createWindow () {
                 submenu: [
                     {
                         label: 'Histogram Cascade',
-                        click(){
+                        click() {
                             visDimensionWindow = new BrowserWindow({width: 900, height: 600, show: false,});
                             visDimensionWindow.loadURL(url.format({
                                 pathname: path.join(__dirname, 'pages/visDimension.html'),
@@ -252,10 +252,29 @@ function createWindow () {
         ]
     };
 
+    const menuTemplateWebServer = {
+        label: 'WebServer',
+        submenu: [{label: 'Edit',
+            click() {
+                visDimensionWindow = new BrowserWindow({width: 900, height: 600, show: false,});
+                visDimensionWindow.loadURL(url.format({
+                    pathname: path.join(__dirname, 'WebService/config.html'),
+                    protocol: 'file:',
+                    slashes: true
+                }));
+                visDimensionWindow.on('closed', function () {
+                    visDimensionWindow = undefined;
+                });
+                mainWindow.webContents.send('getDataModel');
+
+            }
+        }]
+    };
+
     //Work on Mac.
     if(process.platform === 'darwin'){
         mainWindow.on("focus", ()=>{
-            const menuTemplate = [menuTemplateFile, menuTemplateVisualize, menuTemplateDebug];
+            const menuTemplate = [menuTemplateFile, menuTemplateVisualize, menuTemplateDebug, menuTemplateWebServer];
             Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
         });
     }
@@ -264,6 +283,7 @@ function createWindow () {
     menu.append(new MenuItem(menuTemplateFile));
     menu.append(new MenuItem(menuTemplateVisualize));
     menu.append(new MenuItem(menuTemplateDebug));
+    menu.append(new MenuItem(menuTemplateWebServer));
     mainWindow.setMenu(menu);
 
   // Open the DevTools.
@@ -458,6 +478,11 @@ function addVisWindowMenu(visWindow){
 
 
     visWindow.setMenu(visMenu);
+    if(process.platform === 'darwin'){
+        visWindow.on("focus", ()=>{
+            Menu.setApplicationMenu(visMenu);
+        });
+    }
 }
 
 

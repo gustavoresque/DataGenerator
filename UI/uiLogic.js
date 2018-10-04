@@ -1,12 +1,11 @@
 let fs = require('fs');
-// const Events = require('events');
-// const emitter = new Events();
 const electron = require('electron').remote;
 const dialog = electron.dialog;
 
 let DataGen = require("./datagen/datagen.js");
 let UniformGenerator = DataGen.listOfGens['Uniform Generator'];
 let datagen = [new DataGen()];
+
 let currentDataGen = 0;
 let current_sample;
 let activeGenerator;
@@ -18,6 +17,9 @@ let vis = require("@labvis-ufpa/vistechlib");
 
 let pc;
 
+const createServer = require('./WebService');
+
+createServer();
 
 const Json2csvParser = require('json2csv').Parser;
 
