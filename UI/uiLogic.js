@@ -1,4 +1,6 @@
 let fs = require('fs');
+// const Events = require('events');
+// const emitter = new Events();
 const electron = require('electron').remote;
 const dialog = electron.dialog;
 
@@ -381,7 +383,12 @@ function generateDatas(){
                     setTimeout(() => {
                         datagenBackup[currentDataGen].generateStream(targetPath)
                     },100);
-                    //$("#percentage-modal").text(String(startVar/datagen[currentDataGen].n_lines)+"%")
+
+
+                    //emitter.on("StreamCounter", (streamCounterVar) => {
+                    //    $("#percentage-modal").text(String(streamCounterVar/datagen[currentDataGen].n_lines)+"%")
+                    //})
+                    //
                 }
             });
         }
