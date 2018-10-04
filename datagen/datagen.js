@@ -4,6 +4,7 @@ let randgen = require("randgen");
 let moment = require("moment");
 
 
+
 class Generator{
     constructor(name){
         this.name = name;
@@ -2302,7 +2303,6 @@ class DataGen {
     }
 
     generateStream(file) {
-        console.log("Jairo");
         const fs = require('fs');
         let varSeparator =  this.save_as === "csv" ? ',' : '\t';
         let writeStream  = fs.createWriteStream(file);
@@ -2334,7 +2334,11 @@ class DataGen {
                     writer.write(data);
                     break;
             }
-            //if(i%1000 == 0) $("#percentage-modal").text(String(i/this.n_lines)+'%');
+            // if(i%1000 == 0) {
+            //     let streamCounterVar = i;
+            //     emitter.emit('StreamCounter',streamCounterVar);
+            // }
+
         }
 
         switch(this.save_as) {//Pós-for
