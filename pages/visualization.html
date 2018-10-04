@@ -65,6 +65,7 @@
                     });
                 })
                 .on("highlightend",function(d,i){
+                    console.log(i, "tem que remover...");
                     $(".partition-content").each(function(){
                         if(this.__vis__ && this.__vis__ !== pc){
                             this.__vis__.removeHighlight(d,i);
@@ -151,6 +152,7 @@
                         "ParallelBundling": {name: "Bundled Parallel Coordinates"},
                         "ScatterplotMatrix": {name: "Scatter Plot"},
                         "BeeswarmPlot": {name: "Beeswarm Plot"},
+                        "Treemap": {name: "Treemap"}
                     }
                 });
             });

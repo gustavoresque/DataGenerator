@@ -115,6 +115,7 @@ function createWindow () {
 
     let funcOpenVisWindow = (visType) => {
         let visWindow = new BrowserWindow({width: 900, height: 600, show: false,});
+        addVisWindowMenu(visWindow);
         visWindows.push(visWindow);
         visWindow.loadURL(url.format({
             pathname: path.join(__dirname, 'pages/visualization.html'),
@@ -207,6 +208,10 @@ function createWindow () {
                     {
                         label: 'Beeswarm Plot',
                         click(){ funcOpenVisWindow('BeeswarmPlot'); }
+                    },
+                    {
+                        label: 'Treemap',
+                        click(){ funcOpenVisWindow('Treemap'); }
                     }
                 ]
             },
@@ -248,8 +253,12 @@ function createWindow () {
     };
 
     //Work on Mac.
-    const menuTemplate = [menuTemplateFile, menuTemplateVisualize, menuTemplateDebug];
-    Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
+    if(process.platform === 'darwin'){
+        mainWindow.on("focus", ()=>{
+            const menuTemplate = [menuTemplateFile, menuTemplateVisualize, menuTemplateDebug];
+            Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
+        });
+    }
 
     //Work on Windows.
     menu.append(new MenuItem(menuTemplateFile));
@@ -269,6 +278,188 @@ function createWindow () {
     // app.quit();
   });
 }
+
+
+function addVisWindowMenu(visWindow){
+    let visMenu = new Menu();
+    visMenu.append(new MenuItem({
+        label: 'Select',
+        submenu: [
+            {
+                label: "Type",
+                submenu: [
+                    {
+                        label: 'New',
+                        type: 'radio',
+                        click(){  }
+                    },
+                    {
+                        label: 'Add',
+                        type: 'radio',
+                        click(){  }
+                    },
+                    {
+                        label: 'Subtract',
+                        type: 'radio',
+                        click(){  }
+                    }
+                ]
+            },
+
+            {type: 'separator'},
+
+            {
+                label: "Click",
+                click(){  }
+            },
+            {
+                label: "Rect",
+                click(){  }
+            },
+            {
+                label: "Free Drawing",
+                click(){  }
+            },
+            {
+                label: "Lasso",
+                click(){  }
+            },
+        ]
+    }));
+
+    visMenu.append(new MenuItem({
+        label: 'Filter',
+        submenu: [
+            {
+                label: "Type",
+                click(){  }
+            },
+
+            {type: 'separator'},
+
+            {
+                label: "Click",
+                click(){  }
+            },
+            {
+                label: "Rect",
+                click(){  }
+            },
+            {
+                label: "Free Drawing",
+                click(){  }
+            },
+            {
+                label: "Lasso",
+                click(){  }
+            },
+        ]
+    }));
+
+    visMenu.append(new MenuItem({
+        label: 'Color',
+        submenu: [
+            {
+                label: "Type",
+                click(){  }
+            },
+
+            {type: 'separator'},
+
+            {
+                label: "Click",
+                click(){  }
+            },
+            {
+                label: "Rect",
+                click(){  }
+            },
+            {
+                label: "Free Drawing",
+                click(){  }
+            },
+            {
+                label: "Lasso",
+                click(){  }
+            },
+        ]
+    }));
+
+    visMenu.append(new MenuItem({
+        label: 'Hierarchy',
+        submenu: [
+            {
+                label: "Type",
+                click(){  }
+            },
+
+            {type: 'separator'},
+
+            {
+                label: "Click",
+                click(){  }
+            },
+            {
+                label: "Rect",
+                click(){  }
+            },
+            {
+                label: "Free Drawing",
+                click(){  }
+            },
+            {
+                label: "Lasso",
+                click(){  }
+            },
+        ]
+    }));
+
+    visMenu.append(new MenuItem({
+        label: 'Details',
+        submenu: [
+            {
+                label: "Type",
+                click(){  }
+            },
+
+            {type: 'separator'},
+
+            {
+                label: "Click",
+                click(){  }
+            },
+            {
+                label: "Rect",
+                click(){  }
+            },
+            {
+                label: "Free Drawing",
+                click(){  }
+            },
+            {
+                label: "Lasso",
+                click(){  }
+            },
+        ]
+    }));
+
+    visMenu.append(new MenuItem({
+        label: 'Debug',
+        submenu: [
+            {
+                label: 'Toggle Developer Tools',
+                accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
+                click (item, focusedWindow) {
+                    if (focusedWindow) focusedWindow.webContents.toggleDevTools()
+                }
+            }
+        ]
+    }));
+
+
+    visWindow.setMenu(visMenu);
+}
+
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
