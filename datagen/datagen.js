@@ -2188,7 +2188,6 @@ class DataGen {
         this.iterator = {hasIt:false};
         this.ID = "MODEL_"+uniqueID();
         this.columnsCounter = 1; //If delete a not last column, the new colum will the same name as the last but one column and this make the preview have a bug.
-        this.isWSA = false; //is Avaliable to Web Server!
     }
 
     get configs(){

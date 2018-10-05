@@ -17,32 +17,36 @@ let createServer = () => {
         const url = request.url;
         switch(request.method) {
             case "GET":
-                let params = getUrlVars(url)
+                let params = getUrlVars(url);
+                let WSCurrDataGen;
                 if(params.hasOwnProperty('modelID')) {
-                    let numSam = datagen[currentDataGen].n_lines;;
+                    if(params.modelID in WSMA) {
+                        if(!WSMA[params.modelID][0]) response.end('Model is not avaliable!');
+                        WSCurrDataGen = WSMA[params.modelID][1];
+                    } else {
+                        response.end('Model is not valid!');
+                    }
+                    let numSam = datagen[WSCurrDataGen].n_lines;
                     if(params.hasOwnProperty('nSample')) {
-                        datagen[currentDataGen].n_lines = params.nSample;
+                        datagen[WSCurrDataGen].n_lines = params.nSample;
                     }
-                    switch(datagen[currentDataGen].save_as) {
+                    switch(datagen[WSCurrDataGen].save_as) {
                         case "json":
+                            response.write("{");
+                            response.write(JSON.stringify(datagen[WSCurrDataGen].generate()));
+                            response.end("}\n");
                             break;
-                        case "csv":
-                            break;
-                        case "tsv":
+                        case ("csv" || "tsv"):
+                            const Json2csvParser = require('json2csv').Parser;
+                            const fields = datagen[WSCurrDataGen].getColumnsNames();
+                            const delimiter = datagen[WSCurrDataGen].save_as == "tsv" ? "\t": ",";
+                            const parser = new Json2csvParser({fields: fields, delimiter: delimiter});
+                            const parse = parser.parse(datagen[WSCurrDataGen].generate());
+                            response.end(parse);
                             break;
                     }
-                    response.write("{");
-                    response.write(JSON.stringify(datagen[currentDataGen].generate()));
-                    response.write("}\n");
-                    const Json2csvParser = require('json2csv').Parser;
-
-                    const parser = new Json2csvParser({fileds: datagen[currentDataGen].getColumnsNames()});
-                    const csv = parser.parse(datagen[currentDataGen].generate())
-                    response.write(csv);
-
-                    datagen[currentDataGen].resetAll();
-                    datagen[currentDataGen].n_lines = numSam;
-                    //response.end(JSON.stringify(newGen));
+                    datagen[WSCurrDataGen].resetAll();
+                    datagen[WSCurrDataGen].n_lines = numSam;
                 }
                 else{
                     response.end('Model is not defined!')

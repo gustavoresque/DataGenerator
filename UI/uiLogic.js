@@ -21,6 +21,11 @@ const createServer = require('./WebService');
 
 createServer();
 
+let WSMA = {};//It stores the models that is avaliable to web server (Web Server Model Available). It receives the model id, the boolean and the currentDatagen. Model is the Key.
+
+WSMA[datagen[currentDataGen].ID] = [false,currentDataGen];
+console.log(datagen[currentDataGen].ID);
+
 const Json2csvParser = require('json2csv').Parser;
 
 ipc.on('call-datagen', function(event, arg){
@@ -116,7 +121,6 @@ $("html").ready(function(){
                         else if (index < currentDataGen)
                             currentDataGen--;
                     }
-
                     showModels();
                     showGenerators();
                     break;
@@ -133,14 +137,37 @@ $("html").ready(function(){
                     });
                     break;
                 }
+                case "CopyModelId": {
+                    const {clipboard} = require('electron');
+                    let varModelID = datagen[currentDataGen].ID;
+                    if(process.platform == 'darwin') {
+                        console.log(varModelID);
+                        clipboard.writeText(varModelID,'selection');
+                    }else {
+                        clipboard.writeText(varModelID);
+                    }
+                    break;
+                }
+                case "ToggleWS": {
+                    let varModelID = datagen[currentDataGen].ID;
+                    if(WSMA[varModelID][0]) {
+                        WSMA[varModelID] = [false,currentDataGen];
+                    } else {
+                        WSMA[varModelID] = [true,currentDataGen];
+                    }
+                    break;
+                }
                 default:
                     console.log("nenhum");
+                    break;
             }
         },
         items: {
             "Rename": {name: "Rename"},
             "Delete": {name: "Delete"},
-            "exportDot": {name: "Export .DOT File"}
+            "exportDot": {name: "Export .DOT File"},
+            "CopyModelId": {name: "Copy Model Id"},
+            "ToggleWS": {name: "Toggle WebService"}
         }
     });
 
