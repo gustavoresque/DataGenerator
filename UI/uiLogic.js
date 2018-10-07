@@ -22,10 +22,7 @@ const createServer = require('./WebService');
 createServer();
 
 let WSMA = {};//It stores the models that is avaliable to web server (Web Server Model Available). It receives the model id, the boolean and the currentDatagen. Model is the Key.
-
-WSMA[datagen[currentDataGen].ID] = [false,currentDataGen];
-console.log(datagen[currentDataGen].ID);
-
+let wsPort = 8000;
 const Json2csvParser = require('json2csv').Parser;
 
 ipc.on('call-datagen', function(event, arg){
@@ -139,7 +136,8 @@ $("html").ready(function(){
                 }
                 case "CopyModelId": {
                     const {clipboard} = require('electron');
-                    let varModelID = datagen[currentDataGen].ID;
+                    let i = datagen.indexOf(this.get(0).__node__);
+                    let varModelID = datagen[i].ID;
                     if(process.platform == 'darwin') {
                         console.log(varModelID);
                         clipboard.writeText(varModelID,'selection');
@@ -149,12 +147,32 @@ $("html").ready(function(){
                     break;
                 }
                 case "ToggleWS": {
-                    let varModelID = datagen[currentDataGen].ID;
-                    if(WSMA[varModelID][0]) {
-                        WSMA[varModelID] = [false,currentDataGen];
-                    } else {
-                        WSMA[varModelID] = [true,currentDataGen];
+                    let i = datagen.indexOf(this.get(0).__node__);
+                    let htmlItem = $(".fa-upload").eq(i);
+                    let varModelID = datagen[i].ID;
+                    if(!(varModelID in WSMA)) {
+                        WSMA[varModelID] = [true,i];
+                        htmlItem.css("visibility","visible");
                     }
+                    else if(WSMA[varModelID][0]) {
+                        WSMA[varModelID] = [false,i];
+                       htmlItem.css("visibility","hidden");
+                    } else {
+                        WSMA[varModelID] = [true,i];
+                        console.log( WSMA[varModelID][1]);
+                        htmlItem.css("visibility","visible");
+                    }
+                    break;
+                }
+                case "OpenWS": {
+                    let i = datagen.indexOf(this.get(0).__node__);
+                    let htmlItem = $(".fa-upload").eq(i);
+                    let varModelID = datagen[i].ID;
+                    if(!(varModelID in WSMA)) {
+                        WSMA[varModelID] = [true,i];
+                        htmlItem.css("visibility","visible");
+                    }
+                    require("electron").shell.openExternal("http://localhost:"+wsPort+"/?modelID="+datagen[i].ID+"&nsample="+datagen[i].n_lines);
                     break;
                 }
                 default:
@@ -167,7 +185,8 @@ $("html").ready(function(){
             "Delete": {name: "Delete"},
             "exportDot": {name: "Export .DOT File"},
             "CopyModelId": {name: "Copy Model Id"},
-            "ToggleWS": {name: "Toggle WebService"}
+            "ToggleWS": {name: "Toggle WebService"},
+            "OpenWS": {name: "Open out WebService"}
         }
     });
 
@@ -765,13 +784,23 @@ function configGenProps(){
     tippy('.tooltip-label');
 }
 
+function reloadWSIcon () {
+    for(let item in WSMA) {
+        console.log(item);
+        if(WSMA[item][0]) {
+            $(".fa-upload").eq(WSMA[item][1]).css("visibility","visible");
+        }
+    }
+}
+
 function showModels(){
     $("#modelsPane").empty();
     $("#modelsPane").append($("<h5/>").addClass("nav-group-title").text("Models"));
     for(let i = 0; i < datagen.length; i++){
         let idNameModel = datagen[i].name.toLowerCase().replace(' ','');
 
-        let modelButton = $("<span/>").attr('id', idNameModel).addClass("nav-group-item").text(datagen[i].name).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
+        let modelButton = $("<span/>").attr('id', idNameModel).addClass("nav-group-item").text(datagen[i].name).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv")).append($("<span/>").addClass("fa").addClass("fa-upload"));
+
         if (currentDataGen === i)
             modelButton.addClass("active");
         modelButton.mouseup(function(e) {
@@ -799,6 +828,7 @@ function showModels(){
         modelButton.get(0).__node__ = datagen[i];
         $("#modelsPane").append(modelButton);
     }
+    reloadWSIcon();
 }
 
 function createNewModel () {

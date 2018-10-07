@@ -13,8 +13,7 @@ let createServer = () => {
         response.setHeader('Access-Control-Allow-Headers', '*');
 
         const userParams = getUrlVars(decodeURIComponent(request.url));
-
-        const url = request.url;
+        const url = request.url.indexOf('?') != 1 ? '/?'+request.url.substring(1) : request.url;
         switch(request.method) {
             case "GET":
                 let params = getUrlVars(url);
@@ -27,8 +26,8 @@ let createServer = () => {
                         response.end('Model is not valid!');
                     }
                     let numSam = datagen[WSCurrDataGen].n_lines;
-                    if(params.hasOwnProperty('nSample')) {
-                        datagen[WSCurrDataGen].n_lines = params.nSample;
+                    if(params.hasOwnProperty('nsample')) {
+                        datagen[WSCurrDataGen].n_lines = params.nsample;
                     }
                     switch(datagen[WSCurrDataGen].save_as) {
                         case "json":
@@ -36,7 +35,8 @@ let createServer = () => {
                             response.write(JSON.stringify(datagen[WSCurrDataGen].generate()));
                             response.end("}\n");
                             break;
-                        case ("csv" || "tsv"):
+                        case "csv":
+                        case "tsv":
                             const Json2csvParser = require('json2csv').Parser;
                             const fields = datagen[WSCurrDataGen].getColumnsNames();
                             const delimiter = datagen[WSCurrDataGen].save_as == "tsv" ? "\t": ",";
@@ -44,6 +44,8 @@ let createServer = () => {
                             const parse = parser.parse(datagen[WSCurrDataGen].generate());
                             response.end(parse);
                             break;
+                        default:
+                            response.end("Error in this data format. Please, change it!");
                     }
                     datagen[WSCurrDataGen].resetAll();
                     datagen[WSCurrDataGen].n_lines = numSam;

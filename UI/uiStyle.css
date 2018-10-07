@@ -198,3 +198,7 @@ select#selectGeneratorType:focus > option {
     width: 100px;
     color: blue;
 }
+.fa-upload {
+    visibility: hidden;
+    margin: 0 0 0 5px;
+}
