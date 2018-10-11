@@ -407,9 +407,13 @@ function generateDatas(){
                     let prevValue = it.generator[it.parameterIt];
                     it.generator[it.parameterIt] = it.beginIt;
                     for (let i = 0; i < it.numberIt; i++) {
-                        datagen[currentDataGen].generateStream(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
-                            return p1 + "[" + i + "]" + p2;
-                        }));
+                        $("#percentageGD").text("Starting...");
+                        setTimeout(() => {
+                            generateStream(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
+                                return p1 + "[" + i + "]" + p2;
+                            }));
+                        },100);
+
                         it.generator[it.parameterIt] += it.stepIt;
                     }
                     it.generator[it.parameterIt] = prevValue;
@@ -422,21 +426,11 @@ function generateDatas(){
             }, function (targetPath) {
                 modal.style.display = "none";
                 if (targetPath) {
-                    //datagen[currentDataGen].generateStream(targetPath);
-
-                    let datagenBackup = jQuery.extend(true, {}, datagen);
-
-                    console.log(datagenBackup);
-
+                    //generateStream(targetPath);
+                    $("#percentageGD").text("Starting...");
                     setTimeout(() => {
-                        datagenBackup[currentDataGen].generateStream(targetPath)
+                        generateStream(targetPath);
                     },100);
-
-
-                    //emitter.on("StreamCounter", (streamCounterVar) => {
-                    //    $("#percentage-modal").text(String(streamCounterVar/datagen[currentDataGen].n_lines)+"%")
-                    //})
-                    //
                 }
             });
         }
@@ -448,6 +442,77 @@ function generateDatas(){
 
         modal.style.display = "none";
     }
+}
+
+function generateStream(file) {
+    const fs = require('fs');
+    const datagenBackup = jQuery.extend(true, {}, datagen);
+    const currentDBackup = currentDataGen;
+    const varSeparator =  this.save_as === "csv" ? ',' : '\t';
+    let writeStream  = fs.createWriteStream(file);
+    writeStream.write('[');
+
+    const csvWriter = require('csv-write-stream')
+    let writer = csvWriter({separator: varSeparator});
+
+
+    writer.pipe(fs.createWriteStream(file));
+
+    for (let i = 0; i < datagenBackup[currentDBackup].n_lines; i++) {
+        let data = !datagenBackup[currentDBackup].header ? [] : {};
+        for (let j = 0; j < datagenBackup[currentDBackup].columns.length; j++){
+            if(datagenBackup[currentDBackup].columns[j].display) {
+                if(!datagenBackup[currentDBackup].header){
+                    data.push(datagenBackup[currentDBackup].columns[j].generator.generate());
+                } else {
+                    data[datagenBackup[currentDBackup].columns[j].name] = datagenBackup[currentDBackup].columns[j].generator.generate();
+                }
+            }
+        }
+        switch(datagenBackup[currentDBackup].save_as) { //In-for
+            case "json":
+                writeStream.write(JSON.stringify(data)+(i == datagenBackup[currentDBackup].n_lines -1 ? '' : ','));
+                break;
+            case "csv":
+            case "tsv":
+                writer.write(data);
+                break;
+        }
+        if(i%100==0) {
+            setTimeout(() => {
+                $("#percentageGD").text(String((i)*100/datagenBackup[currentDBackup].n_lines)+"%");
+            },100);
+
+        }
+
+    }
+
+    switch(datagenBackup[currentDBackup].save_as) {//Pós-for
+        case "json":
+            setTimeout(() => {
+                $("#percentageGD").text("Saving...");
+            },100);
+
+            writeStream.end(']');
+            break;
+        case "csv":
+        case "tsv":
+            setTimeout(() => {
+                $("#percentageGD").text("Saving...");
+            },100);
+            writer.end();
+            break;
+    }
+
+    writeStream.on('finish', () => {
+        $("#percentageGD").text("Finish!");
+        alert('Data Saved');
+    });
+    writer.on('finish', () => {
+        $("#percentageGD").text("Finish!");
+        alert('Data Saved');
+    });
+    datagenBackup[currentDBackup].resetAll();
 }
 
 function addGenerator(){
