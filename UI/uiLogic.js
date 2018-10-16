@@ -430,7 +430,7 @@ function generateDatas(){
                     $("#percentageGD").text("Starting...");
                     setTimeout(() => {
                         generateStream(targetPath);
-                    },100);
+                    },80);
                 }
             });
         }
@@ -448,7 +448,7 @@ function generateStream(file) {
     const fs = require('fs');
     const datagenBackup = jQuery.extend(true, {}, datagen);
     const currentDBackup = currentDataGen;
-    const varSeparator =  this.save_as === "csv" ? ',' : '\t';
+    const varSeparator =  datagenBackup[currentDBackup].save_as === "csv" ? ',' : '\t';
     let writeStream  = fs.createWriteStream(file);
     writeStream.write('[');
 
@@ -483,6 +483,8 @@ function generateStream(file) {
                 $("#percentageGD").text(String((i)*100/datagenBackup[currentDBackup].n_lines)+"%");
             },100);
 
+        if(i%1000000==0) {
+            console.log(1000000)
         }
 
     }
@@ -491,16 +493,15 @@ function generateStream(file) {
         case "json":
             setTimeout(() => {
                 $("#percentageGD").text("Saving...");
-            },100);
-
-            writeStream.end(']');
+                writeStream.end(']');
+            },1);
             break;
         case "csv":
         case "tsv":
             setTimeout(() => {
                 $("#percentageGD").text("Saving...");
-            },100);
-            writer.end();
+                writer.end();
+            },1);
             break;
     }
 
@@ -1084,6 +1085,9 @@ function createModelFromDataSet(path){
 //Redraw the options on preview's comboBox.
 function optionsPreview() {
     $("#comboBoxPreview").empty();
+    if(!(selectColumnPreview in datagen[currentDataGen].getColumnsNames())) {
+        selectColumnPreview = datagen[currentDataGen].columns[0].name;
+    }
     for(let col of datagen[currentDataGen].columns) {
         if(col.display)
             $('#comboBoxPreview').append($('<option>', {value:col.name, text:col.name}));
