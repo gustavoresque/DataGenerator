@@ -17,12 +17,11 @@ let vis = require("@labvis-ufpa/vistechlib");
 
 let pc;
 
-const createServer = require('./WebService');
-
-createServer();
-
-let WSMA = {};//It stores the models that is avaliable to web server (Web Server Model Available). It receives the model id, the boolean and the currentDatagen. Model is the Key.
+const {createServer,closeServer,changePort} = require('./WebService');
+let wsActive = false;
 let wsPort = 8000;
+let WSMA = {};//It stores the models that is avaliable to web server (Web Server Model Available). It receives the model id, the boolean and the currentDatagen. Model is the Key.
+
 const Json2csvParser = require('json2csv').Parser;
 
 ipc.on('call-datagen', function(event, arg){
@@ -52,6 +51,33 @@ ipc.on('change-datagen', function(event, arg){
         }
     }
     //console.log(datagen[currentDataGen].configs);
+});
+
+ipc.on('change-WebService', function(event, arg){
+    if(arg.hasOwnProperty("wsPort")) {
+        if(arg.wsPort > 1) {
+            if(wsActive) {
+                closeServer();
+                createServer();
+                wsPort = arg.wsPort;
+                changePort(wsPort);
+            }
+        }
+    }
+    if(arg.hasOwnProperty("wsActive")) {
+        if(wsActive != arg.wsActive) {
+            wsActive = arg.wsActive;
+            if (wsActive) {
+                createServer();
+                changePort(wsPort);
+            } else {
+                closeServer();
+                $(".fa-upload").each( (index) => {
+                    $(".fa-upload").eq(index).css("visibility","hidden");
+                })
+            }
+        }
+    }
 });
 ipc.on('update-sampledata', function () {
     if(current_sample)
@@ -162,6 +188,11 @@ $("html").ready(function(){
                         console.log( WSMA[varModelID][1]);
                         htmlItem.css("visibility","visible");
                     }
+                    if(!wsActive) {
+                        wsActive = true;
+                        createServer();
+                        changePort(wsPort);
+                    }
                     break;
                 }
                 case "OpenWS": {
@@ -171,6 +202,11 @@ $("html").ready(function(){
                     if(!(varModelID in WSMA)) {
                         WSMA[varModelID] = [true,i];
                         htmlItem.css("visibility","visible");
+                    }
+                    if(!wsActive) {
+                        wsActive = true;
+                        createServer();
+                        changePort(wsPort);
                     }
                     require("electron").shell.openExternal("http://localhost:"+wsPort+"/?modelID="+datagen[i].ID+"&nsample="+datagen[i].n_lines);
                     break;
@@ -287,6 +323,8 @@ $("html").ready(function(){
         let configs = datagen[currentDataGen].configs;
         configs.modelID = datagen[currentDataGen].ID;
         configs.modelName = datagen[currentDataGen].name;
+        configs.wsActive = wsActive;
+        configs.wsPort = wsPort;
         ipc.send('open-config-datagen-window', configs);
     });
 
@@ -452,9 +490,9 @@ function generateStream(file) {
     let writeStream  = fs.createWriteStream(file);
     writeStream.write('[');
 
+
     const csvWriter = require('csv-write-stream')
     let writer = csvWriter({separator: varSeparator});
-
 
     writer.pipe(fs.createWriteStream(file));
 
@@ -486,7 +524,6 @@ function generateStream(file) {
         if(i%1000000==0) {
             console.log(1000000)
         }
-
     }
 
     switch(datagenBackup[currentDBackup].save_as) {//Pós-for
@@ -852,7 +889,6 @@ function configGenProps(){
 
 function reloadWSIcon () {
     for(let item in WSMA) {
-        console.log(item);
         if(WSMA[item][0]) {
             $(".fa-upload").eq(WSMA[item][1]).css("visibility","visible");
         }

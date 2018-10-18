@@ -1,10 +1,8 @@
-let DataGen = require("../datagen/datagen.js");
-
 
 const http = require('http');
-
+let server = null;
 let createServer = () => {
-    let server = http.createServer((request, response) => {
+    server = http.createServer((request, response) => {
 
         // Set CORS headers
         response.setHeader('Access-Control-Allow-Origin', '*');
@@ -60,10 +58,6 @@ let createServer = () => {
                 break;
         }
     });
-    server.on('clientError', (err, socket) => {
-        socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
-    });
-    server.listen(8000);
 }
 
 function getUrlVars(url) {
@@ -76,8 +70,16 @@ function getUrlVars(url) {
     return myJson;
 }
 
-module.exports = createServer;
+let closeServer = () => {
+    server.close();
+}
 
-//TODO: fazer uma função recursiva para criar objetos ou arrays. [Concluído]
-//TODO: Verificar exemplo de modelos e possíveis parâmetros para pôr no GET.
-//TODO: Verificar modelo exportado para fazer o tipo POST.
+let changePort = (port) => {
+    server.listen(port);
+}
+
+module.exports = {
+    'createServer': createServer,
+    'closeServer': closeServer,
+    'changePort': changePort
+};
