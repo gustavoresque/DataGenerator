@@ -11,6 +11,7 @@ let current_sample;
 let activeGenerator;
 let collumnsSelected = [];
 let collumnsCopied = [];
+let SFLAborted = false;
 let ipc = require('electron').ipcRenderer;
 
 let vis = require("@labvis-ufpa/vistechlib");
@@ -90,6 +91,7 @@ $("html").ready(function(){
 
     $("#reloadPreview").on("click", "", function(e){
         showGenerators();
+        $("#percentageGD").text("Nothing Generated");
     });
 
     //The color lines became gray on resizing, so the reload solve the problem.
@@ -482,6 +484,10 @@ function generateDatas(){
     }
 }
 
+$("#percentageGD").dblclick(function(e){
+    SFLAborted = true;
+});
+
 function generateStream(file) {
     const fs = require('fs');
     const datagenBackup = jQuery.extend(true, {}, datagen);
@@ -490,67 +496,85 @@ function generateStream(file) {
     let writeStream  = fs.createWriteStream(file);
     writeStream.write('[');
 
-
-    const csvWriter = require('csv-write-stream')
+    const csvWriter = require('csv-write-stream');
     let writer = csvWriter({separator: varSeparator});
 
     writer.pipe(fs.createWriteStream(file));
 
-    for (let i = 0; i < datagenBackup[currentDBackup].n_lines; i++) {
-        let data = !datagenBackup[currentDBackup].header ? [] : {};
-        for (let j = 0; j < datagenBackup[currentDBackup].columns.length; j++){
-            if(datagenBackup[currentDBackup].columns[j].display) {
-                if(!datagenBackup[currentDBackup].header){
-                    data.push(datagenBackup[currentDBackup].columns[j].generator.generate());
-                } else {
-                    data[datagenBackup[currentDBackup].columns[j].name] = datagenBackup[currentDBackup].columns[j].generator.generate();
+    function splitForLoop(k,stop) {
+        for (let i = k; i < stop; i++) {
+            let data = !datagenBackup[currentDBackup].header ? [] : {};
+            for (let j = 0; j < datagenBackup[currentDBackup].columns.length; j++){
+                if(datagenBackup[currentDBackup].columns[j].display) {
+                    if(!datagenBackup[currentDBackup].header){
+                        data.push(datagenBackup[currentDBackup].columns[j].generator.generate());
+                    } else {
+                        data[datagenBackup[currentDBackup].columns[j].name] = datagenBackup[currentDBackup].columns[j].generator.generate();
+                    }
                 }
             }
-        }
-        switch(datagenBackup[currentDBackup].save_as) { //In-for
-            case "json":
-                writeStream.write(JSON.stringify(data)+(i == datagenBackup[currentDBackup].n_lines -1 ? '' : ','));
-                break;
-            case "csv":
-            case "tsv":
-                writer.write(data);
-                break;
-        }
-        if(i%100==0) {
-            setTimeout(() => {
-                $("#percentageGD").text(String((i)*100/datagenBackup[currentDBackup].n_lines)+"%");
-            },100);
-
-        if(i%1000000==0) {
-            console.log(1000000)
+            switch(datagenBackup[currentDBackup].save_as) { //In-for
+                case "json":
+                    writeStream.write(JSON.stringify(data)+(i == datagenBackup[currentDBackup].n_lines -1 ? '' : ','));
+                    break;
+                case "csv":
+                case "tsv":
+                    writer.write(data);
+                    break;
+            }
         }
     }
+    const ten = datagenBackup[currentDBackup].n_lines/100;
+    let SFLCounter = 0;
 
-    switch(datagenBackup[currentDBackup].save_as) {//Pós-for
-        case "json":
-            setTimeout(() => {
-                $("#percentageGD").text("Saving...");
-                writeStream.end(']');
-            },1);
-            break;
-        case "csv":
-        case "tsv":
-            setTimeout(() => {
-                $("#percentageGD").text("Saving...");
-                writer.end();
-            },1);
-            break;
-    }
+    let refreshIntervalId = setInterval( () => {
+        if(SFLCounter<100) {
+            splitForLoop(ten*SFLCounter,ten*(SFLCounter+1));
+            $("#percentageGD").text((SFLCounter+1)+"%");
+            if(SFLAborted) {
+                clearInterval(refreshIntervalId);
+                fs.unlinkSync(file);
+                alert("Writing was aborted!");
+                $("#percentageGD").text("Aborted");
+                SFLAborted = false;
+            }
+        } else {
+            clearInterval(refreshIntervalId);
 
-    writeStream.on('finish', () => {
-        $("#percentageGD").text("Finish!");
-        alert('Data Saved');
-    });
-    writer.on('finish', () => {
-        $("#percentageGD").text("Finish!");
-        alert('Data Saved');
-    });
-    datagenBackup[currentDBackup].resetAll();
+            switch(datagenBackup[currentDBackup].save_as) {//Pós-for
+                case "json":
+                    setTimeout(() => {
+                        $("#percentageGD").text("Saving...");
+                        writeStream.end(']');
+                    },1);
+                    break;
+                case "csv":
+                case "tsv":
+                    setTimeout(() => {
+                        $("#percentageGD").text("Saving...");
+                        writer.end();
+                    },1);
+                    break;
+            }
+
+            writeStream.on('finish', () => {
+                setTimeout(() => {
+                    $("#percentageGD").text("Finish!");
+                    alert('Data Saved');
+                }, 10);
+
+            });
+            writer.on('finish', () => {
+                setTimeout(() => {
+                    $("#percentageGD").text("Finish!");
+                    alert('Data Saved');
+                }, 10);
+            });
+            datagenBackup[currentDBackup].resetAll();
+        }
+        SFLCounter++;
+
+    },1);
 }
 
 function addGenerator(){
