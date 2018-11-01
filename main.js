@@ -76,6 +76,14 @@ function createWindow () {
         }
     });
 
+    ipcMain.on('change-WebService', (event, message) => {
+        if(message) {
+            mainWindow.webContents.send('change-WebService', message);
+        } else {
+            mainWindow.webContents.send('change-WebService', 'error');
+        }
+    });
+
     ipcMain.on('change-datasample', (event, message) => {
         if(message)
             for(let w of visWindows)
@@ -252,29 +260,10 @@ function createWindow () {
         ]
     };
 
-    const menuTemplateWebServer = {
-        label: 'WebServer',
-        submenu: [{label: 'Edit',
-            click() {
-                visDimensionWindow = new BrowserWindow({width: 900, height: 600, show: false,});
-                visDimensionWindow.loadURL(url.format({
-                    pathname: path.join(__dirname, 'WebService/config.html'),
-                    protocol: 'file:',
-                    slashes: true
-                }));
-                visDimensionWindow.on('closed', function () {
-                    visDimensionWindow = undefined;
-                });
-                mainWindow.webContents.send('getDataModel');
-
-            }
-        }]
-    };
-
     //Work on Mac.
     if(process.platform === 'darwin'){
         mainWindow.on("focus", ()=>{
-            const menuTemplate = [menuTemplateFile, menuTemplateVisualize, menuTemplateDebug, menuTemplateWebServer];
+            const menuTemplate = [menuTemplateFile, menuTemplateVisualize, menuTemplateDebug];
             Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
         });
     }
@@ -283,7 +272,6 @@ function createWindow () {
     menu.append(new MenuItem(menuTemplateFile));
     menu.append(new MenuItem(menuTemplateVisualize));
     menu.append(new MenuItem(menuTemplateDebug));
-    menu.append(new MenuItem(menuTemplateWebServer));
     mainWindow.setMenu(menu);
 
   // Open the DevTools.

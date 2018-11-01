@@ -11,20 +11,17 @@ let current_sample;
 let activeGenerator;
 let collumnsSelected = [];
 let collumnsCopied = [];
+let SFLAborted = false;
 let ipc = require('electron').ipcRenderer;
 
 let vis = require("@labvis-ufpa/vistechlib");
 
 let pc;
 
-const createServer = require('./WebService');
-
-createServer();
-
+const {createServer,closeServer,changePort} = require('./WebService');
+let wsActive = false;
+let wsPort = 8000;
 let WSMA = {};//It stores the models that is avaliable to web server (Web Server Model Available). It receives the model id, the boolean and the currentDatagen. Model is the Key.
-
-WSMA[datagen[currentDataGen].ID] = [false,currentDataGen];
-console.log(datagen[currentDataGen].ID);
 
 const Json2csvParser = require('json2csv').Parser;
 
@@ -56,6 +53,33 @@ ipc.on('change-datagen', function(event, arg){
     }
     //console.log(datagen[currentDataGen].configs);
 });
+
+ipc.on('change-WebService', function(event, arg){
+    if(arg.hasOwnProperty("wsPort")) {
+        if(arg.wsPort > 1) {
+            if(wsActive) {
+                closeServer();
+                createServer();
+                wsPort = arg.wsPort;
+                changePort(wsPort);
+            }
+        }
+    }
+    if(arg.hasOwnProperty("wsActive")) {
+        if(wsActive != arg.wsActive) {
+            wsActive = arg.wsActive;
+            if (wsActive) {
+                createServer();
+                changePort(wsPort);
+            } else {
+                closeServer();
+                $(".fa-upload").each( (index) => {
+                    $(".fa-upload").eq(index).css("visibility","hidden");
+                })
+            }
+        }
+    }
+});
 ipc.on('update-sampledata', function () {
     if(current_sample)
         ipc.send('change-datasample', current_sample);
@@ -67,6 +91,7 @@ $("html").ready(function(){
 
     $("#reloadPreview").on("click", "", function(e){
         showGenerators();
+        $("#percentageGD").text("Nothing Generated");
     });
 
     //The color lines became gray on resizing, so the reload solve the problem.
@@ -139,7 +164,8 @@ $("html").ready(function(){
                 }
                 case "CopyModelId": {
                     const {clipboard} = require('electron');
-                    let varModelID = datagen[currentDataGen].ID;
+                    let i = datagen.indexOf(this.get(0).__node__);
+                    let varModelID = datagen[i].ID;
                     if(process.platform == 'darwin') {
                         console.log(varModelID);
                         clipboard.writeText(varModelID,'selection');
@@ -149,12 +175,42 @@ $("html").ready(function(){
                     break;
                 }
                 case "ToggleWS": {
-                    let varModelID = datagen[currentDataGen].ID;
-                    if(WSMA[varModelID][0]) {
-                        WSMA[varModelID] = [false,currentDataGen];
-                    } else {
-                        WSMA[varModelID] = [true,currentDataGen];
+                    let i = datagen.indexOf(this.get(0).__node__);
+                    let htmlItem = $(".fa-upload").eq(i);
+                    let varModelID = datagen[i].ID;
+                    if(!(varModelID in WSMA)) {
+                        WSMA[varModelID] = [true,i];
+                        htmlItem.css("visibility","visible");
                     }
+                    else if(WSMA[varModelID][0]) {
+                        WSMA[varModelID] = [false,i];
+                       htmlItem.css("visibility","hidden");
+                    } else {
+                        WSMA[varModelID] = [true,i];
+                        console.log( WSMA[varModelID][1]);
+                        htmlItem.css("visibility","visible");
+                    }
+                    if(!wsActive) {
+                        wsActive = true;
+                        createServer();
+                        changePort(wsPort);
+                    }
+                    break;
+                }
+                case "OpenWS": {
+                    let i = datagen.indexOf(this.get(0).__node__);
+                    let htmlItem = $(".fa-upload").eq(i);
+                    let varModelID = datagen[i].ID;
+                    if(!(varModelID in WSMA)) {
+                        WSMA[varModelID] = [true,i];
+                        htmlItem.css("visibility","visible");
+                    }
+                    if(!wsActive) {
+                        wsActive = true;
+                        createServer();
+                        changePort(wsPort);
+                    }
+                    require("electron").shell.openExternal("http://localhost:"+wsPort+"/?modelID="+datagen[i].ID+"&nsample="+datagen[i].n_lines);
                     break;
                 }
                 default:
@@ -167,7 +223,8 @@ $("html").ready(function(){
             "Delete": {name: "Delete"},
             "exportDot": {name: "Export .DOT File"},
             "CopyModelId": {name: "Copy Model Id"},
-            "ToggleWS": {name: "Toggle WebService"}
+            "ToggleWS": {name: "Toggle WebService"},
+            "OpenWS": {name: "Open out WebService"}
         }
     });
 
@@ -268,6 +325,8 @@ $("html").ready(function(){
         let configs = datagen[currentDataGen].configs;
         configs.modelID = datagen[currentDataGen].ID;
         configs.modelName = datagen[currentDataGen].name;
+        configs.wsActive = wsActive;
+        configs.wsPort = wsPort;
         ipc.send('open-config-datagen-window', configs);
     });
 
@@ -388,9 +447,13 @@ function generateDatas(){
                     let prevValue = it.generator[it.parameterIt];
                     it.generator[it.parameterIt] = it.beginIt;
                     for (let i = 0; i < it.numberIt; i++) {
-                        datagen[currentDataGen].generateStream(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
-                            return p1 + "[" + i + "]" + p2;
-                        }));
+                        $("#percentageGD").text("Starting...");
+                        setTimeout(() => {
+                            generateStream(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
+                                return p1 + "[" + i + "]" + p2;
+                            }));
+                        },100);
+
                         it.generator[it.parameterIt] += it.stepIt;
                     }
                     it.generator[it.parameterIt] = prevValue;
@@ -403,21 +466,11 @@ function generateDatas(){
             }, function (targetPath) {
                 modal.style.display = "none";
                 if (targetPath) {
-                    //datagen[currentDataGen].generateStream(targetPath);
-
-                    let datagenBackup = jQuery.extend(true, {}, datagen);
-
-                    console.log(datagenBackup);
-
+                    //generateStream(targetPath);
+                    $("#percentageGD").text("Starting...");
                     setTimeout(() => {
-                        datagenBackup[currentDataGen].generateStream(targetPath)
-                    },100);
-
-
-                    //emitter.on("StreamCounter", (streamCounterVar) => {
-                    //    $("#percentage-modal").text(String(streamCounterVar/datagen[currentDataGen].n_lines)+"%")
-                    //})
-                    //
+                        generateStream(targetPath);
+                    },80);
                 }
             });
         }
@@ -429,6 +482,99 @@ function generateDatas(){
 
         modal.style.display = "none";
     }
+}
+
+$("#percentageGD").dblclick(function(e){
+    SFLAborted = true;
+});
+
+function generateStream(file) {
+    const fs = require('fs');
+    const datagenBackup = jQuery.extend(true, {}, datagen);
+    const currentDBackup = currentDataGen;
+    const varSeparator =  datagenBackup[currentDBackup].save_as === "csv" ? ',' : '\t';
+    let writeStream  = fs.createWriteStream(file);
+    writeStream.write('[');
+
+    const csvWriter = require('csv-write-stream');
+    let writer = csvWriter({separator: varSeparator});
+
+    writer.pipe(fs.createWriteStream(file));
+
+    function splitForLoop(k,stop) {
+        for (let i = k; i < stop; i++) {
+            let data = !datagenBackup[currentDBackup].header ? [] : {};
+            for (let j = 0; j < datagenBackup[currentDBackup].columns.length; j++){
+                if(datagenBackup[currentDBackup].columns[j].display) {
+                    if(!datagenBackup[currentDBackup].header){
+                        data.push(datagenBackup[currentDBackup].columns[j].generator.generate());
+                    } else {
+                        data[datagenBackup[currentDBackup].columns[j].name] = datagenBackup[currentDBackup].columns[j].generator.generate();
+                    }
+                }
+            }
+            switch(datagenBackup[currentDBackup].save_as) { //In-for
+                case "json":
+                    writeStream.write(JSON.stringify(data)+(i == datagenBackup[currentDBackup].n_lines -1 ? '' : ','));
+                    break;
+                case "csv":
+                case "tsv":
+                    writer.write(data);
+                    break;
+            }
+        }
+    }
+    const ten = datagenBackup[currentDBackup].n_lines/100;
+    let SFLCounter = 0;
+
+    let refreshIntervalId = setInterval( () => {
+        if(SFLCounter<100) {
+            splitForLoop(ten*SFLCounter,ten*(SFLCounter+1));
+            $("#percentageGD").text((SFLCounter+1)+"%");
+            if(SFLAborted) {
+                clearInterval(refreshIntervalId);
+                fs.unlinkSync(file);
+                alert("Writing was aborted!");
+                $("#percentageGD").text("Aborted");
+                SFLAborted = false;
+            }
+        } else {
+            clearInterval(refreshIntervalId);
+
+            switch(datagenBackup[currentDBackup].save_as) {//Pós-for
+                case "json":
+                    setTimeout(() => {
+                        $("#percentageGD").text("Saving...");
+                        writeStream.end(']');
+                    },1);
+                    break;
+                case "csv":
+                case "tsv":
+                    setTimeout(() => {
+                        $("#percentageGD").text("Saving...");
+                        writer.end();
+                    },1);
+                    break;
+            }
+
+            writeStream.on('finish', () => {
+                setTimeout(() => {
+                    $("#percentageGD").text("Finish!");
+                    alert('Data Saved');
+                }, 10);
+
+            });
+            writer.on('finish', () => {
+                setTimeout(() => {
+                    $("#percentageGD").text("Finish!");
+                    alert('Data Saved');
+                }, 10);
+            });
+            datagenBackup[currentDBackup].resetAll();
+        }
+        SFLCounter++;
+
+    },1);
 }
 
 function addGenerator(){
@@ -765,13 +911,22 @@ function configGenProps(){
     tippy('.tooltip-label');
 }
 
+function reloadWSIcon () {
+    for(let item in WSMA) {
+        if(WSMA[item][0]) {
+            $(".fa-upload").eq(WSMA[item][1]).css("visibility","visible");
+        }
+    }
+}
+
 function showModels(){
     $("#modelsPane").empty();
     $("#modelsPane").append($("<h5/>").addClass("nav-group-title").text("Models"));
     for(let i = 0; i < datagen.length; i++){
         let idNameModel = datagen[i].name.toLowerCase().replace(' ','');
 
-        let modelButton = $("<span/>").attr('id', idNameModel).addClass("nav-group-item").text(datagen[i].name).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv"));
+        let modelButton = $("<span/>").attr('id', idNameModel).addClass("nav-group-item").text(datagen[i].name).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv")).append($("<span/>").addClass("fa").addClass("fa-upload"));
+
         if (currentDataGen === i)
             modelButton.addClass("active");
         modelButton.mouseup(function(e) {
@@ -799,6 +954,7 @@ function showModels(){
         modelButton.get(0).__node__ = datagen[i];
         $("#modelsPane").append(modelButton);
     }
+    reloadWSIcon();
 }
 
 function createNewModel () {
@@ -989,6 +1145,9 @@ function createModelFromDataSet(path){
 //Redraw the options on preview's comboBox.
 function optionsPreview() {
     $("#comboBoxPreview").empty();
+    if(!(selectColumnPreview in datagen[currentDataGen].getColumnsNames())) {
+        selectColumnPreview = datagen[currentDataGen].columns[0].name;
+    }
     for(let col of datagen[currentDataGen].columns) {
         if(col.display)
             $('#comboBoxPreview').append($('<option>', {value:col.name, text:col.name}));

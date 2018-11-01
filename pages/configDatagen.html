@@ -170,9 +170,17 @@
         let dtg = {};
         let dimensionsInserted = [];
         let datagenInfos = "";
+        let wsConfig = {};
 
         ipc.on('configure-datagen', (event, arg) => {
-            obj = arg;
+            obj = jQuery.extend(true, {}, arg);
+
+            // WebService
+            $("#wsActive").prop('checked',obj.wsActive);
+            $("#wsPort").val(obj.wsPort);
+            if(!obj.wsActive)
+                $(".webService input[type=number]").attr("disabled","disabled").css("opacity","0.5");
+
             for(let attr in obj){
                 if(obj.hasOwnProperty(attr)){
                     if(attr === "iterator") {
@@ -236,7 +244,11 @@
                     if(!$("#hasIt").is(":checked")){
                         obj.iterator = undefined;
                     }
+                    if(!jQuery.isEmptyObject(wsConfig)) {
+                        ipc.send('change-WebService', wsConfig);
+                    }
                     ipc.send('change-datagen', obj);
+
                 }else{
                     ipc.send('change-datagen', false);
                 }
@@ -263,7 +275,22 @@
                     $("span.form-control").css("opacity","0.5");
                 }
             });
-            
+
+            $("#wsActive").change(function () {
+                if($(this).is(":checked")){
+                    $(".webService input[type=number]").removeAttr("disabled").css("opacity","1");
+                    wsConfig['wsActive'] = true;
+                }else{
+                    $(".webService input[type=number]").attr("disabled","disabled").css("opacity","0.5");
+                    wsConfig['wsActive'] = false;
+                }
+                console.log(wsConfig);
+            });
+
+            $("#wsPort").change(function () {
+                wsConfig['wsPort'] = Number($(this).val());
+            });
+
             $(".parameterIt").on("drop",function(evt){
                 evt.preventDefault();
                 evt.stopPropagation();
@@ -315,6 +342,7 @@
             <!--<h5 class="nav-group-title">Favorites</h5>-->
             <span class="nav-group-item active">General</span>
             <span class="nav-group-item">Parameter Iterator</span>
+            <span class="nav-group-item">WebService</span>
         </nav>
     </div>
         <div class="conteudo general">
@@ -390,9 +418,28 @@
 
             </table>
         </div>
+
+        <div class="conteudo webService">
+            <table>
+                <tr>
+                    <td>
+                        <label for="wsActive">Active</label>
+                    </td>
+                    <td><input id="wsActive" type="checkbox" class="form-control"></td>
+                </tr>
+                <tr>
+                    <td><label for="wsPort">Port</label></td>
+                    <td><input id="wsPort" type="number" class="form-control" onkeypress="return event.charCode >= 48 && event.charCode <= 57"></td>
+                </tr>
+
+            </table>
+    </div>
     </div>
     <button id="btnCancel" class="btn btn-negative">Cancel</button>
     <button id="btnConfirm" class="btn btn-primary">Confirm</button>
+
+<script>
+</script>
 
 </body>
 </html>
