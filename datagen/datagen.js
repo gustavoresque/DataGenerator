@@ -2369,7 +2369,6 @@ class DataGen {
             generator: []
         };
         for(let i=0; i<this.columns.length; i++){
-            console.log(this.columns[i].ID);
             model.generator.push({
                 name: this.columns[i].name,
                 type: this.columns[i].type,
@@ -2380,7 +2379,6 @@ class DataGen {
             let fullGenNames = [];
             this.columns[i].generator.getFullGenerator(fullGenerator);
             for(let gen of fullGenerator){
-                console.log(gen.getModel());
                 fullGenNames.push(gen.getModel());
             }
             model.generator[i].generator = fullGenNames;
