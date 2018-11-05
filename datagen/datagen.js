@@ -1327,33 +1327,80 @@ class RandomWeightedCategorical extends Generator {
 
 
 class CubicBezierGenerator extends Generator{
-    constructor(x0, y0, x1, y1, x2, y2, x3, y3){
+    constructor(x0, y0, x1, y1, x2, y2, x3, y3, proportional){
         super("CubicBezier Generator");
         this.x0 = x0 || 0;
-        this.x1 = x1 || 0.25;
-        this.x2 = x2 || 0.75;
-        this.x3 = x3 || 1;
         this.y0 = y0 || 0;
-        this.y1 = y1 || 0.9;
-        this.y2 = y2 || 0.75;
-        this.y3 = y3 || 0;
+        this.x1 = x1 || 4;
+        this.y1 = y1 || 2;
+        this.x2 = x2 || 0;
+        this.y2 = y2 || 2;
+        this.x3 = x3 || 1;
+        this.y3 = y3 || 1.8;
+        this.proportional = typeof proportional === "boolean" ? proportional : true;
+
+
+        let x=0, y=0;
+        this.prob = [];
+        let lastx = this.x0;
+        let lasty = this.y0;
+        for(let t =0.01; t<1.01; t+=0.01){
+            console.log(t);
+            x = Math.pow(1-t,3)*this.x0 + 3*Math.pow(1-t,2)*t*this.x1 + 3*(1-t)*Math.pow(t,2)*this.x2 + Math.pow(t,3)*this.x3;
+            y = Math.pow(1-t,3)*this.y0 + 3*Math.pow(1-t,2)*t*this.y1 + 3*(1-t)*Math.pow(t,2)*this.y2 + Math.pow(t,3)*this.y3;
+            this.prob.push( Math.sqrt(Math.pow(x-lastx, 2)+Math.pow(y-lasty, 2)) );
+            lastx = x;
+            lasty = y;
+        }
+        let sum=0;
+        for(let v of this.prob)
+            sum+=v;
+
+        for(let i=0;i<this.prob.length;i++)
+            this.prob[i] = this.prob[i]/sum;
+
+        for(let i=1;i<this.prob.length;i++)
+            this.prob[i] = this.prob[i]+this.prob[i-1];
+
+
+
+        console.log(this.prob);
     }
 
     generate(){
+
         let t = Math.random();
-        let array = [];
-        for(let i=0;i<4;i++){
-            array[i] = [this["x"+i], this["y"+i]];
-        }
-        for(let k=1;k<4;k++){
-            for(let i=0;i<4-k;i++){
-                array[i][0] = (1-t)*array[i][0]+t*array[i+1][0];
-                array[i][1] = (1-t)*array[i][1]+t*array[i+1][1];
+
+        if(this.proportional){
+            let index =0;
+            for(let i=0; i<this.prob.length; i++){
+                if(t < this.prob[i]) {
+                    index = i;
+                    break;
+                }
             }
+            t = 0.01*Math.random() +  index*0.01;
         }
 
-        this.lastGenerated1 = array[0][1];
-        return super.generate(array[0][0]);
+
+        // let array = [];
+        //
+        // for(let i=0;i<4;i++){
+        //     array[i] = [this["x"+i], this["y"+i]];
+        // }
+        // for(let k=1;k<4;k++){
+        //     for(let i=0;i<4-k;i++){
+        //         array[i][0] = (1-t)*array[i][0]+t*array[i+1][0];
+        //         array[i][1] = (1-t)*array[i][1]+t*array[i+1][1];
+        //     }
+        // }
+        let x = Math.pow(1-t,3)*this.x0 + 3*Math.pow(1-t,2)*t*this.x1 + 3*(1-t)*Math.pow(t,2)*this.x2 + Math.pow(t,3)*this.x3;
+        this.lastGenerated1 = Math.pow(1-t,3)*this.y0 + 3*Math.pow(1-t,2)*t*this.y1 + 3*(1-t)*Math.pow(t,2)*this.y2 + Math.pow(t,3)*this.y3;
+
+        // if(this.lastGenerated)
+        //     console.log(Math.sqrt(Math.pow(this.lastGenerated-array[0][0],2) + Math.pow(this.lastGenerated1-array[0][1],2)));
+
+        return super.generate(x);
     }
 
     getGenParams(){
@@ -1374,6 +1421,12 @@ class CubicBezierGenerator extends Generator{
                 }
             );
         }
+        params.push({
+            shortName: "prop",
+            variableName: "proportional",
+            name: "Is Proportional to Length?",
+            type: "boolean"
+        });
         return params;
     }
 
@@ -1384,6 +1437,11 @@ class CubicBezierGenerator extends Generator{
             model["y"+i] = this["y"+i];
         }
         return model;
+    }
+
+    reset(){
+        this.cont=0;
+        super.reset();
     }
 
     copy(){
@@ -1403,8 +1461,11 @@ class GetExtraValue extends Generator{
     }
 
     generate(){
-        let lastValue = this.srcGen["lastGenerated"
-        + (this.extra_index > 0 ? this.extra_index : "")];
+        let lastValue = 0;
+        if(this.srcGen){
+            lastValue = this.srcGen["lastGenerated"
+            + (this.extra_index > 0 ? this.extra_index : "")];
+        }
 
         if(lastValue)
             return super.generate(lastValue);

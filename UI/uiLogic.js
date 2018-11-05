@@ -291,7 +291,7 @@ $("html").ready(function(){
             this.__node__[$input.attr("data-variable")] = arr;
         }
         datagen[currentDataGen].resetAll();
-        showGenerators();
+        // showGenerators();
     });
 
     $("#tableCollumn").on("click", "div.md-chip", configGenProps);
