@@ -766,6 +766,7 @@ class RandomNoiseGenerator extends Generator{
     constructor(probability, intensity, generator2){
         super("Noise Generator");
         this.generator2 = generator2 || new defaultGenerator();
+        this.genType = this.generator2.name;
         this.probability = probability || 0.3;
         this.intensity = intensity || 1;
     }
@@ -778,14 +779,25 @@ class RandomNoiseGenerator extends Generator{
             return super.generate(0);
         }
     }
+
+    get accessGenerator(){
+        return this.genType;
+    }
+
+    set accessGenerator(genTypeName){
+        this.genType = genTypeName;
+        this.generator2 = new DataGen.listOfGens[genTypeName]();
+    }
+
     getGenParams(){
         let params = super.getGenParams();
         params.push(
             {
                 shortName: "Type",
-                variableName: "generator2",
-                name: "Generator Type",
-                type: "Generator"
+                variableName: "accessGenerator",
+                name: "Noise Type",
+                type: "options",
+                options: ['Uniform Generator', 'Gaussian Generator', 'Poisson Generator']
             },
             {
                 shortName: "Prob",
@@ -1306,6 +1318,128 @@ class RandomWeightedCategorical extends Generator {
 
     copy(){
         let newGen = new RandomWeightedCategorical(this.array, this.weights);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+}
+
+
+class CubicBezierGenerator extends Generator{
+    constructor(x0, y0, x1, y1, x2, y2, x3, y3){
+        super("CubicBezier Generator");
+        this.x0 = x0 || 0;
+        this.x1 = x1 || 0.25;
+        this.x2 = x2 || 0.75;
+        this.x3 = x3 || 1;
+        this.y0 = y0 || 0;
+        this.y1 = y1 || 0.9;
+        this.y2 = y2 || 0.75;
+        this.y3 = y3 || 0;
+    }
+
+    generate(){
+        let t = Math.random();
+        let array = [];
+        for(let i=0;i<4;i++){
+            array[i] = [this["x"+i], this["y"+i]];
+        }
+        for(let k=1;k<4;k++){
+            for(let i=0;i<4-k;i++){
+                array[i][0] = (1-t)*array[i][0]+t*array[i+1][0];
+                array[i][1] = (1-t)*array[i][1]+t*array[i+1][1];
+            }
+        }
+
+        this.lastGenerated1 = array[0][1];
+        return super.generate(array[0][0]);
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        for(let i=0;i<4;i++){
+            params.push(
+                {
+                    shortName: "x"+i,
+                    variableName: "x"+i,
+                    name: "Control Point X"+i,
+                    type: "number"
+                },
+                {
+                    shortName: "y"+i,
+                    variableName: "y"+i,
+                    name: "Control Point Y"+i,
+                    type: "number"
+                }
+            );
+        }
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        for(let i=0;i<4;i++){
+            model["x"+i] = this["x"+i];
+            model["y"+i] = this["y"+i];
+        }
+        return model;
+    }
+
+    copy(){
+        let newGen = new CubicBezierGenerator(this.x0, this.y0, this.x1, this.y1, this.x2, this.y2, this.x3, this.y3);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+}
+
+class GetExtraValue extends Generator{
+    constructor(extra_index, srcGen){
+        super("Get Extra Value");
+        this.extra_index = extra_index || 1;
+        this.srcGen = srcGen;
+    }
+
+    generate(){
+        let lastValue = this.srcGen["lastGenerated"
+        + (this.extra_index > 0 ? this.extra_index : "")];
+
+        if(lastValue)
+            return super.generate(lastValue);
+        else
+            return super.generate(0);
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "SrcGen",
+                variableName: "srcGen",
+                name: "Source Generator",
+                type: "Generator"
+            },
+            {
+                shortName: "i",
+                variableName: "extra_index",
+                name: "Index of Extra Value",
+                type: "number"
+            }
+        );
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.extra_index = this.extra_index;
+        model.srcGen = this.srcGen;
+        return model;
+    }
+
+    copy(){
+        let newGen = new GetExtraValue(this.extra_index, this.srcGen);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -2455,6 +2589,16 @@ class DataGen {
     }
 
 
+    findGenByID(ID){
+        for(let i=0; i<this.columns.length; i++){
+            let gens = this.columns[i].generator.getFullGenerator();
+
+            for(let j=0; j<gens.length; j++){
+                if(gens[j].ID === ID)
+                    return gens[j];
+            }
+        }
+    }
 
 
 }
@@ -2467,6 +2611,7 @@ LinearScale.genType = "Accessory";
 MinMax.genType = "Accessory";
 LowPassFilter.genType = "Accessory";
 NoRepeat.genType = "Accessory";
+GetExtraValue.genType = "Accessory";
 LinearFunction.genType = "Function";
 QuadraticFunction.genType = "Function";
 PolynomialFunction.genType = "Function";
@@ -2485,6 +2630,7 @@ RandomCauchyGenerator.genType = "Random";
 RandomWeightedCategorical.genType = "Random";
 RandomCategorical.genType = "Random";
 RandomCategoricalQtt.genType = "Random";
+CubicBezierGenerator.genType = "Random";
 FixedTimeGenerator.genType = "Sequence";
 ConstantValue.genType = "Sequence";
 CounterGenerator.genType = "Sequence";
@@ -2522,7 +2668,9 @@ DataGen.listOfGens = {
     'Piecewise Function': PiecewiseFunction,
     'TimeLaps Function': TimeLapsFunction,
     'Sinusoidal Sequence': SinusoidalSequence,
-    'Custom Sequence': CustomSequence
+    'Custom Sequence': CustomSequence,
+    'CubicBezier Generator': CubicBezierGenerator,
+    'Get Extra Value': GetExtraValue
 };
 
 DataGen.listOfGensForNoise = {

@@ -97,7 +97,7 @@ $("html").ready(function(){
     //The color lines became gray on resizing, so the reload solve the problem.
     $(window).on("resize", "", () => {
         showGenerators();
-    })
+    });
 
     $("#hidePreview").on("click", "", function(e){
         $(".previewPanel").hide();
@@ -278,7 +278,7 @@ $("html").ready(function(){
             this.__node__[$input.attr("data-variable")] = $input.get(0).checked;
 
         else if($input.attr("data-type") === "Generator")
-            this.__node__[$input.attr("data-variable")] = new (DataGen.listOfGens[$input.val()])();
+            this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].findGenByID($input.val());
 
         else if($input.attr("data-type").indexOf("Column") >= 0) {
             this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].columns[parseInt($input.val())].generator;
@@ -294,7 +294,7 @@ $("html").ready(function(){
         showGenerators();
     });
 
-    $("#tableCollumn").on("mousedown", "div.md-chip", configGenProps);
+    $("#tableCollumn").on("click", "div.md-chip", configGenProps);
 
 
     $.contextMenu({
@@ -809,7 +809,7 @@ function configGenProps(){
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input));
 
-        }else if(p.type === "auto" || p.type === "string") {
+        }else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
             let $input = $("<input/>")
                 .addClass("form-control")
                 .addClass("smallInput")
@@ -820,6 +820,19 @@ function configGenProps(){
                 .attr("data-type", p.type);
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input));
+            if(p.type === "Generator"){
+                let genSel = generator[p.variableName];
+                $input.val(genSel ? genSel.ID : "");
+                $input.on("drop", function(evt){
+                    evt.preventDefault();
+                    evt.stopPropagation();
+
+                    let msg = evt.originalEvent.dataTransfer.getData("text");
+                    let objs = JSON.parse(msg);
+                    $input.val(objs.genID);
+                    $input.trigger("change");
+                });
+            }
 
         }else if(p.type === "options") {
             let $input = $("<select/>")
@@ -860,16 +873,16 @@ function configGenProps(){
                 $input.attr("checked", "");
             }
 
-        }else if(p.type === "Generator"){// Utiliza os geradores das colunas anteriormente criadas no mesmo model
-            let $select = $("<select/>")
-                .addClass("form-control")
-                .addClass("smallInput")
-                .attr("id", "input_"+p.variableName)
-                .attr("data-variable", p.variableName)
-                .attr("data-type", p.type);
-            $select.get(0).__node__ = generator;
-            putGeneratorOptions($select, generator[p.variableName], true);
-            $tr.append($("<td/>").append($select));
+        // }else if(p.type === "Generator"){// Utiliza os geradores das colunas anteriormente criadas no mesmo model
+        //     let $select = $("<select/>")
+        //         .addClass("form-control")
+        //         .addClass("smallInput")
+        //         .attr("id", "input_"+p.variableName)
+        //         .attr("data-variable", p.variableName)
+        //         .attr("data-type", p.type);
+        //     $select.get(0).__node__ = generator;
+        //     putGeneratorOptions($select, generator[p.variableName], true);
+        //     $tr.append($("<td/>").append($select));
 
         }else if(p.type.indexOf("Column") >= 0){
             let $select = $("<select/>")
