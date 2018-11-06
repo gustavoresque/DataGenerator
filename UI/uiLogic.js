@@ -1,5 +1,4 @@
 let fs = require('fs');
-require("./lib/cycle.js");
 const electron = require('electron').remote;
 const dialog = electron.dialog;
 
@@ -515,7 +514,6 @@ function generateStream(targetPath) {
     child.on('exit', () => {
         if(child.killed) {
             require("fs").unlink(child_targetPath);
-            $("#percentageCancel").css("display","none");
             alert('The writing was aborted');
             $("#percentageGD").text("Aborted!");
             child = null;
@@ -524,7 +522,7 @@ function generateStream(targetPath) {
             datagen[currentDataGen].resetAll();
             alert('Data Saved!');
             $("#percentageGD").text("Finished!");
-            $("#percentageCancel").css("display","none");
+            $("#percentageCancelIcon").css("display","none");
             child = null;
             child_targetPath = "";
         }
