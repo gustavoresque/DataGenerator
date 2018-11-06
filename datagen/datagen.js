@@ -2179,7 +2179,7 @@ class DataGen {
         this.name = "Model";
         this.n_lines = 100; // Quantidade de linhas na geração
         this.n_sample_lines = 100;
-        this.save_as = "csv";
+        this.save_as = "json";
         this.header = true;
         this.header_type = true;
         let column = new Column("Dimension 1");

@@ -1,4 +1,5 @@
 let fs = require('fs');
+require("./lib/cycle.js");
 const electron = require('electron').remote;
 const dialog = electron.dialog;
 
@@ -11,7 +12,6 @@ let current_sample;
 let activeGenerator;
 let collumnsSelected = [];
 let collumnsCopied = [];
-let SFLAborted = false;
 let ipc = require('electron').ipcRenderer;
 
 let vis = require("@labvis-ufpa/vistechlib");
@@ -23,7 +23,7 @@ let wsActive = false;
 let wsPort = 8000;
 let WSMA = {};//It stores the models that is avaliable to web server (Web Server Model Available). It receives the model id, the boolean and the currentDatagen. Model is the Key.
 
-const Json2csvParser = require('json2csv').Parser;
+// const Json2csvParser = require('json2csv').Parser;
 
 ipc.on('call-datagen', function(event, arg){
     // ipc.send('receive-datagen', activeGenerator.getGenParams());
@@ -484,97 +484,57 @@ function generateDatas(){
     }
 }
 
-$("#percentageGD").dblclick(function(e){
-    SFLAborted = true;
+let child = null;
+let child_targetPath = "";
+
+$("#percentageCancelIcon").click(function(e){
+    $("#percentageCancelIcon").css("display","none");
+    $("#percentageCancelSure").css("display","block");
+    $("#percentageCancelNot").css("display","block");
 });
 
-function generateStream(file) {
-    const fs = require('fs');
-    const datagenBackup = jQuery.extend(true, {}, datagen);
-    const currentDBackup = currentDataGen;
-    const varSeparator =  datagenBackup[currentDBackup].save_as === "csv" ? ',' : '\t';
-    let writeStream  = fs.createWriteStream(file);
-    writeStream.write('[');
-
-    const csvWriter = require('csv-write-stream');
-    let writer = csvWriter({separator: varSeparator});
-
-    writer.pipe(fs.createWriteStream(file));
-
-    function splitForLoop(k,stop) {
-        for (let i = k; i < stop; i++) {
-            let data = !datagenBackup[currentDBackup].header ? [] : {};
-            for (let j = 0; j < datagenBackup[currentDBackup].columns.length; j++){
-                if(datagenBackup[currentDBackup].columns[j].display) {
-                    if(!datagenBackup[currentDBackup].header){
-                        data.push(datagenBackup[currentDBackup].columns[j].generator.generate());
-                    } else {
-                        data[datagenBackup[currentDBackup].columns[j].name] = datagenBackup[currentDBackup].columns[j].generator.generate();
-                    }
-                }
-            }
-            switch(datagenBackup[currentDBackup].save_as) { //In-for
-                case "json":
-                    writeStream.write(JSON.stringify(data)+(i == datagenBackup[currentDBackup].n_lines -1 ? '' : ','));
-                    break;
-                case "csv":
-                case "tsv":
-                    writer.write(data);
-                    break;
-            }
-        }
+$("#percentageCancelSure").click(function(e){
+    $("#percentageCancelSure").css("display","none");
+    $("#percentageCancelNot").css("display","none");
+    if(child) {
+        child.kill("SIGHUP");
     }
-    const ten = datagenBackup[currentDBackup].n_lines/100;
-    let SFLCounter = 0;
+});
 
-    let refreshIntervalId = setInterval( () => {
-        if(SFLCounter<100) {
-            splitForLoop(ten*SFLCounter,ten*(SFLCounter+1));
-            $("#percentageGD").text((SFLCounter+1)+"%");
-            if(SFLAborted) {
-                clearInterval(refreshIntervalId);
-                fs.unlinkSync(file);
-                alert("Writing was aborted!");
-                $("#percentageGD").text("Aborted");
-                SFLAborted = false;
-            }
+$("#percentageCancelNot").click(function(e){
+    $("#percentageCancelIcon").css("display","block");
+    $("#percentageCancelSure").css("display","none");
+    $("#percentageCancelNot").css("display","none");
+});
+
+function generateStream(targetPath) {
+    child_targetPath = targetPath;
+    $("#percentageCancelIcon").css("display","block");
+    child = require('child_process').fork("./Stream",[datagen[currentDataGen].exportModel(),String(datagen[currentDataGen].n_lines),targetPath,String(currentDataGen)]);
+
+    child.on('exit', () => {
+        if(child.killed) {
+            require("fs").unlink(child_targetPath);
+            $("#percentageCancel").css("display","none");
+            alert('The writing was aborted');
+            $("#percentageGD").text("Aborted!");
+            child = null;
+            child_targetPath = "";
         } else {
-            clearInterval(refreshIntervalId);
-
-            switch(datagenBackup[currentDBackup].save_as) {//Pós-for
-                case "json":
-                    setTimeout(() => {
-                        $("#percentageGD").text("Saving...");
-                        writeStream.end(']');
-                    },1);
-                    break;
-                case "csv":
-                case "tsv":
-                    setTimeout(() => {
-                        $("#percentageGD").text("Saving...");
-                        writer.end();
-                    },1);
-                    break;
-            }
-
-            writeStream.on('finish', () => {
-                setTimeout(() => {
-                    $("#percentageGD").text("Finish!");
-                    alert('Data Saved');
-                }, 10);
-
-            });
-            writer.on('finish', () => {
-                setTimeout(() => {
-                    $("#percentageGD").text("Finish!");
-                    alert('Data Saved');
-                }, 10);
-            });
-            datagenBackup[currentDBackup].resetAll();
+            datagen[currentDataGen].resetAll();
+            alert('Data Saved!');
+            $("#percentageGD").text("Finished!");
+            $("#percentageCancel").css("display","none");
+            child = null;
+            child_targetPath = "";
         }
-        SFLCounter++;
-
-    },1);
+    })
+    .on('message',(message) => {
+        $("#percentageGD").text(message);
+    })
+    .on("error", (err) => {
+        throw err;
+    })
 }
 
 function addGenerator(){

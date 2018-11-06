@@ -191,14 +191,14 @@ select#selectGeneratorType:focus > option {
     margin-top: 5px;
     padding-right: 0;
 }
-#percentage-modal{
-    margin: 40px auto 0 auto;
-    font-size: 200%;
-    height: 20px;
-    width: 100px;
-    color: blue;
+#percentageGD{
+    width: 108px;
 }
 .fa-upload {
     visibility: hidden;
     margin: 0 0 0 5px;
+}
+.icon-chart-line {
+    cursor:pointer;
+    background-color: #EDEBED;
 }
