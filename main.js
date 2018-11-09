@@ -369,6 +369,7 @@ function addVisWindowMenu(visWindow){
         submenu: [
             {
                 label: "Type",
+                label: "ByDimension",
                 click(){  }
             },
 

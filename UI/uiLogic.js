@@ -165,7 +165,7 @@ $("html").ready(function(){
                     const {clipboard} = require('electron');
                     let i = datagen.indexOf(this.get(0).__node__);
                     let varModelID = datagen[i].ID;
-                    if(process.platform == 'darwin') {
+                    if(process.platform === 'darwin') {
                         console.log(varModelID);
                         clipboard.writeText(varModelID,'selection');
                     }else {
@@ -290,6 +290,7 @@ $("html").ready(function(){
             this.__node__[$input.attr("data-variable")] = arr;
         }
         datagen[currentDataGen].resetAll();
+        setTimeout(()=>{ showGenerators(); }, 500);
         // showGenerators();
     });
 
@@ -335,22 +336,19 @@ $("html").ready(function(){
             $(this).parent().find("div.md-chip").get(l).__node__.removeLastGenerator();
             showGenerators();
         }
-    });
 
-    $("#tableCollumn").on("click", "span.btnAddGen", function(){
+    }).on("click", "span.btnAddGen", function(){
         let l = $(this).parent().find("div.md-chip").length-1;
         $(this).parent().find("div.md-chip").get(l).__node__.addGenerator(new UniformGenerator());
         showGenerators();
-    });
 
-    $("#tableCollumn").on("click", "td.btnRemoveColumn", function(){
-        datagen[currentDataGen].removeCollumn(parseInt($(this).parent().find(".tdIndex").text()) - 1);
+    }).on("click", "span.btnRemoveColumn", function(){
+        datagen[currentDataGen].removeCollumn(parseInt($(this).parent().parent().find(".tdIndex").text()) - 1);
         showGenerators();
-    });
 
-    $("#tableCollumn").on("click", "td.btnFilter", function(){
+    }).on("click", "span.btnFilter", function(){
         //Get the selected dimension.
-        let colu = datagen[currentDataGen].columns[parseInt($(this).parent().find(".tdIndex").text()) - 1];
+        let colu = datagen[currentDataGen].columns[parseInt($(this).parent().parent().find(".tdIndex").text()) - 1];
         colu.display = colu.display == true ? false : true;
         //If the dimension selected to filter were the current dimension on preview, the color lines in preview would be black.
         if(colu.name == selectColumnPreview) {
@@ -397,7 +395,7 @@ $("html").ready(function(){
     });
 
     $(document).keydown(function(e) {
-        if (e.keyCode == 67 && e.ctrlKey) {// CRTL + C
+        if (e.keyCode === 67 && e.ctrlKey) {// CRTL + C
             collumnsCopied = [];
             for (let i = collumnsSelected.length-1; i >= 0; i--){
                 collumnsCopied.push(collumnsSelected[i]);
@@ -406,7 +404,7 @@ $("html").ready(function(){
     });
 
     $(document).keydown(function(e) {
-        if (e.keyCode == 86 && e.ctrlKey) {// CRTL + V
+        if (e.keyCode === 86 && e.ctrlKey) {// CRTL + V
             for(let i = 0; i < collumnsCopied.length; i++){
                 let counter = 0, newName = '';
                 for (let j = 0; j < datagen[currentDataGen].columns.length; j++){
@@ -546,7 +544,7 @@ function dragGenerator(evt){
     let genModel = evt.target.__node__.getModel();
     let modelID = datagen[currentDataGen].ID;
     let modelName = datagen[currentDataGen].name;
-    let col = $(evt.target).parent().parent().get(0).__node__;
+    let col = $(evt.target).closest(".columnTr").get(0).__node__;
     let colName = col.name;
     let colID = col.ID;
     evt.dataTransfer.setData("text/plain", JSON.stringify({modelID, modelName, colID, colName, genID, genModel, params}));
@@ -558,33 +556,10 @@ function dragAndDropGens(){
         event.preventDefault();
         event.stopPropagation();
 
-        if (dragged.generator){
-            dragged.parent.generator = dragged.generator;
-            dragged.generator.parent = dragged.parent;
-            dragged.generator.sumOrder();
+        if(dragged !== event.target.__node__){
+            dragged.unlink();
+            event.target.__node__.insertGenerator(dragged);
         }
-        else{
-            if (dragged.parent.ID.substring(0,3) === "COL"){
-                let newGen = new DataGen.listOfGens["Uniform Generator"]();
-                newGen.parent = dragged.parent;
-                dragged.parent.generator = newGen;
-            }else{
-                dragged.parent.generator = null;
-            }
-        }
-
-        if (event.target.__node__.generator){
-            dragged.parent = event.target.__node__;
-            event.target.__node__.generator.parent = dragged;
-
-            dragged.generator = event.target.__node__.generator;
-            event.target.__node__.generator = dragged;
-        }else{
-            event.target.__node__.generator = dragged;
-            dragged.parent = event.target.__node__;
-            dragged.generator = null;
-        }
-        event.target.__node__.sumOrder();
 
         showGenerators();
     }).on("dragover", function(event) {
@@ -595,6 +570,7 @@ function dragAndDropGens(){
         event.stopPropagation();
     }).on("dragstart", function(event){
         event.stopPropagation();
+        console.log(event.target.__node__);
         dragged = event.target.__node__;
     });
 }
@@ -608,7 +584,10 @@ function showGenerators(){
         for(let gen of generators){
             if (gen instanceof DataGen.superTypes.SwitchCaseFunction){
                 let $switchGenTable = $("<table/>");
-                let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name).attr("draggable","true");
+                let $chip = $("<div/>").addClass("md-chip md-chip-hover")
+                    .text(gen.order + "-" + gen.name)
+                    .attr("draggable","true");
+
                 $chip.get(0).ondragstart = dragGenerator;
                 if(gen === activeGenerator)
                     active_gen_chip.obj = $chip.addClass("active-md-chip");
@@ -656,7 +635,7 @@ function showGenerators(){
     let $tbody = $("#tbody").empty();
     if (datagen.length > 0){
         for(let i = 0; i < datagen[currentDataGen].columns.length; i++){
-            let $tr = $("<tr/>");
+            let $tr = $("<tr/>").addClass("columnTr");
             datagen[currentDataGen].columns[i].type = datagen[currentDataGen].columns[i].generator.getReturnedType();
             let c = false;
             for (let y = 0; y < collumnsSelected.length; y++){
@@ -681,20 +660,27 @@ function showGenerators(){
 
             let slash = datagen[currentDataGen].columns[i].display == false ? "-slash": "";
 
-            $tr.append($("<td/>").addClass("btnGenerator btnFilter fa fa-filter"+slash+" fa-lg"));
-
             $tr.get(0).__node__ = datagen[currentDataGen].columns[i];
-            $tr.append($("<td/>").addClass("btnGenerator btnRemoveColumn icon icon-trash"));
+
+            $tr.append($("<td/>").append($("<span/>").addClass("btnGenerator btnFilter fa fa-filter"+slash+" fa-lg")));
+            $tr.append($("<td/>").append($("<span/>").addClass("btnGenerator btnRemoveColumn icon icon-trash")));
         }
 
         dragAndDropGens();
     }
+    optionsPreview();
+    redrawPreview();
+
+    return active_gen_chip.obj;
+}
+
+function redrawPreview(){
     try{
         current_sample = datagen[currentDataGen].generateSample();
         preview(current_sample);
         ipc.send('change-datasample', current_sample);
     }catch (e){
-        //TODO: alertar sobre erro de referência para o usuário.
+
         switch (e) {
             case 'Please, insert a sentence.':
                 alert(e);
@@ -702,7 +688,6 @@ function showGenerators(){
         console.log(e);
 
     }
-    return active_gen_chip.obj;
 }
 
 /*putGeneratorOptions
@@ -731,7 +716,7 @@ function configGenProps(){
 
     let generator = this.__node__;
     activeGenerator = generator;
-    let coluna = $(this).parent().parent().get(0).__node__;
+    let coluna = $(this).closest(".columnTr").get(0).__node__;
     let params = generator.getGenParams();
 
     //Ativa o <select> e coloca as opções de Geradores para trocar o tipo do gerador.
@@ -1115,22 +1100,27 @@ function createModelFromDataSet(path){
 
 //Redraw the options on preview's comboBox.
 function optionsPreview() {
-    $("#comboBoxPreview").empty();
-    if(!(selectColumnPreview in datagen[currentDataGen].getColumnsNames())) {
-        selectColumnPreview = datagen[currentDataGen].columns[0].name;
+    console.log("optionsPreview()");
+    let $combox = $("#comboBoxPreview").empty();
+
+
+    let cdatagen = datagen[currentDataGen];
+    if(!(cdatagen.getColumnsNames()
+            .indexOf(selectColumnPreview) >= 0)) {
+        selectColumnPreview = cdatagen.columns[0].name;
     }
-    for(let col of datagen[currentDataGen].columns) {
+    for(let col of cdatagen.columns) {
         if(col.display)
-            $('#comboBoxPreview').append($('<option>', {value:col.name, text:col.name}));
+            $combox.append($('<option>', {value:col.name, text:col.name}));
     }
+    $combox.val(selectColumnPreview);
 }
 let selectColumnPreview = "Dimension 1"; //Inicialize according the first columns's name.
 
 $('#comboBoxPreview').change(() => {
     selectColumnPreview = $("#comboBoxPreview").val();
-    showGenerators(); //To redraw the preview;
-    $("#comboBoxPreview").val(selectColumnPreview); //Because the preview is redrawn, the chosen option is lost. This line recover the choice.
-
+    console.log(selectColumnPreview);
+    redrawPreview();
 });
 
 function preview(data2){
@@ -1146,7 +1136,7 @@ function preview(data2){
     let scaleFunction;
     let range; //range of colors.
 
-    optionsPreview(); //Call the function for a comboBox options redrawing.
+    //optionsPreview(); //Call the function for a comboBox options redrawing.
 
     //Set configs according to the dimension type.
     for(let col of datagen[currentDataGen].columns) {

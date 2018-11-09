@@ -17,39 +17,81 @@ class Generator{
 
     addGenerator(gen, order){
         if (this.generator){
-            this.generator.addGenerator(gen, (order || this.order) + 1);
+            this.generator.addGenerator(gen);
         } else {
-            gen.order = (order || this.order) + 1;
+            gen.order = this.order+1;
             this.generator = gen;
             gen.parent = this;
         }
     }
 
     sumOrder(){
-        if (this.parent.ID.substring(0,3) === "GEN"){
+        if (this.parent instanceof Generator){
             this.order = this.parent.order + 1;
-        } else if (this.parent.ID.substring(0,3) === "COL"){
+        } else if (this.parent instanceof Column){
             this.order = 0;
         }
-        if (this.generator) this.generator.sumOrder();
+        if(this instanceof SwitchCaseFunction){
+            for(let cat in this.listOfGenerators)
+                if(this.listOfGenerators.hasOwnProperty(cat))
+                    this.listOfGenerators[cat].sumOrder();
+        } else if (this.generator)
+            this.generator.sumOrder();
     }
 
-    // insertGenerator(gen){
-    //     gen.order = this.order;
-    //
-    //     if (this.generator){
-    //         this.generator.parent = gen;
-    //         gen.parent = this;
-    //
-    //         let aux = this.generator;
-    //         this.generator = gen;
-    //         gen.generator = aux;
-    //     }else{
-    //         gen.generator = null;
-    //         this.generator = gen;
-    //     }
-    //     this.generator.sumOrder();
-    // }
+    unlink(){
+        if(this.parent){
+            if(this.parent instanceof SwitchCaseFunction){
+                this.parent.unlinkChild(this);
+            }else if(this.generator){
+                this.parent.generator = this.generator;
+                this.generator.parent = this.parent;
+            }else{
+                if(this.parent instanceof Column){
+                    let newGen = new defaultGenerator();
+                    this.parent.generator = newGen;
+                    newGen.parent = this.parent;
+                }else{
+                    this.parent.generator = undefined;
+                }
+            }
+            if(this.parent instanceof Column){
+                this.parent.generator.getRootGenerator().sumOrder();
+            }else{
+                this.parent.getRootGenerator().sumOrder();
+            }
+
+
+        }
+    }
+
+    insertGenerator(gen){
+
+        if(this.generator === gen)
+            return;
+
+        gen.parent = this;
+
+        if (this.generator){
+            this.generator.parent = gen;
+            gen.generator = this.generator;
+        }else{
+            gen.generator = undefined;
+        }
+
+        this.generator = gen;
+        console.log("this.generator.getRootGenerator()");
+        console.log(this.generator);
+        console.log(this.generator.getRootGenerator());
+        this.generator.getRootGenerator().sumOrder();
+    }
+
+    getRootGenerator(){
+        let gen = this;
+        if(this.parent instanceof Generator)
+            gen = this.parent.getRootGenerator();
+        return gen;
+    }
 
     changeGenerator(gen){
         gen.order = this.order;
@@ -74,6 +116,8 @@ class Generator{
         //
         // return true;
     }
+
+
 
     removeLastGenerator(){
         if (!this.generator)
@@ -1345,7 +1389,6 @@ class CubicBezierGenerator extends Generator{
         let lastx = this.x0;
         let lasty = this.y0;
         for(let t =0.01; t<1.01; t+=0.01){
-            console.log(t);
             x = Math.pow(1-t,3)*this.x0 + 3*Math.pow(1-t,2)*t*this.x1 + 3*(1-t)*Math.pow(t,2)*this.x2 + Math.pow(t,3)*this.x3;
             y = Math.pow(1-t,3)*this.y0 + 3*Math.pow(1-t,2)*t*this.y1 + 3*(1-t)*Math.pow(t,2)*this.y2 + Math.pow(t,3)*this.y3;
             this.prob.push( Math.sqrt(Math.pow(x-lastx, 2)+Math.pow(y-lasty, 2)) );
@@ -1381,24 +1424,9 @@ class CubicBezierGenerator extends Generator{
             }
             t = 0.01*Math.random() +  index*0.01;
         }
-
-
-        // let array = [];
-        //
-        // for(let i=0;i<4;i++){
-        //     array[i] = [this["x"+i], this["y"+i]];
-        // }
-        // for(let k=1;k<4;k++){
-        //     for(let i=0;i<4-k;i++){
-        //         array[i][0] = (1-t)*array[i][0]+t*array[i+1][0];
-        //         array[i][1] = (1-t)*array[i][1]+t*array[i+1][1];
-        //     }
-        // }
         let x = Math.pow(1-t,3)*this.x0 + 3*Math.pow(1-t,2)*t*this.x1 + 3*(1-t)*Math.pow(t,2)*this.x2 + Math.pow(t,3)*this.x3;
         this.lastGenerated1 = Math.pow(1-t,3)*this.y0 + 3*Math.pow(1-t,2)*t*this.y1 + 3*(1-t)*Math.pow(t,2)*this.y2 + Math.pow(t,3)*this.y3;
 
-        // if(this.lastGenerated)
-        //     console.log(Math.sqrt(Math.pow(this.lastGenerated-array[0][0],2) + Math.pow(this.lastGenerated1-array[0][1],2)));
 
         return super.generate(x);
     }
@@ -1437,11 +1465,6 @@ class CubicBezierGenerator extends Generator{
             model["y"+i] = this["y"+i];
         }
         return model;
-    }
-
-    reset(){
-        this.cont=0;
-        super.reset();
     }
 
     copy(){
@@ -1892,6 +1915,17 @@ class SwitchCaseFunction extends Function{
             return outType;
         }
         return "Numeric";
+    }
+
+    unlinkChild(child){
+        for(let cat in this.listOfGenerators) {
+            if (this.listOfGenerators.hasOwnProperty(cat)) {
+                if (this.listOfGenerators[cat] === child) {
+                    this.listOfGenerators[cat] = child.generator || new defaultGenerator();
+                    this.listOfGenerators[cat].parent = this;
+                }
+            }
+        }
     }
 
 }
@@ -2755,7 +2789,8 @@ DataGen.superTypes = {
     Generator,
     Function,
     SwitchCaseFunction,
-    Sequence
+    Sequence,
+    Column
 };
 
 //var datagen = new DataGen();
