@@ -46,7 +46,6 @@ ipc.on('change-datagen', function(event, arg){
     for(let dtg of datagen){
         if(dtg.ID === arg.modelID){
             dtg.configs = arg;
-            console.log( datagen[currentDataGen].configs);
             break;
         }
     }
@@ -433,30 +432,6 @@ function generateDatas(){
     try {
         modal.style.display = "block";
         let saveas = datagen[currentDataGen].save_as;
-        if (datagen[currentDataGen].configs.iterator.hasIt) {
-            dialog.showSaveDialog({
-                title: "Save Data",
-                filters: [{name: saveas, extensions: [saveas]}]
-            }, function (targetPath) {
-                modal.style.display = "none";
-                if (targetPath) {
-                    let it = datagen[currentDataGen].configs.iterator;
-                    let prevValue = it.generator[it.parameterIt];
-                    it.generator[it.parameterIt] = it.beginIt;
-                    for (let i = 0; i < it.numberIt; i++) {
-                        $("#percentageGD").text("Starting...");
-                        setTimeout(() => {
-                            generateStream(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
-                                return p1 + "[" + i + "]" + p2;
-                            }));
-                        },100);
-
-                        it.generator[it.parameterIt] += it.stepIt;
-                    }
-                    it.generator[it.parameterIt] = prevValue;
-                }
-            });
-        } else {
             dialog.showSaveDialog({
                 title: "Save Data",
                 filters: [{name: saveas, extensions: [saveas]}]
@@ -464,13 +439,102 @@ function generateDatas(){
                 modal.style.display = "none";
                 if (targetPath) {
                     //generateStream(targetPath);
-                    $("#percentageGD").text("Starting...");
-                    setTimeout(() => {
-                        generateStream(targetPath);
-                    },80);
+                    const path = require("path");
+                    if(path.dirname(targetPath) == "/") {
+                        alert("Invalid Directory!");
+                        $("#percentageGD").text("Aborted!");
+                        return ;
+                    }
+                    const diskspace = require('diskspace');
+                    const sizeof = require("object-sizeof");
+                    let freeSpace;
+                    let totalSpaceNecessary = 0;
+
+                    diskspace.check(require("path").dirname(targetPath), function (err, result)
+                    {
+                        freeSpace = result.free;
+
+                        let data = datagen[currentDataGen].save_as == "json" ? {} : [];
+                        let j;
+                        for (j = 0; j < datagen[currentDataGen].columns.length; j++){
+                            if(datagen[currentDataGen].columns[j].display) {
+                                if(!datagen[currentDataGen].save_as == "json"){
+                                    data.push(datagen[currentDataGen].columns[j].generator.generate());
+                                } else {
+                                    data[datagen[currentDataGen].columns[j].name] = datagen[currentDataGen].columns[j].generator.generate();
+                                }
+                            }
+                        }
+                        switch(datagen[currentDataGen].save_as) {
+                            case "json":
+                                totalSpaceNecessary = sizeof("[]")+(sizeof(data)+(sizeof(",")*j)-1)*datagen[currentDataGen].n_lines;
+                                break;
+                            case "tsv":
+                            case "csv":
+                                const separator = datagen[currentDataGen].save_as == "csv" ? "," : "\t";
+                                totalSpaceNecessary = sizeof(datagen[currentDataGen].getColumnsNames())+(sizeof(data)+(sizeof(separator)*j)-1)*datagen[currentDataGen].n_lines;
+                                break;
+                        }
+
+                        if(totalSpaceNecessary*0.8>freeSpace) {
+                            alert("No free space available!");
+                            $("#percentageGD").text("Failed!");
+                        } else {
+                            if (totalSpaceNecessary*0.8>=freeSpace && totalSpaceNecessary*1.2<=freeSpace) {
+                                console.log(freeSpace);
+                                let spaceMessage = "";
+                                if (totalSpaceNecessary < 1024 * 1024) {
+                                    spaceMessage = String(totalSpaceNecessary / 1024).substring(0, 5) + "KB";
+                                } else if (totalSpaceNecessary < 1024 * 1024 * 1024) {
+                                    spaceMessage = String(totalSpaceNecessary / (1024 * 1024)).substring(0, 5) + "MB";
+                                } else if (totalSpaceNecessary < 1024 * 1024 * 1024 * 1024) {
+                                    spaceMessage = String(totalSpaceNecessary / (1024 * 1024 * 1024)).substring(0, 5) + "GB";
+                                } else {
+                                    spaceMessage = String(totalSpaceNecessary / (1024 * 1024 * 1024 * 1024)).substring(0, 5) + "TB";
+                                }
+
+                                if (freeSpace < 1024 * 1024) {
+                                    freeSpace = String(freeSpace / 1024).substring(0, 5) + "KB";
+                                } else if (freeSpace < 1024 * 1024 * 1024) {
+                                    freeSpace = String(freeSpace / (1024 * 1024)).substring(0, 5) + "MB";
+                                } else if (freeSpace < 1024 * 1024 * 1024 * 1024) {
+                                    freeSpace = String(freeSpace / (1024 * 1024 * 1024)).substring(0, 5) + "GB";
+                                } else {
+                                    freeSpace = String(freeSpace / (1024 * 1024 * 1024 * 1024)).substring(0, 5) + "TB";
+                                }
+
+                                alert("You are in a Critic Zone of space memory. We are not sure if you have the needed space. We recommend to abort, but if you don't, it might work.\nYour free space: " + freeSpace + "\nNeeded Space: " + spaceMessage);
+                            }
+                            $("#percentageGD").text("Starting...");
+                            if (datagen[currentDataGen].configs.iterator.hasIt) {
+                                let it = datagen[currentDataGen].configs.iterator;
+                                let prevValue = it.generator[it.parameterIt];
+                                let promises = [];
+                                it.generator[it.parameterIt] = it.beginIt;
+                                for (let i = 0; i < it.numberIt; i++) {
+                                    promises.push(new Promise( (resolve,reject) => {
+                                        generateStream(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
+                                            return p1 + "[" + i + "]" + p2;
+                                        }), resolve, reject);
+                                    }));
+                                    it.generator[it.parameterIt] += it.stepIt;
+                                    console.log(promises);
+                                }
+                                Promise.all(promises).then(function() {
+                                    console.log("Boraaaa")
+                                    alert('All Files Saved!');
+                                })
+                                it.generator[it.parameterIt] = prevValue;
+
+
+                            } else {
+                                generateStream(targetPath);
+                            }
+                        }
+                    })
                 }
             });
-        }
+
     }catch (e) {
         console.log(e);
         alert('Some problem happened!!! Verify generators properties.\n' +
@@ -481,7 +545,7 @@ function generateDatas(){
     }
 }
 
-let child = null;
+let child = [];
 let child_targetPath = "";
 
 $("#percentageCancelIcon").click(function(e){
@@ -504,26 +568,47 @@ $("#percentageCancelNot").click(function(e){
     $("#percentageCancelNot").css("display","none");
 });
 
-function generateStream(targetPath) {
+function generateStream(targetPath,resolve,reject) {
     child_targetPath = targetPath;
-    $("#percentageCancelIcon").css("display","block");
-    child = require('child_process').fork("./Stream",[datagen[currentDataGen].exportModel(),String(datagen[currentDataGen].n_lines),targetPath,String(currentDataGen)]);
+    let currentIteration;
+    it = datagen[currentDataGen].configs.iterator;
+    if(it.hasIt) {
+        currentIteration = Number( targetPath.substring( targetPath.lastIndexOf("[")+1,targetPath.lastIndexOf("]") ) );
+    } else {
+        currentIteration = 0;
+    }
 
-    child.on('exit', () => {
-        if(child.killed) {
+    $("#percentageCancelIcon").css("display","block");
+    child[currentIteration] = require('child_process').fork("./Stream",[datagen[currentDataGen].exportModel(),String(datagen[currentDataGen].n_lines),targetPath,datagen[currentDataGen].header]);
+    child[currentIteration].on('exit', (code) => {
+        if(code == null && !child[currentIteration].killed) {
             require("fs").unlink(child_targetPath);
-            alert('The writing was aborted');
-            $("#percentageGD").text("Aborted!");
-            child = null;
+            alert('Something bad happended... :(');
+            $("#percentageGD").text("Failed!");
+            child[currentIteration] = null;
             child_targetPath = "";
+            reject(true);
         } else {
-            datagen[currentDataGen].resetAll();
-            alert('Data Saved!');
-            $("#percentageGD").text("Finished!");
-            $("#percentageCancelIcon").css("display","none");
-            child = null;
-            child_targetPath = "";
+            if(child[currentIteration].killed) {
+                require("fs").unlink(child_targetPath);
+                alert('The writing was aborted');
+                $("#percentageGD").text("Aborted!");
+                child[currentIteration] = null;
+                child_targetPath = "";
+                reject(true);
+            } else {
+                datagen[currentDataGen].resetAll();
+                if(!it.hasIt) {
+                    alert('Data Saved!');
+                }
+                $("#percentageGD").text("Finished!");
+                $("#percentageCancelIcon").css("display","none");
+                child[currentIteration] = null;
+                child_targetPath = "";
+                resolve(true);
+            }
         }
+
     })
     .on('message',(message) => {
         $("#percentageGD").text(message);
