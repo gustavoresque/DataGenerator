@@ -22,7 +22,7 @@ let wsActive = false;
 let wsPort = 8000;
 let WSMA = {};//It stores the models that is avaliable to web server (Web Server Model Available). It receives the model id, the boolean and the currentDatagen. Model is the Key.
 
-// const Json2csvParser = require('json2csv').Parser;
+const Json2csvParser = require('json2csv').Parser;
 
 ipc.on('call-datagen', function(event, arg){
     // ipc.send('receive-datagen', activeGenerator.getGenParams());
@@ -428,6 +428,7 @@ $("html").ready(function(){
 });
 
 let modal = document.getElementById('myModal');
+let child = [];
 
 function generateDatas(){
     try {
@@ -446,93 +447,82 @@ function generateDatas(){
                         $("#percentageGD").text("Aborted!");
                         return ;
                     }
-                    const diskspace = require('diskspace');
-                    const sizeof = require("object-sizeof");
-                    let freeSpace;
-                    let totalSpaceNecessary = 0;
 
-                    diskspace.check(require("path").dirname(targetPath), function (err, result)
-                    {
-                        freeSpace = result.free;
+                    $("#percentageGD").text("Starting...");
+                    let promises = [];
+                    if (datagen[currentDataGen].configs.iterator.hasIt) {
+                        let it = datagen[currentDataGen].configs.iterator;
+                        let prevValue = it.generator[it.parameterIt];
+                        it.generator[it.parameterIt] = it.beginIt;
+                        for (let i = 0; i < it.numberIt; i++) {
+                            if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
 
-                        let data = datagen[currentDataGen].save_as == "json" ? {} : [];
-                        let j;
-                        for (j = 0; j < datagen[currentDataGen].columns.length; j++){
-                            if(datagen[currentDataGen].columns[j].display) {
-                                if(!datagen[currentDataGen].save_as == "json"){
-                                    data.push(datagen[currentDataGen].columns[j].generator.generate());
-                                } else {
-                                    data[datagen[currentDataGen].columns[j].name] = datagen[currentDataGen].columns[j].generator.generate();
-                                }
-                            }
-                        }
-                        switch(datagen[currentDataGen].save_as) {
-                            case "json":
-                                totalSpaceNecessary = sizeof("[]")+(sizeof(data)+(sizeof(",")*j)-1)*datagen[currentDataGen].n_lines;
-                                break;
-                            case "tsv":
-                            case "csv":
-                                const separator = datagen[currentDataGen].save_as == "csv" ? "," : "\t";
-                                totalSpaceNecessary = sizeof(datagen[currentDataGen].getColumnsNames())+(sizeof(data)+(sizeof(separator)*j)-1)*datagen[currentDataGen].n_lines;
-                                break;
-                        }
-
-                        if(totalSpaceNecessary*0.8>freeSpace) {
-                            alert("No free space available!");
-                            $("#percentageGD").text("Failed!");
-                        } else {
-                            if (totalSpaceNecessary*0.8>=freeSpace && totalSpaceNecessary*1.2<=freeSpace) {
-                                console.log(freeSpace);
-                                let spaceMessage = "";
-                                if (totalSpaceNecessary < 1024 * 1024) {
-                                    spaceMessage = String(totalSpaceNecessary / 1024).substring(0, 5) + "KB";
-                                } else if (totalSpaceNecessary < 1024 * 1024 * 1024) {
-                                    spaceMessage = String(totalSpaceNecessary / (1024 * 1024)).substring(0, 5) + "MB";
-                                } else if (totalSpaceNecessary < 1024 * 1024 * 1024 * 1024) {
-                                    spaceMessage = String(totalSpaceNecessary / (1024 * 1024 * 1024)).substring(0, 5) + "GB";
-                                } else {
-                                    spaceMessage = String(totalSpaceNecessary / (1024 * 1024 * 1024 * 1024)).substring(0, 5) + "TB";
-                                }
-
-                                if (freeSpace < 1024 * 1024) {
-                                    freeSpace = String(freeSpace / 1024).substring(0, 5) + "KB";
-                                } else if (freeSpace < 1024 * 1024 * 1024) {
-                                    freeSpace = String(freeSpace / (1024 * 1024)).substring(0, 5) + "MB";
-                                } else if (freeSpace < 1024 * 1024 * 1024 * 1024) {
-                                    freeSpace = String(freeSpace / (1024 * 1024 * 1024)).substring(0, 5) + "GB";
-                                } else {
-                                    freeSpace = String(freeSpace / (1024 * 1024 * 1024 * 1024)).substring(0, 5) + "TB";
-                                }
-
-                                alert("You are in a Critic Zone of space memory. We are not sure if you have the needed space. We recommend to abort, but if you don't, it might work.\nYour free space: " + freeSpace + "\nNeeded Space: " + spaceMessage);
-                            }
-                            $("#percentageGD").text("Starting...");
-                            if (datagen[currentDataGen].configs.iterator.hasIt) {
-                                let it = datagen[currentDataGen].configs.iterator;
-                                let prevValue = it.generator[it.parameterIt];
-                                let promises = [];
-                                it.generator[it.parameterIt] = it.beginIt;
-                                for (let i = 0; i < it.numberIt; i++) {
-                                    promises.push(new Promise( (resolve,reject) => {
-                                        generateStream(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
-                                            return p1 + "[" + i + "]" + p2;
-                                        }), resolve, reject);
-                                    }));
-                                    it.generator[it.parameterIt] += it.stepIt;
-                                    console.log(promises);
-                                }
-                                Promise.all(promises).then(function() {
-                                    console.log("Boraaaa")
-                                    alert('All Files Saved!');
-                                })
-                                it.generator[it.parameterIt] = prevValue;
-
-
+                                promises.push(new Promise( (resolve,reject) => {
+                                    generateStream(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
+                                        return p1 + "[" + i + "]" + p2;
+                                    }), resolve, reject);
+                                }));
                             } else {
-                                generateStream(targetPath);
+                                promises.push(new Promise( (resolve,reject) => {
+                                    generateWritingSimple(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
+                                        return p1 + "[" + i + "]" + p2;
+                                    }), resolve, reject);
+                                }));
                             }
+                            it.generator[it.parameterIt] += it.stepIt;
                         }
-                    })
+                        Promise.all(promises).then(function() {
+                            $("#percentageCancelIcon").css("display","none");
+                            $("#percentageGD").text("Finished!");
+                            alert('All Files Saved!');
+                        }).catch((err) => {
+                            switch (err) {
+                                case 'abort':
+                                    alert("The writing was aborted!")
+                                    $("#percentageGD").text("Aborted!");
+                                    break;
+                                case 'error':
+                                    alert("Something bad happened!")
+                                    $("#percentageGD").text("Finished!");
+                                    break;
+                            }
+                        }).finally(() => {
+                            child = [];
+                        });
+                        it.generator[it.parameterIt] = prevValue;
+
+
+                    } else {
+                        if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
+                            promises.push(new Promise( (resolve,reject) => {
+                                generateStream(targetPath,resolve,reject);
+                            }));
+
+                        } else {
+                            promises.push(new Promise( (resolve,reject) => {
+                                generateWritingSimple(targetPath,resolve,reject);
+                            }));
+
+                        }
+                        Promise.all(promises).then(function() {
+                            $("#percentageCancelIcon").css("display","none");
+                            $("#percentageGD").text("Finished!");
+                            alert('Data Saved')
+                        }).catch((err) => {
+                            switch (err) {
+                                case 'abort':
+                                    alert("The writing was aborted!")
+                                    $("#percentageGD").text("Aborted!");
+                                    break;
+                                case 'error':
+                                    alert("Something bad happened!")
+                                    $("#percentageGD").text("Finished!");
+                                    break;
+                            }
+                        }).finally(() => {
+                            child = [];
+                        });
+                    }
                 }
             });
 
@@ -546,9 +536,6 @@ function generateDatas(){
     }
 }
 
-let child = [];
-let child_targetPath = "";
-
 $("#percentageCancelIcon").click(function(e){
     $("#percentageCancelIcon").css("display","none");
     $("#percentageCancelSure").css("display","block");
@@ -559,7 +546,16 @@ $("#percentageCancelSure").click(function(e){
     $("#percentageCancelSure").css("display","none");
     $("#percentageCancelNot").css("display","none");
     if(child) {
-        child.kill("SIGHUP");
+        const it = datagen[currentDataGen].configs.iterator;
+        if(it.hasIt) {
+            for(let i = 0; i < it.numberIt; i++) {
+                if(child[i]) {
+                    child[i].kill("SIGKILL");
+                }
+            }
+        } else {
+            child[0].kill("SIGKILL");
+        }
     }
 });
 
@@ -569,8 +565,28 @@ $("#percentageCancelNot").click(function(e){
     $("#percentageCancelNot").css("display","none");
 });
 
+function generateWritingSimple(targetPath,resolve,reject) {
+    switch(datagen[currentDataGen].save_as) {
+        case 'json':
+            fs.writeFile(targetPath,JSON.stringify(datagen[currentDataGen].generate()),"utf8",(err) => {
+                if(err){ reject('error'); }
+                resolve(true)
+            })
+            break;
+        case 'csv':
+        case 'tsv':
+            const parser = new Json2csvParser({fields: datagen[currentDataGen].getDisplayedColumnsNames(), delimiter: datagen[currentDataGen].save_as=='csv' ? ',' : '\t'});
+            const csv = parser.parse(datagen[currentDataGen].generate());
+            fs.writeFile(targetPath,csv,"utf8",(err) => {
+                if(err){ reject('error'); }
+                resolve(true)
+            })
+            break;
+
+    }
+}
+
 function generateStream(targetPath,resolve,reject) {
-    child_targetPath = targetPath;
     let currentIteration;
     it = datagen[currentDataGen].configs.iterator;
     if(it.hasIt) {
@@ -580,32 +596,17 @@ function generateStream(targetPath,resolve,reject) {
     }
 
     $("#percentageCancelIcon").css("display","block");
-    child[currentIteration] = require('child_process').fork("./Stream",[datagen[currentDataGen].exportModel(),String(datagen[currentDataGen].n_lines),targetPath,datagen[currentDataGen].header]);
+    child[currentIteration] = require('child_process').fork("./Stream",[datagen[currentDataGen].exportModel(),String(datagen[currentDataGen].n_lines),targetPath,datagen[currentDataGen].header,datagen[currentDataGen].save_as,it.hasIt ? currentIteration : ""]);
     child[currentIteration].on('exit', (code) => {
         if(code == null && !child[currentIteration].killed) {
-            require("fs").unlink(child_targetPath);
-            alert('Something bad happended... :(');
-            $("#percentageGD").text("Failed!");
-            child[currentIteration] = null;
-            child_targetPath = "";
-            reject(true);
+            fs.unlink(targetPath);
+            reject('error');
         } else {
             if(child[currentIteration].killed) {
-                require("fs").unlink(child_targetPath);
-                alert('The writing was aborted');
-                $("#percentageGD").text("Aborted!");
-                child[currentIteration] = null;
-                child_targetPath = "";
-                reject(true);
+                fs.unlink(targetPath);
+                reject('abort');
             } else {
                 datagen[currentDataGen].resetAll();
-                if(!it.hasIt) {
-                    alert('Data Saved!');
-                }
-                $("#percentageGD").text("Finished!");
-                $("#percentageCancelIcon").css("display","none");
-                child[currentIteration] = null;
-                child_targetPath = "";
                 resolve(true);
             }
         }
