@@ -306,6 +306,7 @@ $("html").ready(function(){
             this[0].__node__.changeGenerator(newGen);
             activeGenerator = newGen;
 
+            console.log(activeGenerator);
             let $active_chip = showGenerators();
             configGenProps.apply($active_chip.get(0));
             datagen[currentDataGen].resetAll();
@@ -681,18 +682,18 @@ function showGenerators(){
 
                 let $switchGenTr;
                 let flag = false;
-                let listOfGenSwitchFunction = gen.listOfGenerators;
-                for (let c in listOfGenSwitchFunction){
-                    if(listOfGenSwitchFunction.hasOwnProperty(c)){
+                let listOfGenSF = gen.listOfGenerators;
+                for (let c in listOfGenSF){
+                    if(listOfGenSF.hasOwnProperty(c)){
                         $switchGenTr = $("<tr/>");
                         if (!flag){
-                            $switchGenTr.append($("<td/>").attr("rowspan", Object.keys(listOfGenSwitchFunction).length).append($chip));
+                            $switchGenTr.append($("<td/>").attr("rowspan", Object.keys(listOfGenSF).length).append($chip));
                             flag = true;
                         }
                         $switchGenTr.append($("<td/>").text(c));
                         let $td = $("<td/>").addClass("columnGen");
 
-                        displayGens($td, listOfGenSwitchFunction[c], active_gen_chip);
+                        displayGens($td, listOfGenSF[c], active_gen_chip);
                         $switchGenTr.append($td);
                         $switchGenTable.append($switchGenTr);
                     }
@@ -1185,7 +1186,7 @@ function createModelFromDataSet(path){
 
 //Redraw the options on preview's comboBox.
 function optionsPreview() {
-    console.log("optionsPreview()");
+
     let $combox = $("#comboBoxPreview").empty();
 
 
@@ -1343,34 +1344,6 @@ function preview(data2){
 
 }
 
-function position(d) {
-    var v = dragging[d];
-    return v == null ? x(d) : v;
-}
-
-function transition(g) {
-    return g.transition().duration(500);
-}
-
-// Returns the path for a given data point.
-function path(d) {
-    return line(dimensions.map(function(p) { return [position(p), y[p](d[p])]; }));
-}
-
-function brushstart() {
-    d3.event.sourceEvent.stopPropagation();
-}
-
-// Handles a brush event, toggling the display of foreground lines.
-function brush() {
-    var actives = dimensions.filter(function(p) { return !y[p].brush.empty(); }),
-        extents = actives.map(function(p) { return y[p].brush.extent(); });
-    foreground.style("display", function(d) {
-        return actives.every(function(p, i) {
-            return extents[i][0] <= d[p] && d[p] <= extents[i][1];
-        }) ? null : "none";
-    });
-}
 
 function configureMenuOfGens(){
     let types = ["Sequence", "Random", "Function", "Accessory"];

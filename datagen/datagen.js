@@ -106,8 +106,13 @@ class Generator{
 
         if(gen.parent instanceof SwitchCaseFunction){
             for(let cat in gen.parent.listOfGenerators){
-                if(gen.parent.listOfGenerators.hasOwnProperty(cat) && gen.parent.listOfGenerators[cat] === this)
+                if(gen.parent.listOfGenerators.hasOwnProperty(cat) && gen.parent.listOfGenerators[cat] === this) {
+                    console.log("depois");
+                    console.log(gen.parent.listOfGenerators[cat]);
                     gen.parent.listOfGenerators[cat] = gen;
+                    console.log("antes");
+                    console.log(gen.parent.listOfGenerators[cat]);
+                }
             }
         }
         // let genSub = this.generator.generator;
@@ -1569,12 +1574,18 @@ class Function extends Generator{
     }
 
     copy(){
-
+        let newGen = new this.constructor(this.inputGenerator);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        newGen.inputGenerator = this.inputGenerator;
+        newGen.inputGenIndex = this.inputGenIndex;
+        return newGen;
     }
 }
 
 class LinearFunction extends Function{
-    constructor(a, b, inputGenerator){
+    constructor(inputGenerator, a, b){
         super("Linear Function", inputGenerator);
         this.a = a || 2;
         this.b = b || 0;
@@ -1609,16 +1620,15 @@ class LinearFunction extends Function{
     }
 
     copy(){
-        let newGen = new LinearFunction(this.a, this.b);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
+        let newGen = super.copy();
+        newGen.a = this.a;
+        newGen.b = this.b;
         return newGen;
     }
 }
 
 class QuadraticFunction extends Function{
-    constructor(a, b, c, inputGenerator){
+    constructor(inputGenerator, a, b, c){
         super("Quadratic Function", inputGenerator);
         this.a = a || 1;
         this.b = b || 1;
@@ -1661,16 +1671,16 @@ class QuadraticFunction extends Function{
     }
 
     copy(){
-        let newGen = new QuadraticFunction(this.a, this.b, this.c);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
+        let newGen = super.copy();
+        newGen.a = this.a;
+        newGen.b = this.b;
+        newGen.c = this.c;
         return newGen;
     }
 }
 
 class PolynomialFunction extends Function{
-    constructor(constants, inputGenerator){
+    constructor(inputGenerator, constants){
         super("Polynomial Function", inputGenerator);
         this.constants = constants || [1,1,1];
     }
@@ -1700,16 +1710,14 @@ class PolynomialFunction extends Function{
     }
 
     copy(){
-        let newGen = new PolynomialFunction(this.constants);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
+        let newGen = super.copy();
+        newGen.constants = this.constants;
         return newGen;
     }
 }
 
 class ExponentialFunction extends Function{
-    constructor(a, b, inputGenerator){
+    constructor(inputGenerator, a, b){
         super("Exponential Function", inputGenerator);
         this.a = a || 2;
         this.b = b || 1;
@@ -1743,16 +1751,15 @@ class ExponentialFunction extends Function{
     }
 
     copy(){
-        let newGen = new ExponentialFunction(this.a, this.b);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
+        let newGen = super.copy();
+        newGen.a = this.a;
+        newGen.b = this.b;
         return newGen;
     }
 }
 
 class LogarithmFunction extends Function{
-    constructor(base, inputGenerator){
+    constructor(inputGenerator, base){
         super("Logarithm Function", inputGenerator);
         this.base = base || Math.E;
     }
@@ -1778,16 +1785,14 @@ class LogarithmFunction extends Function{
     }
 
     copy(){
-        let newGen = new LogarithmFunction(this.base);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
+        let newGen = super.copy();
+        newGen.base = this.base;
         return newGen;
     }
 }
 
 class SinusoidalFunction extends Function{
-    constructor(a, b, c, inputGenerator){
+    constructor(inputGenerator, a, b, c){
         super("Sinusoidal Function", inputGenerator);
         this.a = a || 1;
         this.b = b || 1;
@@ -1830,10 +1835,10 @@ class SinusoidalFunction extends Function{
     }
 
     copy(){
-        let newGen = new SinusoidalFunction(this.a, this.b, this.c);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
+        let newGen = super.copy();
+        newGen.a = this.a;
+        newGen.b = this.b;
+        newGen.c = this.c;
         return newGen;
     }
 }
@@ -1917,6 +1922,28 @@ class SwitchCaseFunction extends Function{
         return "Numeric";
     }
 
+    copy(){
+        let newList = {};
+        //Copia a lista de Geradores
+        for(let prop in this.listOfGenerators)
+            if(this.listOfGenerators.hasOwnProperty(prop))
+                newList[prop] = this.listOfGenerators[prop].copy();
+
+        let newGen = new this.constructor(newList, this.inputGenerator);
+
+        for(let prop in newList)
+            if(newList.hasOwnProperty(prop))
+                newList[prop].parent = newGen;
+
+        newGen.inputGenerator = this.inputGenerator;
+        newGen.inputGenIndex = this.inputGenIndex;
+
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+
     unlinkChild(child){
         for(let cat in this.listOfGenerators) {
             if (this.listOfGenerators.hasOwnProperty(cat)) {
@@ -1948,23 +1975,10 @@ class CategoricalFunction extends SwitchCaseFunction{
         super.reset();
     }
 
-
-    copy(){
-        let newList = {};
-        //Copia a lista de Geradores
-        for(let prop in this.listOfGenerators)
-            if(this.listOfGenerators.hasOwnProperty(prop))
-                newList[prop] = this.listOfGenerators[prop].copy();
-        let newGen = new CategoricalFunction(newList, this.inputGenerator);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
-        return newGen;
-    }
 }
 
 class PiecewiseFunction extends SwitchCaseFunction{
-    constructor(intervals, listOfGenerators, inputGenerator){
+    constructor(listOfGenerators, inputGenerator, intervals){
         super("Piecewise Function", listOfGenerators, inputGenerator);
         this.intervals = intervals || [0];
     }
@@ -2029,22 +2043,16 @@ class PiecewiseFunction extends SwitchCaseFunction{
 
 
     copy(){
-        let newList = {};
-        //Copia a lista de Geradores
-        for(let prop in this.listOfGenerators)
-            if(this.listOfGenerators.hasOwnProperty(prop))
-                newList[prop] = this.listOfGenerators[prop].copy();
-        // laps, timeMask, listOfGenerators, inputGenerator, generator, operator
-        let newGen = new PiecewiseFunction(this.intervals, newList, this.inputGenerator);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
+
+        let newGen = super.copy();
+        if(this.intervals)
+            newGen.intervals = this.intervals;
         return newGen;
     }
 }
 
 class TimeLapsFunction extends SwitchCaseFunction{
-    constructor(laps, listOfGenerators, inputGenerator){
+    constructor(listOfGenerators, inputGenerator, laps){
         super("TimeLaps Function", listOfGenerators, inputGenerator);
         this.accessLaps = laps || [];
     }
@@ -2114,16 +2122,9 @@ class TimeLapsFunction extends SwitchCaseFunction{
     }
 
     copy(){
-        let newList = {};
-        //Copia a lista de Geradores
-        for(let prop in this.listOfGenerators)
-            if(this.listOfGenerators.hasOwnProperty(prop))
-                newList[prop] = this.listOfGenerators[prop].copy();
-        // laps, timeMask, listOfGenerators, inputGenerator, generator, operator
-        let newGen = new TimeLapsFunction(this.laps, newList, this.inputGenerator);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
+        let newGen = super.copy();
+        if(this.laps)
+            newGen.accessLaps = this.laps;
         return newGen;
     }
 }
