@@ -2408,7 +2408,7 @@ class DataGen {
         this.name = "Model";
         this.n_lines = 100; // Quantidade de linhas na geração
         this.n_sample_lines = 100;
-        this.save_as = "json";
+        this.save_as = "csv";
         this.header = true;
         this.header_type = true;
         let column = new Column("Dimension 1");
@@ -2459,6 +2459,14 @@ class DataGen {
         let names = [];
         for(let col of this.columns){
             names.push(col.name);
+        }
+        return names;
+    }
+    getDisplayedColumnsNames() {
+        let names = [];
+        for(let col of this.columns){
+            if(col.display)
+                names.push(col.name);
         }
         return names;
     }
