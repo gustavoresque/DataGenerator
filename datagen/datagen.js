@@ -2502,7 +2502,7 @@ class DataGen {
 
     removeCollumn(index){
         if (index > -1)
-            this.columns.splice(index, 1);
+      this.columns.splice(index, 1);
     }
 
 
@@ -2547,7 +2547,11 @@ class DataGen {
     exportModel(){
         let model = {
             name: this.name,
-            generator: []
+            generator: [],
+            n_lines: this.n_lines,
+            save_as: this.save_as,
+            header: this.header,
+            header_type: this.header_type
         };
         for(let i=0; i<this.columns.length; i++){
             model.generator.push({
@@ -2572,6 +2576,10 @@ class DataGen {
     importModel(model_str, resetColumns){
         let model = JSON.parse(model_str);
         this.name = model.name;
+        this.n_lines = model.n_lines;
+        this.save_as = model.save_as;
+        this.header = model.header;
+        this.header_type = model.header_type;
 
         if(resetColumns)
             this.columns = [];

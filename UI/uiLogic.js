@@ -446,81 +446,147 @@ function generateDatas(){
                         $("#percentageGD").text("Aborted!");
                         return ;
                     }
+                    function promiseRecursiveGS(i,prevValue) {
+                         return new Promise( (resolve,reject) => {
+                            generateStream(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
+                                return p1 + "[" + i + "]" + p2;
+                            }), resolve, reject);
+                        }).then( () => {
+                            if(datagen[currentDataGen].configs.iterator.numberIt == i+1) {
+                                $("#percentageGD").text("Finished!");
+                                $("#percentageCancelIcon").css("display","none");
+                                $("#percentageCancelSure").css("display","none");
+                                $("#percentageCancelNot").css("display","none");
+                                alert('All Files Saved!');
+                                datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] = prevValue;
+                                child = [];
+                            } else {
+                                console.log("foi?")
+                                datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] += datagen[currentDataGen].configs.iterator.stepIt;
+                                promiseRecursiveGS((i+1),prevValue)
+                            }
+
+                        }).catch((err) => {
+                            switch (err) {
+                                case 'abort':
+                                    $("#percentageCancelIcon").css("display","none");
+                                    $("#percentageCancelSure").css("display","none");
+                                    $("#percentageCancelNot").css("display","none");
+                                    $("#percentageGD").text("Aborted!");
+                                    alert("The writing was aborted!")
+                                    child = [];
+                                    break;
+                                case 'error':
+                                    $("#percentageGD").text("Finished!");
+                                    $("#percentageCancelIcon").css("display","none");
+                                    $("#percentageCancelSure").css("display","none");
+                                    $("#percentageCancelNot").css("display","none");
+                                    alert("Something bad happened!")
+                                    child = [];
+                                    break;
+                            }
+                        })
+                    }
+
+                    function promiseRecursiveGWS(i,prevValue) {
+                        return new Promise( (resolve,reject) => {
+                            generateWritingSimple(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
+                                return p1 + "[" + i + "]" + p2;
+                            }), resolve, reject);
+                        }).then( () => {
+                            console.log(datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt])
+                            if(datagen[currentDataGen].configs.iterator.numberIt == i+1) {
+                                $("#percentageCancelIcon").css("display","none");
+                                $("#percentageGD").text("Finished!");
+                                datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] = prevValue;
+                                child = [];
+                                alert('All Files Saved!');
+                            } else {
+                                console.log("foi?");
+                                datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] += datagen[currentDataGen].configs.iterator.stepIt;
+                                promiseRecursiveGWS((i+1),prevValue)
+                            }
+
+                        }).catch( (err) => {
+                            switch (err) {
+                                case 'abort':
+                                    alert("The writing was aborted!")
+                                    $("#percentageGD").text("Aborted!");
+                                    child = [];
+                                    break;
+                                case 'error':
+                                    alert("Something bad happened!")
+                                    $("#percentageGD").text("Finished!");
+                                    child = [];
+                                    break;
+                            }
+                        });
+                    }
 
                     $("#percentageGD").text("Starting...");
-                    let promises = [];
                     if (datagen[currentDataGen].configs.iterator.hasIt) {
                         let it = datagen[currentDataGen].configs.iterator;
                         let prevValue = it.generator[it.parameterIt];
                         it.generator[it.parameterIt] = it.beginIt;
-                        for (let i = 0; i < it.numberIt; i++) {
-                            if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
+                        console.log(it.generator[it.parameterIt])
 
-                                promises.push(new Promise( (resolve,reject) => {
-                                    generateStream(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
-                                        return p1 + "[" + i + "]" + p2;
-                                    }), resolve, reject);
-                                }));
-                            } else {
-                                promises.push(new Promise( (resolve,reject) => {
-                                    generateWritingSimple(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
-                                        return p1 + "[" + i + "]" + p2;
-                                    }), resolve, reject);
-                                }));
-                            }
-                            it.generator[it.parameterIt] += it.stepIt;
+                        if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
+                            $("#percentageCancelIcon").css("display","block");
+                            promiseRecursiveGS(0,prevValue)
+                        } else {
+                            promiseRecursiveGWS(0,prevValue)
                         }
-                        Promise.all(promises).then(function() {
-                            $("#percentageCancelIcon").css("display","none");
-                            $("#percentageGD").text("Finished!");
-                            alert('All Files Saved!');
-                        }).catch((err) => {
-                            switch (err) {
-                                case 'abort':
-                                    alert("The writing was aborted!")
-                                    $("#percentageGD").text("Aborted!");
-                                    break;
-                                case 'error':
-                                    alert("Something bad happened!")
-                                    $("#percentageGD").text("Finished!");
-                                    break;
-                            }
-                        }).finally(() => {
-                            child = [];
-                        });
-                        it.generator[it.parameterIt] = prevValue;
-
 
                     } else {
                         if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
-                            promises.push(new Promise( (resolve,reject) => {
+                            $("#percentageCancelIcon").css("display","block");
+                            new Promise( (resolve,reject) => {
                                 generateStream(targetPath,resolve,reject);
-                            }));
+                            }).then( () => {
+                                $("#percentageGD").text("Finished!");
+                                $("#percentageCancelIcon").css("display","none");
+                                $("#percentageCancelSure").css("display","none");
+                                $("#percentageCancelNot").css("display","none");
+                                alert('Data Saved!');
+                            }).catch((err) => {
+                                switch (err) {
+                                    case 'abort':
+                                        $("#percentageGD").text("Aborted!");
+                                        $("#percentageCancelIcon").css("display","none");
+                                        $("#percentageCancelSure").css("display","none");
+                                        $("#percentageCancelNot").css("display","none");
+                                        alert("The writing was aborted!")
+                                        break;
+                                    case 'error':
+                                        $("#percentageGD").text("Failed!");
+                                        $("#percentageCancelIcon").css("display","none");
+                                        $("#percentageCancelSure").css("display","none");
+                                        $("#percentageCancelNot").css("display","none");
+                                        alert("Something bad happened!")
+                                        break;
+                                }
+                            })
 
                         } else {
-                            promises.push(new Promise( (resolve,reject) => {
+                            new Promise( (resolve,reject) => {
                                 generateWritingSimple(targetPath,resolve,reject);
-                            }));
+                            }).then( () => {
+                                $("#percentageGD").text("Finished!");
+                                alert('Data Saved!');
+                            }).catch((err) => {
+                                switch (err) {
+                                    case 'abort':
+                                        alert("The writing was aborted!")
+                                        $("#percentageGD").text("Aborted!");
+                                        break;
+                                    case 'error':
+                                        alert("Something bad happened!")
+                                        $("#percentageGD").text("Failed!");
+                                        break;
+                                }
+                            })
 
                         }
-                        Promise.all(promises).then(function() {
-                            $("#percentageCancelIcon").css("display","none");
-                            $("#percentageGD").text("Finished!");
-                            alert('Data Saved')
-                        }).catch((err) => {
-                            switch (err) {
-                                case 'abort':
-                                    alert("The writing was aborted!")
-                                    $("#percentageGD").text("Aborted!");
-                                    break;
-                                case 'error':
-                                    alert("Something bad happened!")
-                                    $("#percentageGD").text("Finished!");
-                                    break;
-                            }
-                        }).finally(() => {
-                            child = [];
-                        });
                     }
                 }
             });
@@ -587,15 +653,13 @@ function generateWritingSimple(targetPath,resolve,reject) {
 
 function generateStream(targetPath,resolve,reject) {
     let currentIteration;
-    it = datagen[currentDataGen].configs.iterator;
+    let it = datagen[currentDataGen].configs.iterator;
     if(it.hasIt) {
         currentIteration = Number( targetPath.substring( targetPath.lastIndexOf("[")+1,targetPath.lastIndexOf("]") ) );
     } else {
         currentIteration = 0;
     }
-
-    $("#percentageCancelIcon").css("display","block");
-    child[currentIteration] = require('child_process').fork("./Stream",[datagen[currentDataGen].exportModel(),String(datagen[currentDataGen].n_lines),targetPath,datagen[currentDataGen].header,datagen[currentDataGen].save_as,it.hasIt ? currentIteration : ""]);
+    child[currentIteration] = require('child_process').fork("./Stream",[datagen[currentDataGen].exportModel(),it.hasIt ? currentIteration : "",targetPath]);
     child[currentIteration].on('exit', (code) => {
         if(code == null && !child[currentIteration].killed) {
             fs.unlink(targetPath);
