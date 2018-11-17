@@ -2472,14 +2472,6 @@ class DataGen {
         return names;
     }
 
-    getAvaliableColumnsNames() {
-        let names = [];
-        for(let col of this.columns){
-            if(col.display) names.push(col.name);
-        }
-        return names;
-    }
-
     addCollumn(name, generator){
         generator = generator || new defaultGenerator();
         let column = new Column(name, generator);

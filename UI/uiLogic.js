@@ -85,6 +85,157 @@ ipc.on('update-sampledata', function () {
         ipc.send('change-datasample', current_sample);
 });
 
+function propsConfigs(generator,coluna){
+    let params = generator.getGenParams();
+
+    //Ativa o <select> e coloca as opções de Geradores para trocar o tipo do gerador.
+    let $selectGenType = $("#selectGeneratorType").removeAttr("disabled").empty();
+    putGeneratorOptions($selectGenType, generator.name);
+    $selectGenType.get(0).__node__ = generator;
+
+    let $propForms = $("#generatorPropertiesForm");
+    $propForms.empty();
+
+    let $table = $("<table/>").attr("id","propertiesTable");
+    $propForms.append($table);
+
+    for(let p of params){
+        let $tr = $("<tr/>");
+        $table.append($tr);
+        $tr.append($("<td/>")
+            .append($("<label/>")
+                .text(p.shortName)
+                .addClass("tooltip-label")
+                .attr("title", p.name)
+                .attr("for", "input_"+p.variableName)));
+
+        if(p.type === "number"){
+            let $input = $("<input/>")
+                .addClass("form-control")
+                .addClass("smallInput")
+                .attr("type","number")
+                .attr("value", generator[p.variableName])
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type);
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input));
+
+        }else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
+            let $input = $("<input/>")
+                .addClass("form-control")
+                .addClass("smallInput")
+                .attr("type","text")
+                .attr("value", generator[p.variableName])
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type);
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input));
+            if(p.type === "Generator"){
+                let genSel = generator[p.variableName];
+                $input.val(genSel ? genSel.ID : "");
+                $input.on("drop", function(evt){
+                    evt.preventDefault();
+                    evt.stopPropagation();
+
+                    let msg = evt.originalEvent.dataTransfer.getData("text");
+                    let objs = JSON.parse(msg);
+                    $input.val(objs.genID);
+                    $input.trigger("change");
+                });
+            }
+
+        }else if(p.type === "options") {
+            let $input = $("<select/>")
+                .addClass("form-control")
+                .addClass("smallInput")
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type);
+            for(let opt of p.options){
+                $input.append($("<option/>").attr("value", opt).text(opt));
+            }
+            $input.val(generator[p.variableName]);
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input));
+
+        }else if(p.type === "array" || p.type === "numarray") {
+            let $input = $("<input/>")
+                .addClass("form-control")
+                .addClass("smallInput")
+                .attr("type", "text")
+                .attr("onkeydown", "if (event.keyCode == 13) return false;")
+                .attr("value", generator[p.variableName])
+                .attr("id", "input_" + p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type);
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input));
+
+        }else if (p.type === "boolean") {
+            let $input = $("<input/>")
+                .attr("type","checkbox")
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type);
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input));
+            if (generator[p.variableName]){
+                $input.attr("checked", "");
+            }
+
+            // }else if(p.type === "Generator"){// Utiliza os geradores das colunas anteriormente criadas no mesmo model
+            //     let $select = $("<select/>")
+            //         .addClass("form-control")
+            //         .addClass("smallInput")
+            //         .attr("id", "input_"+p.variableName)
+            //         .attr("data-variable", p.variableName)
+            //         .attr("data-type", p.type);
+            //     $select.get(0).__node__ = generator;
+            //     putGeneratorOptions($select, generator[p.variableName], true);
+            //     $tr.append($("<td/>").append($select));
+
+        }else if(p.type.indexOf("Column") >= 0){
+            let $select = $("<select/>")
+                .addClass("form-control")
+                .addClass("smallInput")
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type);
+
+            $select.get(0).__node__ = generator;
+
+            //Preenche a lista de seleção para funções
+            //Só podem ser utilizadas as colunas anteriores a essa.
+            for(let i=0; i<datagen[currentDataGen].columns.length; i++){
+                if(datagen[currentDataGen].columns[i] !== coluna){
+
+                    //Verifica se o tipo das dimensões anteriores é compatível com o tipo de dimensão esperado pela função.
+                    if(p.type.indexOf(datagen[currentDataGen].columns[i].type) < 0 )
+                        continue;
+
+                    let $option = $("<option/>").attr("value", i).text(datagen[currentDataGen].columns[i].name);
+                    $option.get(0).__node__ = datagen[currentDataGen].columns[i];
+
+                    if(generator[p.variableName] === datagen[currentDataGen].columns[i].generator){
+                        $option.attr("selected", "selected");
+                    }
+                    $select.append($option);
+                }else{
+                    break;
+                }
+            }
+            if (!generator[p.variableName]){
+                $select.prepend($("<option/>").attr("selected", "selected").text("null"));
+            }
+
+            $tr.append($("<td/>").append($select));
+        }
+    }
+    tippy('.tooltip-label');
+}
+
 
 $("html").ready(function(){
     showModels();
@@ -297,7 +448,6 @@ $("html").ready(function(){
 
     $("#tableCollumn").on("click", "div.md-chip", configGenProps);
 
-
     $.contextMenu({
         selector: '#selectGeneratorType',
         trigger: 'none',
@@ -342,7 +492,15 @@ $("html").ready(function(){
     }).on("click", "span.btnAddGen", function(){
         let l = $(this).parent().find("div.md-chip").length-1;
         $(this).parent().find("div.md-chip").get(l).__node__.addGenerator(new UniformGenerator());
+        let generators = [];
+        datagen[currentDataGen].columns[$(this).parent().parent().index()].generator.getFullGenerator(generators);
+
+        let generator = generators[generators.length-1];
+        activeGenerator = generator;
         showGenerators();
+        let coluna = $(this).closest(".columnTr").get(0).__node__;
+
+        propsConfigs(generator,coluna)
 
     }).on("click", "span.btnRemoveColumn", function(){
         datagen[currentDataGen].removeCollumn(parseInt($(this).parent().parent().find(".tdIndex").text()) - 1);
@@ -915,154 +1073,7 @@ function configGenProps(){
     let generator = this.__node__;
     activeGenerator = generator;
     let coluna = $(this).closest(".columnTr").get(0).__node__;
-    let params = generator.getGenParams();
-
-    //Ativa o <select> e coloca as opções de Geradores para trocar o tipo do gerador.
-    let $selectGenType = $("#selectGeneratorType").removeAttr("disabled").empty();
-    putGeneratorOptions($selectGenType, generator.name);
-    $selectGenType.get(0).__node__ = generator;
-
-    let $propForms = $("#generatorPropertiesForm");
-    $propForms.empty();
-
-    let $table = $("<table/>").attr("id","propertiesTable");
-    $propForms.append($table);
-
-    for(let p of params){
-        let $tr = $("<tr/>");
-        $table.append($tr);
-        $tr.append($("<td/>")
-            .append($("<label/>")
-                .text(p.shortName)
-                .addClass("tooltip-label")
-                .attr("title", p.name)
-                .attr("for", "input_"+p.variableName)));
-
-        if(p.type === "number"){
-            let $input = $("<input/>")
-                .addClass("form-control")
-                .addClass("smallInput")
-                .attr("type","number")
-                .attr("value", generator[p.variableName])
-                .attr("id", "input_"+p.variableName)
-                .attr("data-variable", p.variableName)
-                .attr("data-type", p.type);
-            $input.get(0).__node__ = generator;
-            $tr.append($("<td/>").append($input));
-
-        }else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
-            let $input = $("<input/>")
-                .addClass("form-control")
-                .addClass("smallInput")
-                .attr("type","text")
-                .attr("value", generator[p.variableName])
-                .attr("id", "input_"+p.variableName)
-                .attr("data-variable", p.variableName)
-                .attr("data-type", p.type);
-            $input.get(0).__node__ = generator;
-            $tr.append($("<td/>").append($input));
-            if(p.type === "Generator"){
-                let genSel = generator[p.variableName];
-                $input.val(genSel ? genSel.ID : "");
-                $input.on("drop", function(evt){
-                    evt.preventDefault();
-                    evt.stopPropagation();
-
-                    let msg = evt.originalEvent.dataTransfer.getData("text");
-                    let objs = JSON.parse(msg);
-                    $input.val(objs.genID);
-                    $input.trigger("change");
-                });
-            }
-
-        }else if(p.type === "options") {
-            let $input = $("<select/>")
-                .addClass("form-control")
-                .addClass("smallInput")
-                .attr("id", "input_"+p.variableName)
-                .attr("data-variable", p.variableName)
-                .attr("data-type", p.type);
-            for(let opt of p.options){
-                $input.append($("<option/>").attr("value", opt).text(opt));
-            }
-            $input.val(generator[p.variableName]);
-            $input.get(0).__node__ = generator;
-            $tr.append($("<td/>").append($input));
-
-        }else if(p.type === "array" || p.type === "numarray") {
-            let $input = $("<input/>")
-                .addClass("form-control")
-                .addClass("smallInput")
-                .attr("type", "text")
-                .attr("onkeydown", "if (event.keyCode == 13) return false;")
-                .attr("value", generator[p.variableName])
-                .attr("id", "input_" + p.variableName)
-                .attr("data-variable", p.variableName)
-                .attr("data-type", p.type);
-            $input.get(0).__node__ = generator;
-            $tr.append($("<td/>").append($input));
-
-        }else if (p.type === "boolean") {
-            let $input = $("<input/>")
-                .attr("type","checkbox")
-                .attr("id", "input_"+p.variableName)
-                .attr("data-variable", p.variableName)
-                .attr("data-type", p.type);
-            $input.get(0).__node__ = generator;
-            $tr.append($("<td/>").append($input));
-            if (generator[p.variableName]){
-                $input.attr("checked", "");
-            }
-
-        // }else if(p.type === "Generator"){// Utiliza os geradores das colunas anteriormente criadas no mesmo model
-        //     let $select = $("<select/>")
-        //         .addClass("form-control")
-        //         .addClass("smallInput")
-        //         .attr("id", "input_"+p.variableName)
-        //         .attr("data-variable", p.variableName)
-        //         .attr("data-type", p.type);
-        //     $select.get(0).__node__ = generator;
-        //     putGeneratorOptions($select, generator[p.variableName], true);
-        //     $tr.append($("<td/>").append($select));
-
-        }else if(p.type.indexOf("Column") >= 0){
-            let $select = $("<select/>")
-                .addClass("form-control")
-                .addClass("smallInput")
-                .attr("id", "input_"+p.variableName)
-                .attr("data-variable", p.variableName)
-                .attr("data-type", p.type);
-
-            $select.get(0).__node__ = generator;
-
-            //Preenche a lista de seleção para funções
-            //Só podem ser utilizadas as colunas anteriores a essa.
-            for(let i=0; i<datagen[currentDataGen].columns.length; i++){
-                if(datagen[currentDataGen].columns[i] !== coluna){
-
-                    //Verifica se o tipo das dimensões anteriores é compatível com o tipo de dimensão esperado pela função.
-                    if(p.type.indexOf(datagen[currentDataGen].columns[i].type) < 0 )
-                        continue;
-
-                    let $option = $("<option/>").attr("value", i).text(datagen[currentDataGen].columns[i].name);
-                    $option.get(0).__node__ = datagen[currentDataGen].columns[i];
-
-                    if(generator[p.variableName] === datagen[currentDataGen].columns[i].generator){
-                        $option.attr("selected", "selected");
-                    }
-                    $select.append($option);
-                }else{
-                    break;
-                }
-            }
-            if (!generator[p.variableName]){
-                $select.prepend($("<option/>").attr("selected", "selected").text("null"));
-            }
-
-            $tr.append($("<td/>").append($select));
-        }
-    }
-    tippy('.tooltip-label');
+    propsConfigs(generator,coluna)
 }
 
 function reloadWSIcon () {
