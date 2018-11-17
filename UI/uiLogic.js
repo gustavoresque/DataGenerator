@@ -429,6 +429,23 @@ $("html").ready(function(){
 
 let modal = document.getElementById('myModal');
 let child = [];
+let freeSpace = 0;
+let neededSpace = 0;
+
+function sizeFormatter(size) {
+    if(Number(size)<1024) {
+        size = String(size).substr(0,6) + " B";
+    } else if(Number(size)<1024*1024) {
+        size = String(size/(1024)).substr(0,6) + " KB";
+    } else if(Number(size)<1024*1024*1024) {
+        size = String(size/(1024*1024)).substr(0,6) + " MB";
+    } else if(Number(size)<1024*1024*1024*1024) {
+        size = String(size/(1024*1024*1024)).substr(0,6) + " GB";
+    } else {
+        size = size/(1024*1024*1024*1024) + " TB";
+    }
+    return size;
+}
 
 function generateDatas(){
     try {
@@ -448,7 +465,7 @@ function generateDatas(){
                         return ;
                     }
                     function promiseRecursiveGS(i,prevValue) {
-                         return new Promise( (resolve,reject) => {
+                        return new Promise( (resolve,reject) => {
                             generateStream(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
                                 return p1 + "[" + i + "]" + p2;
                             }), resolve, reject);
@@ -462,7 +479,6 @@ function generateDatas(){
                                 datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] = prevValue;
                                 child = [];
                             } else {
-                                console.log("foi?")
                                 datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] += datagen[currentDataGen].configs.iterator.stepIt;
                                 promiseRecursiveGS((i+1),prevValue)
                             }
@@ -484,6 +500,13 @@ function generateDatas(){
                                     $("#percentageCancelNot").css("display","none");
                                     alert("Something bad happened!")
                                     child = [];
+                                    break;
+                                case 'size':
+                                    $("#percentageGD").text("Failed!");
+                                    $("#percentageCancelIcon").css("display","none");
+                                    $("#percentageCancelSure").css("display","none");
+                                    $("#percentageCancelNot").css("display","none");
+                                    alert("No free space available!\nFree space: "+sizeFormatter(freeSpace)+"\nNeeded space: "+sizeFormatter(neededSpace))
                                     break;
                             }
                         })
@@ -524,71 +547,81 @@ function generateDatas(){
                         });
                     }
 
-                    $("#percentageGD").text("Starting...");
-                    if (datagen[currentDataGen].configs.iterator.hasIt) {
-                        let it = datagen[currentDataGen].configs.iterator;
-                        let prevValue = it.generator[it.parameterIt];
-                        it.generator[it.parameterIt] = it.beginIt;
-                        console.log(it.generator[it.parameterIt])
+                    require('@sindresorhus/df').file(path.dirname(targetPath)).then(info => {
+                        freeSpace = info.available;
 
-                        if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
-                            $("#percentageCancelIcon").css("display","block");
-                            promiseRecursiveGS(0,prevValue)
-                        } else {
-                            promiseRecursiveGWS(0,prevValue)
-                        }
+                        $("#percentageGD").text("Starting...");
+                        if (datagen[currentDataGen].configs.iterator.hasIt) {
+                            let it = datagen[currentDataGen].configs.iterator;
+                            let prevValue = it.generator[it.parameterIt];
+                            it.generator[it.parameterIt] = it.beginIt;
 
-                    } else {
-                        if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
-                            $("#percentageCancelIcon").css("display","block");
-                            new Promise( (resolve,reject) => {
-                                generateStream(targetPath,resolve,reject);
-                            }).then( () => {
-                                $("#percentageGD").text("Finished!");
-                                $("#percentageCancelIcon").css("display","none");
-                                $("#percentageCancelSure").css("display","none");
-                                $("#percentageCancelNot").css("display","none");
-                                alert('Data Saved!');
-                            }).catch((err) => {
-                                switch (err) {
-                                    case 'abort':
-                                        $("#percentageGD").text("Aborted!");
-                                        $("#percentageCancelIcon").css("display","none");
-                                        $("#percentageCancelSure").css("display","none");
-                                        $("#percentageCancelNot").css("display","none");
-                                        alert("The writing was aborted!")
-                                        break;
-                                    case 'error':
-                                        $("#percentageGD").text("Failed!");
-                                        $("#percentageCancelIcon").css("display","none");
-                                        $("#percentageCancelSure").css("display","none");
-                                        $("#percentageCancelNot").css("display","none");
-                                        alert("Something bad happened!")
-                                        break;
-                                }
-                            })
+                            if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
+                                $("#percentageCancelIcon").css("display","block");
+                                promiseRecursiveGS(0,prevValue)
+                            } else {
+                                promiseRecursiveGWS(0,prevValue)
+                            }
 
                         } else {
-                            new Promise( (resolve,reject) => {
-                                generateWritingSimple(targetPath,resolve,reject);
-                            }).then( () => {
-                                $("#percentageGD").text("Finished!");
-                                alert('Data Saved!');
-                            }).catch((err) => {
-                                switch (err) {
-                                    case 'abort':
-                                        alert("The writing was aborted!")
-                                        $("#percentageGD").text("Aborted!");
-                                        break;
-                                    case 'error':
-                                        alert("Something bad happened!")
-                                        $("#percentageGD").text("Failed!");
-                                        break;
-                                }
-                            })
+                            if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
+                                $("#percentageCancelIcon").css("display","block");
+                                new Promise( (resolve,reject) => {
+                                    generateStream(targetPath,resolve,reject);
+                                }).then( () => {
+                                    $("#percentageGD").text("Finished!");
+                                    $("#percentageCancelIcon").css("display","none");
+                                    $("#percentageCancelSure").css("display","none");
+                                    $("#percentageCancelNot").css("display","none");
+                                    alert('Data Saved!');
+                                }).catch((err) => {
+                                    switch (err) {
+                                        case 'abort':
+                                            $("#percentageGD").text("Aborted!");
+                                            $("#percentageCancelIcon").css("display","none");
+                                            $("#percentageCancelSure").css("display","none");
+                                            $("#percentageCancelNot").css("display","none");
+                                            alert("The writing was aborted!")
+                                            break;
+                                        case 'error':
+                                            $("#percentageGD").text("Failed!");
+                                            $("#percentageCancelIcon").css("display","none");
+                                            $("#percentageCancelSure").css("display","none");
+                                            $("#percentageCancelNot").css("display","none");
+                                            alert("Something bad happened!")
+                                            break;
+                                        case 'size':
+                                            $("#percentageGD").text("Failed!");
+                                            $("#percentageCancelIcon").css("display","none");
+                                            $("#percentageCancelSure").css("display","none");
+                                            $("#percentageCancelNot").css("display","none");
+                                            alert("No free space available!\nFree space: "+sizeFormatter(freeSpace)+"\nNeeded space: "+sizeFormatter(neededSpace))
+                                            break;
+                                    }
+                                })
 
+                            } else {
+                                new Promise( (resolve,reject) => {
+                                    generateWritingSimple(targetPath,resolve,reject);
+                                }).then( () => {
+                                    $("#percentageGD").text("Finished!");
+                                    alert('Data Saved!');
+                                }).catch((err) => {
+                                    switch (err) {
+                                        case 'abort':
+                                            alert("The writing was aborted!")
+                                            $("#percentageGD").text("Aborted!");
+                                            break;
+                                        case 'error':
+                                            alert("Something bad happened!")
+                                            $("#percentageGD").text("Failed!");
+                                            break;
+                                    }
+                                })
+
+                            }
                         }
-                    }
+                    })
                 }
             });
 
@@ -660,24 +693,33 @@ function generateStream(targetPath,resolve,reject) {
     } else {
         currentIteration = 0;
     }
-    child[currentIteration] = require('child_process').fork("./Stream",[datagen[currentDataGen].exportModel(),it.hasIt ? currentIteration : "",targetPath]);
+    child[currentIteration] = require('child_process').fork("./Stream",[datagen[currentDataGen].exportModel(),it.hasIt ? currentIteration : "",targetPath,freeSpace]);
     child[currentIteration].on('exit', (code) => {
-        if(code == null && !child[currentIteration].killed) {
-            fs.unlink(targetPath);
-            reject('error');
+        if(code == 0) {
+            datagen[currentDataGen].resetAll();
+            resolve(true);
         } else {
-            if(child[currentIteration].killed) {
+            if(code == 99) {
+                fs.unlink(targetPath);
+                reject('size');
+            }
+            else if(child[currentIteration].killed) {
                 fs.unlink(targetPath);
                 reject('abort');
             } else {
-                datagen[currentDataGen].resetAll();
-                resolve(true);
+                fs.unlink(targetPath);
+                reject('error');
             }
         }
 
     })
     .on('message',(message) => {
-        $("#percentageGD").text(message);
+        if( String(message).includes("size:") ) {
+            neededSpace = Number( String(message).substr(5) )
+            console.log(neededSpace);
+        }else {
+            $("#percentageGD").text(message);
+        }
     })
     .on("error", (err) => {
         throw err;
