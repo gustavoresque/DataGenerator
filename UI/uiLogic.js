@@ -484,23 +484,29 @@ $("html").ready(function(){
 
     $("#tableCollumn").on("click", "span.btnRemoveGen", function(){
         if ($(this).parent().find("div.md-chip").length > 1){
-            let l = $(this).parent().find("div.md-chip").length-2;
-            $(this).parent().find("div.md-chip").get(l).__node__.removeLastGenerator();
+
+            let generators = [];
+            if(generators.includes(activeGenerator)){
+                activeGenerator.unlink()
+                activeGenerator = undefined;
+            } else {
+                let l = $(this).parent().find("div.md-chip").length-2;
+                $(this).parent().find("div.md-chip").get(l).__node__.removeLastGenerator();
+            }
             showGenerators();
         }
 
     }).on("click", "span.btnAddGen", function(){
         let l = $(this).parent().find("div.md-chip").length-1;
         $(this).parent().find("div.md-chip").get(l).__node__.addGenerator(new UniformGenerator());
+
         let generators = [];
         datagen[currentDataGen].columns[$(this).parent().parent().index()].generator.getFullGenerator(generators);
-
-        let generator = generators[generators.length-1];
-        activeGenerator = generator;
+        activeGenerator = generators[generators.length-1];
         showGenerators();
-        let coluna = $(this).closest(".columnTr").get(0).__node__;
 
-        propsConfigs(generator,coluna)
+        let coluna = $(this).closest(".columnTr").get(0).__node__;
+        propsConfigs(generators[generators.length-1],coluna)
 
     }).on("click", "span.btnRemoveColumn", function(){
         datagen[currentDataGen].removeCollumn(parseInt($(this).parent().parent().find(".tdIndex").text()) - 1);
