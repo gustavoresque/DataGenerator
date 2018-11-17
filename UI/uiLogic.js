@@ -1,6 +1,8 @@
+
 let fs = require('fs');
 const electron = require('electron').remote;
 const dialog = electron.dialog;
+const BrowserWindow = electron.BrowserWindow;
 
 let DataGen = require("./datagen/datagen.js");
 let UniformGenerator = DataGen.listOfGens['Uniform Generator'];
@@ -451,7 +453,10 @@ function generateDatas(){
     try {
         modal.style.display = "block";
         let saveas = datagen[currentDataGen].save_as;
-            dialog.showSaveDialog({
+            dialog.showSaveDialog(new BrowserWindow({
+                show: false,
+                alwaysOnTop: true
+            }),{
                 title: "Save Data",
                 filters: [{name: saveas, extensions: [saveas]}]
             }, function (targetPath) {
