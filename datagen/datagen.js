@@ -1853,8 +1853,9 @@ class SwitchCaseFunction extends Function{
     reset(){
         //Sempre que ocorre um reset, o switchCaseFunction avalia a lista de input para verificar se essa lista possui valores novos.
         //Se possui valores a mais, são incluidos RandomUniformGenerators, caso possua um input a menos esse é removido.
-        if (!this.inputGenerator)
+        if (!this.inputGenerator || !this.inputArray)
             return;
+
         let auxgen = new RandomUniformGenerator();
         this.generator = auxgen;
         auxgen.parent = this;
@@ -2496,8 +2497,36 @@ class DataGen {
     }
 
     removeCollumn(index){
+
+        let removeFunc = (g) => {
+            if(g instanceof Function) {
+                if (g.inputGenIndex > index) {
+                    g.inputGenIndex--;
+                }else if (g.inputGenIndex == index) {
+                    g.inputGenIndex = undefined;
+                    g.inputGenerator = undefined
+                }
+            }
+            if(g instanceof SwitchCaseFunction){
+                for(let child in g.listOfGenerators){
+                    if(g.listOfGenerators.hasOwnProperty(child)){
+                        removeFunc(g.listOfGenerators[child]);
+                    }
+                }
+            }
+        };
+
         if (index > -1)
-      this.columns.splice(index, 1);
+            this.columns.splice(index, 1);
+
+        //Atualiza o indexOfGens de todos as Function que estejam em colunas depois
+        for(let i=index;i<this.columns.length; i++){
+            let gens = this.columns[i].generator.getFullGenerator();
+
+            for(let g of gens){
+                removeFunc(g);
+            }
+        }
     }
 
 
