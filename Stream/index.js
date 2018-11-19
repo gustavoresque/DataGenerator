@@ -2,28 +2,38 @@
 const Datagen = require("../datagen/datagen.js");
 let datagenBackup = new Datagen();
 datagenBackup.columns = [];
-datagenBackup.importModel(process.argv.slice(2)[0]);
-datagenBackup.n_lines = Number(process.argv.slice(2)[1]);
-datagenBackup.header = process.argv.slice(2)[3] == "true" ? true : false;
-datagenBackup.save_as = process.argv.slice(2)[4];
-const numberProcess = process.argv.slice(2)[5];
 
+datagenBackup.importModel(process.argv.slice(2)[0]);
+const numberProcess = process.argv.slice(2)[1];
 const file = process.argv.slice(2)[2];
+const freeSpace = process.argv.slice(2)[3];
+
 const fs = require('fs');
-let onePercent = 10000;
+let onePercent = 1000;
 
 const varSeparator =  datagenBackup.save_as == "csv" ? ',' : '\t';
-let writeStream  = fs.createWriteStream(file);
-writeStream.write('[');
+const json2csv = require('json2csv').parse;
 
-const csvWriter = require('csv-write-stream');
-let writer = csvWriter({separator: varSeparator,sendHeaders: datagenBackup.header});
-writer.pipe(fs.createWriteStream(file));
+fs.writeFileSync(file,""); //Clear the file;
 
-let i = 0;
+switch(datagenBackup.save_as) {
+    case "json":
+        fs.writeFileSync(file,"[");
+        break;
+    case "csv":
+    case "tsv":
+        if(datagenBackup.header) {fs.writeFileSync(file,json2csv("", {fields: datagenBackup.getColumnsNames(),delimiter: varSeparator})+"\n",)};
+        break;
+}
 
-function hardWork() {
-
+for(let i = 0;i<datagenBackup.n_lines;i++) {
+    if(i == 10001) {
+        const neededSpace = fs.statSync(file).size/10000*datagenBackup.n_lines
+        if(neededSpace>freeSpace) {
+            process.send("size:"+neededSpace);
+            process.exit(99);//size :)
+        }
+    }
     if(i%onePercent==0) {
         process.send("Progress"+(numberProcess == "" ? ": " : " ["+numberProcess+"]: ")+String(i*100/datagenBackup.n_lines)+"%");
     }
@@ -36,34 +46,19 @@ function hardWork() {
                 data[datagenBackup.columns[j].name] = datagenBackup.columns[j].generator.generate();
             } else {
                 data.push(datagenBackup.columns[j].generator.generate());
-
             }
         }
     }
-    switch(datagenBackup.save_as) { //In-for
+    switch(datagenBackup.save_as) {
         case "json":
-            writeStream.write(JSON.stringify(data)+(i == datagenBackup.n_lines -1 ? '' : ','),"utf8",() => {
-                i++;
-                if(i<datagenBackup.n_lines) {
-                    return hardWork();
-                } else {
-                    writeStream.end(']');
-                    return ;
-                }
-            });
+            fs.appendFileSync(file,JSON.stringify(data)+(i == datagenBackup.n_lines -1 ? '' : ','))
             break;
         case "csv":
         case "tsv":
-            writer.write(data,"utf8",() => {
-                i++;
-                if(i<datagenBackup.n_lines) {
-                    return hardWork();
-                } else {
-                    return ;
-                }
-            });
+            fs.appendFileSync(file,json2csv(data, {delimiter: varSeparator, header: false})+(i == datagenBackup.n_lines -1 ? '' : '\n'));
             break;
     }
 }
-
-hardWork();
+if(datagenBackup.save_as == "json") {
+    fs.appendFileSync(file,"]");
+}

@@ -1,6 +1,8 @@
+
 let fs = require('fs');
 const electron = require('electron').remote;
 const dialog = electron.dialog;
+const BrowserWindow = electron.BrowserWindow;
 
 let DataGen = require("./datagen/datagen.js");
 let UniformGenerator = DataGen.listOfGens['Uniform Generator'];
@@ -85,6 +87,157 @@ ipc.on('update-sampledata', function () {
     if(current_sample)
         ipc.send('change-datasample', current_sample);
 });
+
+function propsConfigs(generator,coluna){
+    let params = generator.getGenParams();
+
+    //Ativa o <select> e coloca as opções de Geradores para trocar o tipo do gerador.
+    let $selectGenType = $("#selectGeneratorType").removeAttr("disabled").empty();
+    putGeneratorOptions($selectGenType, generator.name);
+    $selectGenType.get(0).__node__ = generator;
+
+    let $propForms = $("#generatorPropertiesForm");
+    $propForms.empty();
+
+    let $table = $("<table/>").attr("id","propertiesTable");
+    $propForms.append($table);
+
+    for(let p of params){
+        let $tr = $("<tr/>");
+        $table.append($tr);
+        $tr.append($("<td/>")
+            .append($("<label/>")
+                .text(p.shortName)
+                .addClass("tooltip-label")
+                .attr("title", p.name)
+                .attr("for", "input_"+p.variableName)));
+
+        if(p.type === "number"){
+            let $input = $("<input/>")
+                .addClass("form-control")
+                .addClass("smallInput")
+                .attr("type","number")
+                .attr("value", generator[p.variableName])
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type);
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input));
+
+        }else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
+            let $input = $("<input/>")
+                .addClass("form-control")
+                .addClass("smallInput")
+                .attr("type","text")
+                .attr("value", generator[p.variableName])
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type);
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input));
+            if(p.type === "Generator"){
+                let genSel = generator[p.variableName];
+                $input.val(genSel ? genSel.ID : "");
+                $input.on("drop", function(evt){
+                    evt.preventDefault();
+                    evt.stopPropagation();
+
+                    let msg = evt.originalEvent.dataTransfer.getData("text");
+                    let objs = JSON.parse(msg);
+                    $input.val(objs.genID);
+                    $input.trigger("change");
+                });
+            }
+
+        }else if(p.type === "options") {
+            let $input = $("<select/>")
+                .addClass("form-control")
+                .addClass("smallInput")
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type);
+            for(let opt of p.options){
+                $input.append($("<option/>").attr("value", opt).text(opt));
+            }
+            $input.val(generator[p.variableName]);
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input));
+
+        }else if(p.type === "array" || p.type === "numarray") {
+            let $input = $("<input/>")
+                .addClass("form-control")
+                .addClass("smallInput")
+                .attr("type", "text")
+                .attr("onkeydown", "if (event.keyCode == 13) return false;")
+                .attr("value", generator[p.variableName])
+                .attr("id", "input_" + p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type);
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input));
+
+        }else if (p.type === "boolean") {
+            let $input = $("<input/>")
+                .attr("type","checkbox")
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type);
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input));
+            if (generator[p.variableName]){
+                $input.attr("checked", "");
+            }
+
+            // }else if(p.type === "Generator"){// Utiliza os geradores das colunas anteriormente criadas no mesmo model
+            //     let $select = $("<select/>")
+            //         .addClass("form-control")
+            //         .addClass("smallInput")
+            //         .attr("id", "input_"+p.variableName)
+            //         .attr("data-variable", p.variableName)
+            //         .attr("data-type", p.type);
+            //     $select.get(0).__node__ = generator;
+            //     putGeneratorOptions($select, generator[p.variableName], true);
+            //     $tr.append($("<td/>").append($select));
+
+        }else if(p.type.indexOf("Column") >= 0){
+            let $select = $("<select/>")
+                .addClass("form-control")
+                .addClass("smallInput")
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type);
+
+            $select.get(0).__node__ = generator;
+
+            //Preenche a lista de seleção para funções
+            //Só podem ser utilizadas as colunas anteriores a essa.
+            for(let i=0; i<datagen[currentDataGen].columns.length; i++){
+                if(datagen[currentDataGen].columns[i] !== coluna){
+
+                    //Verifica se o tipo das dimensões anteriores é compatível com o tipo de dimensão esperado pela função.
+                    if(p.type.indexOf(datagen[currentDataGen].columns[i].type) < 0 )
+                        continue;
+
+                    let $option = $("<option/>").attr("value", i).text(datagen[currentDataGen].columns[i].name);
+                    $option.get(0).__node__ = datagen[currentDataGen].columns[i];
+
+                    if(generator[p.variableName] === datagen[currentDataGen].columns[i].generator){
+                        $option.attr("selected", "selected");
+                    }
+                    $select.append($option);
+                }else{
+                    break;
+                }
+            }
+            if (!generator[p.variableName]){
+                $select.prepend($("<option/>").attr("selected", "selected").text("null"));
+            }
+
+            $tr.append($("<td/>").append($select));
+        }
+    }
+    tippy('.tooltip-label');
+}
 
 
 $("html").ready(function(){
@@ -298,7 +451,6 @@ $("html").ready(function(){
 
     $("#tableCollumn").on("click", "div.md-chip", configGenProps);
 
-
     $.contextMenu({
         selector: '#selectGeneratorType',
         trigger: 'none',
@@ -335,15 +487,29 @@ $("html").ready(function(){
 
     $("#tableCollumn").on("click", "span.btnRemoveGen", function(){
         if ($(this).parent().find("div.md-chip").length > 1){
-            let l = $(this).parent().find("div.md-chip").length-2;
-            $(this).parent().find("div.md-chip").get(l).__node__.removeLastGenerator();
+
+            let generators = [];
+            if(generators.includes(activeGenerator)){
+                activeGenerator.unlink()
+                activeGenerator = undefined;
+            } else {
+                let l = $(this).parent().find("div.md-chip").length-2;
+                $(this).parent().find("div.md-chip").get(l).__node__.removeLastGenerator();
+            }
             showGenerators();
         }
 
     }).on("click", "span.btnAddGen", function(){
         let l = $(this).parent().find("div.md-chip").length-1;
         $(this).parent().find("div.md-chip").get(l).__node__.addGenerator(new UniformGenerator());
+
+        let generators = [];
+        datagen[currentDataGen].columns[$(this).parent().parent().index()].generator.getFullGenerator(generators);
+        activeGenerator = generators[generators.length-1];
         showGenerators();
+
+        let coluna = $(this).closest(".columnTr").get(0).__node__;
+        propsConfigs(generators[generators.length-1],coluna)
 
     }).on("click", "span.btnRemoveColumn", function(){
         datagen[currentDataGen].removeCollumn(parseInt($(this).parent().parent().find(".tdIndex").text()) - 1);
@@ -432,12 +598,32 @@ $("html").ready(function(){
 
 let modal = document.getElementById('myModal');
 let child = [];
+let freeSpace = 0;
+let neededSpace = 0;
+
+function sizeFormatter(size) {
+    if(Number(size)<1024) {
+        size = String(size).substr(0,6) + " B";
+    } else if(Number(size)<1024*1024) {
+        size = String(size/(1024)).substr(0,6) + " KB";
+    } else if(Number(size)<1024*1024*1024) {
+        size = String(size/(1024*1024)).substr(0,6) + " MB";
+    } else if(Number(size)<1024*1024*1024*1024) {
+        size = String(size/(1024*1024*1024)).substr(0,6) + " GB";
+    } else {
+        size = size/(1024*1024*1024*1024) + " TB";
+    }
+    return size;
+}
 
 function generateDatas(){
     try {
         modal.style.display = "block";
         let saveas = datagen[currentDataGen].save_as;
-            dialog.showSaveDialog({
+            dialog.showSaveDialog(new BrowserWindow({
+                show: false,
+                alwaysOnTop: true
+            }),{
                 title: "Save Data",
                 filters: [{name: saveas, extensions: [saveas]}]
             }, function (targetPath) {
@@ -450,82 +636,164 @@ function generateDatas(){
                         $("#percentageGD").text("Aborted!");
                         return ;
                     }
-
-                    $("#percentageGD").text("Starting...");
-                    let promises = [];
-                    if (datagen[currentDataGen].configs.iterator.hasIt) {
-                        let it = datagen[currentDataGen].configs.iterator;
-                        let prevValue = it.generator[it.parameterIt];
-                        it.generator[it.parameterIt] = it.beginIt;
-                        for (let i = 0; i < it.numberIt; i++) {
-                            if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
-
-                                promises.push(new Promise( (resolve,reject) => {
-                                    generateStream(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
-                                        return p1 + "[" + i + "]" + p2;
-                                    }), resolve, reject);
-                                }));
+                    function promiseRecursiveGS(i,prevValue) {
+                        return new Promise( (resolve,reject) => {
+                            generateStream(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
+                                return p1 + "[" + i + "]" + p2;
+                            }), resolve, reject);
+                        }).then( () => {
+                            if(datagen[currentDataGen].configs.iterator.numberIt == i+1) {
+                                $("#percentageGD").text("Finished!");
+                                $("#percentageCancelIcon").css("display","none");
+                                $("#percentageCancelSure").css("display","none");
+                                $("#percentageCancelNot").css("display","none");
+                                alert('All Files Saved!');
+                                datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] = prevValue;
+                                child = [];
                             } else {
-                                promises.push(new Promise( (resolve,reject) => {
-                                    generateWritingSimple(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
-                                        return p1 + "[" + i + "]" + p2;
-                                    }), resolve, reject);
-                                }));
+                                datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] += datagen[currentDataGen].configs.iterator.stepIt;
+                                promiseRecursiveGS((i+1),prevValue)
                             }
-                            it.generator[it.parameterIt] += it.stepIt;
-                        }
-                        Promise.all(promises).then(function() {
-                            $("#percentageCancelIcon").css("display","none");
-                            $("#percentageGD").text("Finished!");
-                            alert('All Files Saved!');
+
                         }).catch((err) => {
+                            switch (err) {
+                                case 'abort':
+                                    $("#percentageCancelIcon").css("display","none");
+                                    $("#percentageCancelSure").css("display","none");
+                                    $("#percentageCancelNot").css("display","none");
+                                    $("#percentageGD").text("Aborted!");
+                                    alert("The writing was aborted!")
+                                    child = [];
+                                    break;
+                                case 'error':
+                                    $("#percentageGD").text("Finished!");
+                                    $("#percentageCancelIcon").css("display","none");
+                                    $("#percentageCancelSure").css("display","none");
+                                    $("#percentageCancelNot").css("display","none");
+                                    alert("Something bad happened!")
+                                    child = [];
+                                    break;
+                                case 'size':
+                                    $("#percentageGD").text("Failed!");
+                                    $("#percentageCancelIcon").css("display","none");
+                                    $("#percentageCancelSure").css("display","none");
+                                    $("#percentageCancelNot").css("display","none");
+                                    alert("No free space available!\nFree space: "+sizeFormatter(freeSpace)+"\nNeeded space: "+sizeFormatter(neededSpace))
+                                    break;
+                            }
+                        })
+                    }
+
+                    function promiseRecursiveGWS(i,prevValue) {
+                        return new Promise( (resolve,reject) => {
+                            generateWritingSimple(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
+                                return p1 + "[" + i + "]" + p2;
+                            }), resolve, reject);
+                        }).then( () => {
+                            console.log(datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt])
+                            if(datagen[currentDataGen].configs.iterator.numberIt == i+1) {
+                                $("#percentageCancelIcon").css("display","none");
+                                $("#percentageGD").text("Finished!");
+                                datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] = prevValue;
+                                child = [];
+                                alert('All Files Saved!');
+                            } else {
+                                console.log("foi?");
+                                datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] += datagen[currentDataGen].configs.iterator.stepIt;
+                                promiseRecursiveGWS((i+1),prevValue)
+                            }
+
+                        }).catch( (err) => {
                             switch (err) {
                                 case 'abort':
                                     alert("The writing was aborted!")
                                     $("#percentageGD").text("Aborted!");
+                                    child = [];
                                     break;
                                 case 'error':
                                     alert("Something bad happened!")
                                     $("#percentageGD").text("Finished!");
+                                    child = [];
                                     break;
                             }
-                        }).finally(() => {
-                            child = [];
-                        });
-                        it.generator[it.parameterIt] = prevValue;
-
-
-                    } else {
-                        if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
-                            promises.push(new Promise( (resolve,reject) => {
-                                generateStream(targetPath,resolve,reject);
-                            }));
-
-                        } else {
-                            promises.push(new Promise( (resolve,reject) => {
-                                generateWritingSimple(targetPath,resolve,reject);
-                            }));
-
-                        }
-                        Promise.all(promises).then(function() {
-                            $("#percentageCancelIcon").css("display","none");
-                            $("#percentageGD").text("Finished!");
-                            alert('Data Saved')
-                        }).catch((err) => {
-                            switch (err) {
-                                case 'abort':
-                                    alert("The writing was aborted!")
-                                    $("#percentageGD").text("Aborted!");
-                                    break;
-                                case 'error':
-                                    alert("Something bad happened!")
-                                    $("#percentageGD").text("Finished!");
-                                    break;
-                            }
-                        }).finally(() => {
-                            child = [];
                         });
                     }
+
+                    require('@sindresorhus/df').file(path.dirname(targetPath)).then(info => {
+                        freeSpace = info.available;
+
+                        $("#percentageGD").text("Starting...");
+                        if (datagen[currentDataGen].configs.iterator.hasIt) {
+                            let it = datagen[currentDataGen].configs.iterator;
+                            let prevValue = it.generator[it.parameterIt];
+                            it.generator[it.parameterIt] = it.beginIt;
+
+                            if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
+                                $("#percentageCancelIcon").css("display","block");
+                                promiseRecursiveGS(0,prevValue)
+                            } else {
+                                promiseRecursiveGWS(0,prevValue)
+                            }
+
+                        } else {
+                            if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
+                                $("#percentageCancelIcon").css("display","block");
+                                new Promise( (resolve,reject) => {
+                                    generateStream(targetPath,resolve,reject);
+                                }).then( () => {
+                                    $("#percentageGD").text("Finished!");
+                                    $("#percentageCancelIcon").css("display","none");
+                                    $("#percentageCancelSure").css("display","none");
+                                    $("#percentageCancelNot").css("display","none");
+                                    alert('Data Saved!');
+                                }).catch((err) => {
+                                    switch (err) {
+                                        case 'abort':
+                                            $("#percentageGD").text("Aborted!");
+                                            $("#percentageCancelIcon").css("display","none");
+                                            $("#percentageCancelSure").css("display","none");
+                                            $("#percentageCancelNot").css("display","none");
+                                            alert("The writing was aborted!")
+                                            break;
+                                        case 'error':
+                                            $("#percentageGD").text("Failed!");
+                                            $("#percentageCancelIcon").css("display","none");
+                                            $("#percentageCancelSure").css("display","none");
+                                            $("#percentageCancelNot").css("display","none");
+                                            alert("Something bad happened!")
+                                            break;
+                                        case 'size':
+                                            $("#percentageGD").text("Failed!");
+                                            $("#percentageCancelIcon").css("display","none");
+                                            $("#percentageCancelSure").css("display","none");
+                                            $("#percentageCancelNot").css("display","none");
+                                            alert("No free space available!\nFree space: "+sizeFormatter(freeSpace)+"\nNeeded space: "+sizeFormatter(neededSpace))
+                                            break;
+                                    }
+                                })
+
+                            } else {
+                                new Promise( (resolve,reject) => {
+                                    generateWritingSimple(targetPath,resolve,reject);
+                                }).then( () => {
+                                    $("#percentageGD").text("Finished!");
+                                    alert('Data Saved!');
+                                }).catch((err) => {
+                                    switch (err) {
+                                        case 'abort':
+                                            alert("The writing was aborted!")
+                                            $("#percentageGD").text("Aborted!");
+                                            break;
+                                        case 'error':
+                                            alert("Something bad happened!")
+                                            $("#percentageGD").text("Failed!");
+                                            break;
+                                    }
+                                })
+
+                            }
+                        }
+                    })
                 }
             });
 
@@ -591,32 +859,39 @@ function generateWritingSimple(targetPath,resolve,reject) {
 
 function generateStream(targetPath,resolve,reject) {
     let currentIteration;
-    it = datagen[currentDataGen].configs.iterator;
+    let it = datagen[currentDataGen].configs.iterator;
     if(it.hasIt) {
         currentIteration = Number( targetPath.substring( targetPath.lastIndexOf("[")+1,targetPath.lastIndexOf("]") ) );
     } else {
         currentIteration = 0;
     }
-
-    $("#percentageCancelIcon").css("display","block");
-    child[currentIteration] = require('child_process').fork("./Stream",[datagen[currentDataGen].exportModel(),String(datagen[currentDataGen].n_lines),targetPath,datagen[currentDataGen].header,datagen[currentDataGen].save_as,it.hasIt ? currentIteration : ""]);
+    child[currentIteration] = require('child_process').fork("./Stream",[datagen[currentDataGen].exportModel(),it.hasIt ? currentIteration : "",targetPath,freeSpace]);
     child[currentIteration].on('exit', (code) => {
-        if(code == null && !child[currentIteration].killed) {
-            fs.unlink(targetPath);
-            reject('error');
+        if(code == 0) {
+            datagen[currentDataGen].resetAll();
+            resolve(true);
         } else {
-            if(child[currentIteration].killed) {
+            if(code == 99) {
+                fs.unlink(targetPath);
+                reject('size');
+            }
+            else if(child[currentIteration].killed) {
                 fs.unlink(targetPath);
                 reject('abort');
             } else {
-                datagen[currentDataGen].resetAll();
-                resolve(true);
+                fs.unlink(targetPath);
+                reject('error');
             }
         }
 
     })
     .on('message',(message) => {
-        $("#percentageGD").text(message);
+        if( String(message).includes("size:") ) {
+            neededSpace = Number( String(message).substr(5) )
+            console.log(neededSpace);
+        }else {
+            $("#percentageGD").text(message);
+        }
     })
     .on("error", (err) => {
         throw err;
@@ -807,154 +1082,7 @@ function configGenProps(){
     let generator = this.__node__;
     activeGenerator = generator;
     let coluna = $(this).closest(".columnTr").get(0).__node__;
-    let params = generator.getGenParams();
-
-    //Ativa o <select> e coloca as opções de Geradores para trocar o tipo do gerador.
-    let $selectGenType = $("#selectGeneratorType").removeAttr("disabled").empty();
-    putGeneratorOptions($selectGenType, generator.name);
-    $selectGenType.get(0).__node__ = generator;
-
-    let $propForms = $("#generatorPropertiesForm");
-    $propForms.empty();
-
-    let $table = $("<table/>").attr("id","propertiesTable");
-    $propForms.append($table);
-
-    for(let p of params){
-        let $tr = $("<tr/>");
-        $table.append($tr);
-        $tr.append($("<td/>")
-            .append($("<label/>")
-                .text(p.shortName)
-                .addClass("tooltip-label")
-                .attr("title", p.name)
-                .attr("for", "input_"+p.variableName)));
-
-        if(p.type === "number"){
-            let $input = $("<input/>")
-                .addClass("form-control")
-                .addClass("smallInput")
-                .attr("type","number")
-                .attr("value", generator[p.variableName])
-                .attr("id", "input_"+p.variableName)
-                .attr("data-variable", p.variableName)
-                .attr("data-type", p.type);
-            $input.get(0).__node__ = generator;
-            $tr.append($("<td/>").append($input));
-
-        }else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
-            let $input = $("<input/>")
-                .addClass("form-control")
-                .addClass("smallInput")
-                .attr("type","text")
-                .attr("value", generator[p.variableName])
-                .attr("id", "input_"+p.variableName)
-                .attr("data-variable", p.variableName)
-                .attr("data-type", p.type);
-            $input.get(0).__node__ = generator;
-            $tr.append($("<td/>").append($input));
-            if(p.type === "Generator"){
-                let genSel = generator[p.variableName];
-                $input.val(genSel ? genSel.ID : "");
-                $input.on("drop", function(evt){
-                    evt.preventDefault();
-                    evt.stopPropagation();
-
-                    let msg = evt.originalEvent.dataTransfer.getData("text");
-                    let objs = JSON.parse(msg);
-                    $input.val(objs.genID);
-                    $input.trigger("change");
-                });
-            }
-
-        }else if(p.type === "options") {
-            let $input = $("<select/>")
-                .addClass("form-control")
-                .addClass("smallInput")
-                .attr("id", "input_"+p.variableName)
-                .attr("data-variable", p.variableName)
-                .attr("data-type", p.type);
-            for(let opt of p.options){
-                $input.append($("<option/>").attr("value", opt).text(opt));
-            }
-            $input.val(generator[p.variableName]);
-            $input.get(0).__node__ = generator;
-            $tr.append($("<td/>").append($input));
-
-        }else if(p.type === "array" || p.type === "numarray") {
-            let $input = $("<input/>")
-                .addClass("form-control")
-                .addClass("smallInput")
-                .attr("type", "text")
-                .attr("onkeydown", "if (event.keyCode == 13) return false;")
-                .attr("value", generator[p.variableName])
-                .attr("id", "input_" + p.variableName)
-                .attr("data-variable", p.variableName)
-                .attr("data-type", p.type);
-            $input.get(0).__node__ = generator;
-            $tr.append($("<td/>").append($input));
-
-        }else if (p.type === "boolean") {
-            let $input = $("<input/>")
-                .attr("type","checkbox")
-                .attr("id", "input_"+p.variableName)
-                .attr("data-variable", p.variableName)
-                .attr("data-type", p.type);
-            $input.get(0).__node__ = generator;
-            $tr.append($("<td/>").append($input));
-            if (generator[p.variableName]){
-                $input.attr("checked", "");
-            }
-
-        // }else if(p.type === "Generator"){// Utiliza os geradores das colunas anteriormente criadas no mesmo model
-        //     let $select = $("<select/>")
-        //         .addClass("form-control")
-        //         .addClass("smallInput")
-        //         .attr("id", "input_"+p.variableName)
-        //         .attr("data-variable", p.variableName)
-        //         .attr("data-type", p.type);
-        //     $select.get(0).__node__ = generator;
-        //     putGeneratorOptions($select, generator[p.variableName], true);
-        //     $tr.append($("<td/>").append($select));
-
-        }else if(p.type.indexOf("Column") >= 0){
-            let $select = $("<select/>")
-                .addClass("form-control")
-                .addClass("smallInput")
-                .attr("id", "input_"+p.variableName)
-                .attr("data-variable", p.variableName)
-                .attr("data-type", p.type);
-
-            $select.get(0).__node__ = generator;
-
-            //Preenche a lista de seleção para funções
-            //Só podem ser utilizadas as colunas anteriores a essa.
-            for(let i=0; i<datagen[currentDataGen].columns.length; i++){
-                if(datagen[currentDataGen].columns[i] !== coluna){
-
-                    //Verifica se o tipo das dimensões anteriores é compatível com o tipo de dimensão esperado pela função.
-                    if(p.type.indexOf(datagen[currentDataGen].columns[i].type) < 0 )
-                        continue;
-
-                    let $option = $("<option/>").attr("value", i).text(datagen[currentDataGen].columns[i].name);
-                    $option.get(0).__node__ = datagen[currentDataGen].columns[i];
-
-                    if(generator[p.variableName] === datagen[currentDataGen].columns[i].generator){
-                        $option.attr("selected", "selected");
-                    }
-                    $select.append($option);
-                }else{
-                    break;
-                }
-            }
-            if (!generator[p.variableName]){
-                $select.prepend($("<option/>").attr("selected", "selected").text("null"));
-            }
-
-            $tr.append($("<td/>").append($select));
-        }
-    }
-    tippy('.tooltip-label');
+    propsConfigs(generator,coluna)
 }
 
 function reloadWSIcon () {
