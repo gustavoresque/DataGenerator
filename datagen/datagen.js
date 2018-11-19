@@ -2570,11 +2570,11 @@ class DataGen {
     //TODO: resolver funções e ruido.
     importModel(model_str, resetColumns){
         let model = JSON.parse(model_str);
-        this.name = model.name;
-        this.n_lines = model.n_lines;
-        this.save_as = model.save_as;
-        this.header = model.header;
-        this.header_type = model.header_type;
+        this.name = model.name || this.name;
+        this.n_lines = model.n_lines || this.n_lines;
+        this.save_as = model.save_as || this.save_as;
+        this.header = model.header || this.header;
+        this.header_type = model.header_type || this.header_type;
 
         if(resetColumns)
             this.columns = [];
