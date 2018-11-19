@@ -1,5 +1,8 @@
 const electron = require('electron');
 const dialog = electron.dialog;
+
+const spawn = require('cross-spawn');
+
 // Module to control application life.
 const Menu = electron.Menu;
 const MenuItem = electron.MenuItem;
@@ -18,12 +21,14 @@ const fs = require('fs');
 let mainWindow, visWindows = [], visDimenWindows = [];
 let visDimensionWindow;
 
+let sockets = [];
+
 
 
 function createWindow () {
 
   // Create the browser window.
-  mainWindow = new BrowserWindow({width: 900, height: 600});
+  mainWindow = new BrowserWindow({width: 900, height: 600, icon: "icon3.png"});
   mainWindow.maximize();
 
     // and load the index.html of the app.
@@ -85,9 +90,12 @@ function createWindow () {
     });
 
     ipcMain.on('change-datasample', (event, message) => {
+        // if(message)
+        //     for(let w of visWindows)
+        //         w.webContents.send('change-datasample', message);
         if(message)
-            for(let w of visWindows)
-                w.webContents.send('change-datasample', message);
+            for(let s of sockets)
+                s.send(JSON.stringify({act:'change-datasample', msg: message}));
     });
     ipcMain.on('update-sampledata', function () {
         mainWindow.webContents.send('update-sampledata');
@@ -122,24 +130,57 @@ function createWindow () {
     };
 
     let funcOpenVisWindow = (visType) => {
-        let visWindow = new BrowserWindow({width: 900, height: 600, show: false,});
-        addVisWindowMenu(visWindow);
-        visWindows.push(visWindow);
-        visWindow.loadURL(url.format({
-            pathname: path.join(__dirname, 'pages/visualization.html'),
-            protocol: 'file:',
-            slashes: true
-        }));
-        visWindow.on('closed', function () {
-            let i = visWindows.indexOf(visWindow);
-            visWindows.splice(i,1);
-            visWindow = undefined;
+        // let visWindow = new BrowserWindow({width: 900, height: 600, show: false,});
+        // addVisWindowMenu(visWindow);
+        // visWindows.push(visWindow);
+
+
+        child = spawn('npm', ['start', 'websocketmode=on'], {cwd: "C:/Users/Gustavo/WebstormProjects/VisApplication"});
+        child.on("error", (message)=>{
+            console.log(message);
         });
-        visWindow.once('ready-to-show', () => {
-            visWindow.show();
-            visWindow.webContents.send('add-vis', visType);
-            mainWindow.webContents.send('update-sampledata');
+
+
+
+        child.stdout.setEncoding('utf8');
+        child.stdout.on('data', (data) => {
+
+            if(typeof data === 'string'){
+                let obj = {act:""};
+                try{
+                    obj = JSON.parse(data);
+                }catch (e){
+                    obj = {act:""};
+                }
+                if(obj && obj.act){
+                    switch (obj.act){
+                        case "init":
+                            console.log("foi aqui");
+                            initServerWebSocket();
+                            break;
+                        case "cl":
+                            console.log("cl", obj.msg);
+                            break;
+                    }
+                }
+            }
         });
+
+        // visWindow.loadURL(url.format({
+        //     pathname: path.join(__dirname, 'pages/visualization.html'),
+        //     protocol: 'file:',
+        //     slashes: true
+        // }));
+        // visWindow.on('closed', function () {
+        //     let i = visWindows.indexOf(visWindow);
+        //     visWindows.splice(i,1);
+        //     visWindow = undefined;
+        // });
+        // visWindow.once('ready-to-show', () => {
+        //     visWindow.show();
+        //     visWindow.webContents.send('add-vis', visType);
+        //     mainWindow.webContents.send('update-sampledata');
+        // });
     };
 
     const menu = new Menu();
@@ -157,8 +198,11 @@ function createWindow () {
                     if(pathFile){
                         fs.readFile(pathFile.toString(), 'utf8', (err, data) => {
                             if (err) throw err;
-                            let name = pathFile.toString().split('\\')[pathFile.toString().split('\\').length-1];
-                            mainWindow.webContents.executeJavaScript("createImportModel('"+ name.split('.')[0] +"','"+ data +"');");
+
+                            console.log("foi aqui");
+                            mainWindow.webContents.send('open-datagen', data);
+                            // let name = pathFile.toString().split('\\')[pathFile.toString().split('\\').length-1];
+                            // mainWindow.webContents.executeJavaScript("createImportModel('"+ name.split('.')[0] +"','"+ data +"');");
                         });
                     }
                     //mainWindow.webContents.executeJavaScript('createImportModel("'+ str +'");');
@@ -473,6 +517,25 @@ function addVisWindowMenu(visWindow){
     }
 }
 
+function initServerWebSocket() {
+    const WebSocket = require('ws');
+
+    const ws = new WebSocket('ws://localhost:6661/');
+
+    ws.on('open', function () {
+        sockets.push(ws);
+        ws.send('something');
+    });
+
+    ws.on('message', function (data) {
+        console.log(data);
+    });
+
+    ws.on('close', function(){
+        let i = sockets.indexOf(ws);
+        sockets.splice(i,1);
+    });
+}
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.

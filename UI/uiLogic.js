@@ -24,23 +24,26 @@ let WSMA = {};//It stores the models that is avaliable to web server (Web Server
 
 const Json2csvParser = require('json2csv').Parser;
 
-ipc.on('call-datagen', function(event, arg){
+ipc.on('call-datagen', function(event, data){
     // ipc.send('receive-datagen', activeGenerator.getGenParams());
+
 });
+
+ipc.on('open-datagen', function(event, data){
+    let dg = new DataGen();
+    dg.columns = [];
+    dg.importModel(data);
+    datagen.push(dg);
+    let pos = (datagen.length-1);
+    currentDataGen = pos;
+    showModels();
+    showGenerators();
+});
+
 ipc.on('getDataModel', function(event, arg){
     // ipc.send('receive-datagen', activeGenerator.getGenParams());
     ipc.send('receive-dimension-generator', datagen[currentDataGen].exportModel());
 
-    // if(collumnsSelected[0]){
-    //     let fullGenerator = collumnsSelected[0].generator.getFullGenerator();
-    //     let fullGenModels = [];
-    //     for(let gen of fullGenerator){
-    //         fullGenModels.push(gen.getModel());
-    //     }
-    //     ipc.send('receive-dimension-generator', JSON.stringify(fullGenModels));
-    // }else{
-    //     alert("Please, Select a Dimension.")
-    // }
 });
 ipc.on('change-datagen', function(event, arg){
     for(let dtg of datagen){
@@ -1016,15 +1019,7 @@ function createExportModel (path) {
 }
 
 function createImportModel (modelName, data) {
-    let dg = new DataGen();
-    dg.columns = [];
-    dg.importModel(data);
-    dg.name = modelName;
-    datagen.push(dg);
-    let pos = (datagen.length-1);
-    currentDataGen = pos;
-    showModels();
-    showGenerators();
+
 }
 
 function exportResultsCSVTSV(data, separator){

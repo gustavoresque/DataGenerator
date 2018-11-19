@@ -1844,8 +1844,8 @@ class SinusoidalFunction extends Function{
 }
 
 class SwitchCaseFunction extends Function{
-    constructor(name, listOfGenerators, inputGenerator){
-        super(name, inputGenerator);
+    constructor(name, listOfGenerators, inputGenerator, inputGenIndex){
+        super(name, inputGenerator, inputGenIndex);
         this.listOfGenerators = listOfGenerators || {};
         this.inputArray = [];
     }
@@ -1929,7 +1929,7 @@ class SwitchCaseFunction extends Function{
             if(this.listOfGenerators.hasOwnProperty(prop))
                 newList[prop] = this.listOfGenerators[prop].copy();
 
-        let newGen = new this.constructor(newList, this.inputGenerator);
+        let newGen = new this.constructor(newList, this.inputGenerator, this.inputGenIndex);
 
         for(let prop in newList)
             if(newList.hasOwnProperty(prop))
@@ -1958,8 +1958,8 @@ class SwitchCaseFunction extends Function{
 }
 
 class CategoricalFunction extends SwitchCaseFunction{
-    constructor(listOfGenerators, inputGenerator){
-        super("Categorical Function", listOfGenerators, inputGenerator);
+    constructor(listOfGenerators, inputGenerator, inputGenIndex){
+        super("Categorical Function", listOfGenerators, inputGenerator, inputGenIndex);
     }
 
     getGenParams() {
@@ -1978,8 +1978,8 @@ class CategoricalFunction extends SwitchCaseFunction{
 }
 
 class PiecewiseFunction extends SwitchCaseFunction{
-    constructor(listOfGenerators, inputGenerator, intervals){
-        super("Piecewise Function", listOfGenerators, inputGenerator);
+    constructor(listOfGenerators, inputGenerator, inputGenIndex, intervals){
+        super("Piecewise Function", listOfGenerators, inputGenerator, inputGenIndex);
         this.intervals = intervals || [0];
     }
 
@@ -2052,8 +2052,8 @@ class PiecewiseFunction extends SwitchCaseFunction{
 }
 
 class TimeLapsFunction extends SwitchCaseFunction{
-    constructor(listOfGenerators, inputGenerator, laps){
-        super("TimeLaps Function", listOfGenerators, inputGenerator);
+    constructor(listOfGenerators, inputGenerator, inputGenIndex, laps){
+        super("TimeLaps Function", listOfGenerators, inputGenerator, inputGenIndex);
         this.accessLaps = laps || [];
     }
 
@@ -2360,8 +2360,10 @@ function copyAttrs(source, target, context){
             if(attr === "generator2"){
                 target[attr] = new (DataGen.listOfGens[source[attr].name])();
             }else if(attr === "inputGenIndex") {
-                target.inputGenerator = context.columns[source[attr]].generator;
-                target[attr] = source[attr];
+                if(context.columns[source[attr]]){
+                    target.inputGenerator = context.columns[source[attr]].generator;
+                    target[attr] = source[attr];
+                }
             }else if(attr === "listOfGenerators") {
                 target[attr] = {};
                 for(let attr2 in source[attr]){
@@ -2599,8 +2601,8 @@ class DataGen {
 
             generator.reset();
             let col = new Column(model.generator[i].name, generator);
-            col.ID = model.generator[i].ID;
-            col.display = model.generator[i].display;
+            col.ID = model.generator[i].ID || col.ID;
+            col.display = model.generator[i].display || col.display;
             this.columns.push(col);
         }
     }

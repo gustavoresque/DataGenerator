@@ -1,11 +1,11 @@
 {
-  "name": "DataGenerator",
+  "name": "Blocks",
   "version": "1.0.0",
-  "description": "A minimal Electron application",
+  "description": "A Building Block Based Syntetic Dataset Generator",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-packager . --overwrite --platform=darwin --arch=x64 --prune=true --out=release-builds"
+    "build": "electron-packager . --overwrite --platform=win32 --arch=x64 --icon=icon.ico --prune=true --out=release-builds"
   },
   "repository": "https://github.com/electron/electron-quick-start",
   "keywords": [
@@ -15,8 +15,8 @@
     "tutorial",
     "demo"
   ],
-  "author": "GitHub",
-  "license": "CC0-1.0",
+  "author": "Laboratório de Visualização, Interação e Sistemas inteligentes (LABVIS)",
+  "license": "Apache-2.0",
   "devDependencies": {
     "electron": "^1.8.8",
     "electron-builder": "^20.34.0"
@@ -25,6 +25,7 @@
     "@labvis-ufpa/vistechlib": "^1.0.18",
     "@sindresorhus/df": "^2.1.0",
     "asar": "^0.14.5",
+    "cross-spawn": "^6.0.5",
     "csv-write-stream": "^2.0.0",
     "d3": "^4.13.0",
     "electron-packager": "^12.2.0",
@@ -32,6 +33,7 @@
     "jquery": "^3.3.1",
     "json2csv": "^4.3.0",
     "moment": "^2.22.2",
-    "randgen": "^0.1.0"
+    "randgen": "^0.1.0",
+    "ws": "^6.1.2"
   }
 }
