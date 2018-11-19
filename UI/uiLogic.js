@@ -245,7 +245,6 @@ $("html").ready(function(){
 
     $("#reloadPreview").on("click", "", function(e){
         showGenerators();
-        $("#percentageGD").text("Nothing Generated");
     });
 
     //The color lines became gray on resizing, so the reload solve the problem.
@@ -512,7 +511,7 @@ $("html").ready(function(){
         propsConfigs(generators[generators.length-1],coluna)
 
     }).on("click", "span.btnRemoveColumn", function(){
-        datagen[currentDataGen].removeCollumn(parseInt($(this).parent().parent().find(".tdIndex").text()) - 1);
+        datagen[currentDataGen].removeColumn(parseInt($(this).parent().parent().find(".tdIndex").text()) - 1);
         showGenerators();
 
     }).on("click", "span.btnFilter", function(){
@@ -585,7 +584,7 @@ $("html").ready(function(){
                     newName = collumnsCopied[i].name + '(' + counter + ')';
                 else
                     newName = collumnsCopied[i].name;
-                datagen[currentDataGen].addCollumn(newName, collumnsCopied[i].generator.copy());
+                datagen[currentDataGen].addColumn(newName, collumnsCopied[i].generator.copy());
             }
             collumnsSelected = [];
             showGenerators();
@@ -718,7 +717,7 @@ function generateDatas(){
                             }
                         });
                     }
-
+                    console.log(path.dirname(targetPath));
                     require('@sindresorhus/df').file(path.dirname(targetPath)).then(info => {
                         freeSpace = info.available;
 
@@ -779,6 +778,7 @@ function generateDatas(){
                                     $("#percentageGD").text("Finished!");
                                     alert('Data Saved!');
                                 }).catch((err) => {
+
                                     switch (err) {
                                         case 'abort':
                                             alert("The writing was aborted!")
@@ -793,7 +793,28 @@ function generateDatas(){
 
                             }
                         }
-                    })
+                    }).catch(function(err){
+                        //TODO: resolver o problema dessa biblioteca.
+                        console.log(err);
+                        new Promise( (resolve,reject) => {
+                            generateWritingSimple(targetPath,resolve,reject);
+                        }).then( () => {
+                            $("#percentageGD").text("Finished!");
+                            alert('Data Saved!');
+                        }).catch((err) => {
+
+                            switch (err) {
+                                case 'abort':
+                                    alert("The writing was aborted!")
+                                    $("#percentageGD").text("Aborted!");
+                                    break;
+                                case 'error':
+                                    alert("Something bad happened!")
+                                    $("#percentageGD").text("Failed!");
+                                    break;
+                            }
+                        })
+                    });
                 }
             });
 
@@ -899,7 +920,7 @@ function generateStream(targetPath,resolve,reject) {
 }
 
 function addGenerator(){
-    datagen[currentDataGen].addCollumn("Dimension "+(++datagen[currentDataGen].columnsCounter));
+    datagen[currentDataGen].addColumn("Dimension "+(++datagen[currentDataGen].columnsCounter));
     showGenerators();
 }
 
@@ -1298,7 +1319,7 @@ function createModelFromDataSet(path){
             //Adiciona Colunas com base nos dados Reais.
             createdDatagen.columns.splice(0,1);
             for(let c of columns){
-                createdDatagen.addCollumn(c, new DataGen.listOfGensComplete['Real Data Wrapper'](_.pluck(data, c)));
+                createdDatagen.addColumn(c, new DataGen.listOfGensComplete['Real Data Wrapper'](_.pluck(data, c)));
             }
 
             showModels();

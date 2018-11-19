@@ -2475,7 +2475,7 @@ class DataGen {
         return names;
     }
 
-    addCollumn(name, generator){
+    addColumn(name, generator){
         generator = generator || new defaultGenerator();
         let column = new Column(name, generator);
         this.columns.push(column);
@@ -2496,13 +2496,13 @@ class DataGen {
         this.columns[index].generator.removeLastGenerator();
     }
 
-    removeCollumn(index){
+    removeColumn(index){
 
         let removeFunc = (g) => {
             if(g instanceof Function) {
                 if (g.inputGenIndex > index) {
                     g.inputGenIndex--;
-                }else if (g.inputGenIndex == index) {
+                }else if (g.inputGenIndex === index) {
                     g.inputGenIndex = undefined;
                     g.inputGenerator = undefined
                 }
