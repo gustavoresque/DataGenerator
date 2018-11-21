@@ -1861,13 +1861,21 @@ class SwitchCaseFunction extends Function{
         auxgen.parent = this;
 
         let attrs = [];
+        this.array = [];
         for(let attr in this.listOfGenerators){
             if(this.listOfGenerators.hasOwnProperty(attr)){
                 //Todos os geradores são resetados aqui.
+
                 this.listOfGenerators[attr].reset();
+
+                if(this.listOfGenerators[attr].array)
+                    this.array.push.apply(this.array, this.listOfGenerators[attr].array);
+
                 attrs.push(attr);
             }
         }
+        //retorna valores únicos do array
+        this.array = [...new Set(this.array)];
         for(let i=0; i<this.inputArray.length; i++){
             if(!(this.listOfGenerators[this.inputArray[i]])) {
                 let gen = new RandomUniformGenerator();
