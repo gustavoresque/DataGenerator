@@ -80,10 +80,22 @@ class Generator{
         }
 
         this.generator = gen;
-        console.log("this.generator.getRootGenerator()");
-        console.log(this.generator);
-        console.log(this.generator.getRootGenerator());
         this.generator.getRootGenerator().sumOrder();
+    }
+
+    insertGeneratorBefore(gen){
+        if(this.parent instanceof Generator) {
+            this.parent.insertGenerator(gen);
+            return;
+        }else{
+            this.parent.generator = gen;
+
+            gen.parent = this.parent;
+            gen.generator = this;
+
+            this.parent = gen;
+        }
+        this.getRootGenerator().sumOrder();
     }
 
     getRootGenerator(){

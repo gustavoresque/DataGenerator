@@ -941,19 +941,42 @@ function dragAndDropGens(){
     $(".md-chip").on("drop",function(event){
         event.preventDefault();
         event.stopPropagation();
+        $("#iconDown").css({display: "none"});
+
+        console.log(event.target.getBoundingClientRect(), event);
 
         if(dragged !== event.target.__node__){
+            let bouding = event.target.getBoundingClientRect();
+            let midTarget = Math.round(bouding.left+bouding.width/2);
+
             dragged.unlink();
-            event.target.__node__.insertGenerator(dragged);
+            if((midTarget - event.pageX) < 0)
+                event.target.__node__.insertGenerator(dragged);
+            else
+                event.target.__node__.insertGeneratorBefore(dragged);
         }
 
         showGenerators();
     }).on("dragover", function(event) {
         event.preventDefault();
         event.stopPropagation();
+        if(event.target.__node__ && event.target.__node__ instanceof DataGen.superTypes.Generator){
+            let bouding = event.target.getBoundingClientRect();
+            let midTarget = Math.round(bouding.left+bouding.width/2);
+            let left = bouding.left-8;
+            let top = bouding.top-14;
+            if((midTarget - event.pageX) < 0)
+                left+=bouding.width;
+            $("#iconDown").css({
+                left: left+"px",
+                top: top+"px",
+                display: "block"
+            });
+        }
     }).on("dragleave", function(event) {
         event.preventDefault();
         event.stopPropagation();
+        $("#iconDown").css({display: "none"});
     }).on("dragstart", function(event){
         event.stopPropagation();
         console.log(event.target.__node__);
