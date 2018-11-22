@@ -135,7 +135,7 @@ function createWindow () {
         // visWindows.push(visWindow);
 
 
-        child = spawn('npm', ['start', 'websocketmode=on'], {cwd: "C:/Users/Gustavo/WebstormProjects/VisApplication"});
+        child = spawn('npm', ['start', 'websocketmode=on'], {cwd: "../VisApplication"});
         child.on("error", (message)=>{
             console.log(message);
         });
