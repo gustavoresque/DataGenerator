@@ -213,7 +213,8 @@ class Generator{
         return {
             name: this.name,
             order: this.order,
-            ID: this.ID
+            ID: this.ID,
+            accessOperator: this.accessOperator
         }
     }
 
@@ -2360,6 +2361,7 @@ Generator.Operators = {
     "none": (a,b) => { return b; }
 
 };
+
 Generator.Operators.sum.name = "sum";
 Generator.Operators.multiply.name = "multiply";
 Generator.Operators.modulus.name = "modulus";
@@ -2639,8 +2641,6 @@ class DataGen {
                     generator.addGenerator(newgen);
                     copyAttrs(model.generator[i].generator[j], newgen, this);
 
-
-
                 }else{
                     generator = new selectedGenerator();
                     copyAttrs(model.generator[i].generator[j], generator, this);
@@ -2754,7 +2754,6 @@ class DataGen {
             }
         }
     }
-
 
 }
 

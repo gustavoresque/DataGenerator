@@ -697,7 +697,6 @@ function generateDatas(){
                                 child = [];
                                 alert('All Files Saved!');
                             } else {
-                                console.log("foi?");
                                 datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] += datagen[currentDataGen].configs.iterator.stepIt;
                                 promiseRecursiveGWS((i+1),prevValue)
                             }
