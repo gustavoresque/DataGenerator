@@ -1373,7 +1373,6 @@ let selectColumnPreview = "Dimension 1"; //Inicialize according the first column
 
 $('#comboBoxPreview').change(() => {
     selectColumnPreview = $("#comboBoxPreview").val();
-    console.log(selectColumnPreview);
     redrawPreview();
 });
 
@@ -1408,7 +1407,11 @@ function preview(data2){
             break;
         }
     }
-
+    pc.on("dimensiontitleclick", function (d) {
+        selectColumnPreview = d;
+        $("#comboBoxPreview").val(d)
+        redrawPreview();
+    })
 
     //Get the chosen dimension values to calculate the domain.
     /*This is necessary because data2 is a object of objects, so there is no way to use Object.values() for exemple*/
