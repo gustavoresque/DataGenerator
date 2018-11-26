@@ -22,10 +22,26 @@ let mainWindow, visWindows = [], visDimenWindows = [];
 let visDimensionWindow;
 
 let sockets = [];
+let isCPActive = false; //isChildProcessActive
 
+ipcMain.on("active-child-process", (event) => {
+    isCPActive = true;
+    event.returnValue = 1;
+})
 
+ipcMain.on("child-process-killed", (event) => {
+    isCPActive = false;
+    app.quit();
+    event.returnValue = 1;
+})
 
 function createWindow () {
+    if(process.platform === "darwin") {
+        electron.globalShortcut.register('Command+Q', () => {
+            mainWindow.webContents.send('quit-child-process');
+            app.quit();
+        })
+    }
 
   // Create the browser window.
   mainWindow = new BrowserWindow({width: 900, height: 600, icon: "icon3.png"});
@@ -321,14 +337,24 @@ function createWindow () {
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
 
-  // Emitted when the window is closed.
-  mainWindow.on('closed', function () {
-    // Dereference the window object, usually you would store windows
-    // in an array if your app supports multi windows, this is the time
-    // when you should delete the corresponding element.
-    mainWindow = null;
-    // app.quit();
-  });
+    mainWindow.on('close',function (e) {
+        if(isCPActive) {
+            e.preventDefault();
+            mainWindow.webContents.send('quit-child-process');
+        }
+    });
+    // Emitted when the window is closed.
+  // mainWindow.on('closed', function () {
+  //
+  //   // Dereference the window object, usually you would store windows
+  //   // in an array if your app supports multi windows, this is the time
+  //   // when you should delete the corresponding element.
+  //
+  //     mainWindow = null;
+  //
+  //   // app.quit();
+  // });
+
 }
 
 
@@ -546,9 +572,11 @@ app.on('ready', createWindow);
 app.on('window-all-closed', function () {
   // On OS X it is common for applications and their menu bar
   // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+    mainWindow.webContents.send('quit-child-process');
+
+    if (process.platform !== 'darwin') {
+        app.quit()
+    }
 });
 
 app.on('activate', function () {
