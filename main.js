@@ -548,10 +548,11 @@ function addVisWindowMenu(visWindow){
 function initServerWebSocket() {
     const WebSocket = require('ws');
 
-    const ws = new WebSocket('ws://localhost:6661/');
+    const ws = new WebSocket('ws://127.0.0.1:6661/');
 
     ws.on('open', function () {
         sockets.push(ws);
+        console.log("WebSocket Opened!");
         ws.send('something');
     });
 
