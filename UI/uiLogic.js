@@ -644,8 +644,6 @@ function generateDatas(){
                             if(datagen[currentDataGen].configs.iterator.numberIt == i+1) {
                                 $("#percentageGD").text("Finished!");
                                 $("#percentageCancelIcon").css("display","none");
-                                $("#percentageCancelSure").css("display","none");
-                                $("#percentageCancelNot").css("display","none");
                                 alert('All Files Saved!');
                                 datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] = prevValue;
                                 child = [];
@@ -658,8 +656,6 @@ function generateDatas(){
                             switch (err) {
                                 case 'abort':
                                     $("#percentageCancelIcon").css("display","none");
-                                    $("#percentageCancelSure").css("display","none");
-                                    $("#percentageCancelNot").css("display","none");
                                     $("#percentageGD").text("Aborted!");
                                     alert("The writing was aborted!")
                                     child = [];
@@ -667,16 +663,12 @@ function generateDatas(){
                                 case 'error':
                                     $("#percentageGD").text("Finished!");
                                     $("#percentageCancelIcon").css("display","none");
-                                    $("#percentageCancelSure").css("display","none");
-                                    $("#percentageCancelNot").css("display","none");
                                     alert("Something bad happened!")
                                     child = [];
                                     break;
                                 case 'size':
                                     $("#percentageGD").text("Failed!");
                                     $("#percentageCancelIcon").css("display","none");
-                                    $("#percentageCancelSure").css("display","none");
-                                    $("#percentageCancelNot").css("display","none");
                                     alert("No free space available!\nFree space: "+sizeFormatter(freeSpace)+"\nNeeded space: "+sizeFormatter(neededSpace))
                                     break;
                             }
@@ -741,30 +733,22 @@ function generateDatas(){
                                 }).then( () => {
                                     $("#percentageGD").text("Finished!");
                                     $("#percentageCancelIcon").css("display","none");
-                                    $("#percentageCancelSure").css("display","none");
-                                    $("#percentageCancelNot").css("display","none");
                                     alert('Data Saved!');
                                 }).catch((err) => {
                                     switch (err) {
                                         case 'abort':
                                             $("#percentageGD").text("Aborted!");
                                             $("#percentageCancelIcon").css("display","none");
-                                            $("#percentageCancelSure").css("display","none");
-                                            $("#percentageCancelNot").css("display","none");
                                             alert("The writing was aborted!")
                                             break;
                                         case 'error':
                                             $("#percentageGD").text("Failed!");
                                             $("#percentageCancelIcon").css("display","none");
-                                            $("#percentageCancelSure").css("display","none");
-                                            $("#percentageCancelNot").css("display","none");
                                             alert("Something bad happened!")
                                             break;
                                         case 'size':
                                             $("#percentageGD").text("Failed!");
                                             $("#percentageCancelIcon").css("display","none");
-                                            $("#percentageCancelSure").css("display","none");
-                                            $("#percentageCancelNot").css("display","none");
                                             alert("No free space available!\nFree space: "+sizeFormatter(freeSpace)+"\nNeeded space: "+sizeFormatter(neededSpace))
                                             break;
                                     }
@@ -828,14 +812,17 @@ function generateDatas(){
 }
 
 $("#percentageCancelIcon").click(function(e){
-    $("#percentageCancelIcon").css("display","none");
-    $("#percentageCancelSure").css("display","block");
-    $("#percentageCancelNot").css("display","block");
+    if(confirm("Are you sure you want to abort writing?")) {
+        killProcess();
+        $("#percentageCancelIcon").css("display","none");
+    }
 });
 
-$("#percentageCancelSure").click(function(e){
-    $("#percentageCancelSure").css("display","none");
-    $("#percentageCancelNot").css("display","none");
+ipc.on("quit-child-process", () => {
+    killProcess();
+});
+
+function killProcess() {
     if(child) {
         const it = datagen[currentDataGen].configs.iterator;
         if(it.hasIt) {
@@ -848,13 +835,7 @@ $("#percentageCancelSure").click(function(e){
             child[0].kill("SIGKILL");
         }
     }
-});
-
-$("#percentageCancelNot").click(function(e){
-    $("#percentageCancelIcon").css("display","block");
-    $("#percentageCancelSure").css("display","none");
-    $("#percentageCancelNot").css("display","none");
-});
+}
 
 function generateWritingSimple(targetPath,resolve,reject) {
     switch(datagen[currentDataGen].save_as) {
@@ -878,6 +859,7 @@ function generateWritingSimple(targetPath,resolve,reject) {
 }
 
 function generateStream(targetPath,resolve,reject) {
+    ipc.sendSync("active-child-process");
     let currentIteration;
     let it = datagen[currentDataGen].configs.iterator;
     if(it.hasIt) {
@@ -898,6 +880,7 @@ function generateStream(targetPath,resolve,reject) {
             else if(child[currentIteration].killed) {
                 fs.unlink(targetPath);
                 reject('abort');
+                ipc.sendSync("child-process-killed");
             } else {
                 fs.unlink(targetPath);
                 reject('error');
