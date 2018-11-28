@@ -16,10 +16,14 @@ const path = require('path');
 const url = require('url');
 const fs = require('fs');
 
+const menu = new Menu();
+
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow, visWindows = [], visDimenWindows = [];
 let visDimensionWindow;
+
+let file_path = undefined;
 
 let sockets = [];
 let isCPActive = false; //isChildProcessActive
@@ -35,13 +39,18 @@ ipcMain.on("child-process-killed", (event) => {
     event.returnValue = 1;
 })
 
-function createWindow () {
-    if(process.platform === "darwin") {
-        electron.globalShortcut.register('Command+Q', () => {
-            mainWindow.webContents.send('quit-child-process');
-            app.quit();
-        })
+function saveExport(targetPath) {
+
+    let partsOfStr = targetPath.split('\\');
+    targetPath = "";
+    for (let i = 0; i < partsOfStr.length; i++){
+        let backslash = i == partsOfStr.length - 1 ? "" : "\\\\";
+        targetPath += partsOfStr[i] + backslash;
     }
+    mainWindow.webContents.executeJavaScript("createExportModel('" + targetPath + "');");
+}
+
+function createWindow () {
 
   // Create the browser window.
   mainWindow = new BrowserWindow({width: 900, height: 600, icon: "icon3.png"});
@@ -199,7 +208,7 @@ function createWindow () {
         // });
     };
 
-    const menu = new Menu();
+
 
     const menuTemplateFile = {
         label: 'File',
@@ -207,7 +216,7 @@ function createWindow () {
             {label: 'New Model', click (){
                     mainWindow.webContents.executeJavaScript('createNewModel();');
                 }},
-            {label: 'Import Model', click (){
+            {label: 'Open Model', click (){
                     let pathFile = dialog.showOpenDialog(mainWindow, {
                         properties: ['openFile']
                     });
@@ -216,26 +225,18 @@ function createWindow () {
                             if (err) throw err;
 
                             console.log("foi aqui");
-                            mainWindow.webContents.send('open-datagen', data);
+                            mainWindow.webContents.send('open-datagen', data, pathFile.toString());
                             // let name = pathFile.toString().split('\\')[pathFile.toString().split('\\').length-1];
                             // mainWindow.webContents.executeJavaScript("createImportModel('"+ name.split('.')[0] +"','"+ data +"');");
                         });
                     }
                     //mainWindow.webContents.executeJavaScript('createImportModel("'+ str +'");');
                 }},
-            {label: 'Export Model', click (){
-                    dialog.showSaveDialog({title:"Salvar modelo", filters:[{name: 'json', extensions: ['json']}]}, function(targetPath) {
-                        if(targetPath){
-                            let partsOfStr = targetPath.split('\\');
-                            targetPath = "";
-                            for (let i = 0; i < partsOfStr.length; i++){
-                                let backslash = i == partsOfStr.length - 1 ? "" : "\\\\";
-                                targetPath += partsOfStr[i] + backslash;
-                            }
-                            mainWindow.webContents.executeJavaScript("createExportModel('" + targetPath + "');");
-                        }
-                    });
-                    //mainWindow.webContents.executeJavaScript('createExportModel("' + str + '");');
+            {label: 'Save Model', accelerator: process.platform === "darwin" ? 'Cmd+S' : 'Ctrl+S', click (){
+                    mainWindow.webContents.send('export-datagen', "save");
+                }},
+            {label: 'Save Model As', click (){
+                    mainWindow.webContents.send('export-datagen', "saveas");
                 }},
             {type: 'separator'},
             {
@@ -251,10 +252,11 @@ function createWindow () {
                 }
             },
             {type: 'separator'},
-            {role: 'close'}
+            {role: 'close'},
+            {type: 'separator'},
+            {label: 'Quit App', accelerator: 'Cmd+Q', click: () => {mainWindow.webContents.send('quit-child-process');app.quit();}}
         ]
     };
-
     const menuTemplateVisualize = {
         label: 'Visualize',
         submenu: [

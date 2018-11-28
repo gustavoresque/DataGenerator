@@ -2442,6 +2442,7 @@ class DataGen {
         this.iterator = {hasIt:false};
         this.ID = "MODEL_"+uniqueID();
         this.columnsCounter = 1; //If delete a not last column, the new colum will the same name as the last but one column and this make the preview have a bug.
+        this.filePath = undefined;
     }
 
     get configs(){
@@ -2811,6 +2812,42 @@ DataGen.listOfGens = {
     'Low-Pass Filter': LowPassFilter,
     'Weighted Categorical': RandomWeightedCategorical,
     'Categorical': RandomCategorical,
+    'Categorical Quantity': RandomCategoricalQtt,
+    'Linear Function': LinearFunction,
+    'Quadratic Function': QuadraticFunction,
+    'Polynomial Function': PolynomialFunction,
+    'Exponential Function': ExponentialFunction,
+    'Logarithm Function': LogarithmFunction,
+    'Sinusoidal Function': SinusoidalFunction,
+    'Categorical Function': CategoricalFunction,
+    'Piecewise Function': PiecewiseFunction,
+    'TimeLaps Function': TimeLapsFunction,
+    'Sinusoidal Sequence': SinusoidalSequence,
+    'Custom Sequence': CustomSequence,
+    'CubicBezier Generator': CubicBezierGenerator,
+    'Get Extra Value': GetExtraValue
+};
+
+DataGen.listOfGensHelp = {
+    'Constant Value': "Generate a sequence with only one constant number.",
+    'Missing Value': MissingValue,
+    'Counter Generator': "Generate a sequence counting Step by Step from Begin.",
+    'Fixed Time Generator': FixedTimeGenerator,
+    'Poisson Time Generator': PoissonTimeGenerator,
+    'Uniform Generator': "Generate random data distributed evenly.",
+    'Gaussian Generator': RandomGaussianGenerator,
+    'Poisson Generator': RandomPoissonGenerator,
+    'Bernoulli Generator': RandomBernoulliGenerator,
+    'Cauchy Generator': RandomCauchyGenerator,
+    'Noise Generator': RandomNoiseGenerator,
+    'Constant Noise Generator': RandomConstantNoiseGenerator,
+    'Range Filter': RangeFilter,
+    'Linear Scale': LinearScale,
+    'No Repeat': NoRepeat,
+    'MinMax': MinMax,
+    'Low-Pass Filter': LowPassFilter,
+    'Weighted Categorical': RandomWeightedCategorical,
+    'Categorical': "Generate random data using names.",
     'Categorical Quantity': RandomCategoricalQtt,
     'Linear Function': LinearFunction,
     'Quadratic Function': QuadraticFunction,

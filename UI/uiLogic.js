@@ -31,15 +31,43 @@ ipc.on('call-datagen', function(event, data){
 
 });
 
-ipc.on('open-datagen', function(event, data){
+ipc.on('open-datagen', function(event, data, path){
     let dg = new DataGen();
     dg.columns = [];
     dg.importModel(data);
     datagen.push(dg);
     let pos = (datagen.length-1);
     currentDataGen = pos;
+    datagen[currentDataGen].filePath = path;
     showModels();
     showGenerators();
+});
+
+ipc.on('export-datagen', function(event, type){
+    switch(type) {
+        case "save":
+            if(datagen[currentDataGen].filePath === undefined) {
+                dialog.showSaveDialog({title:"Save Model", filters:[{name: 'json', extensions: ['json']}]}, function(targetPath) {
+                    if(targetPath){
+                        if(confirm("Do you want to change the model name to '"+ require('path').basename(targetPath,'.json')+"'?")) datagen[currentDataGen].name = require('path').basename(targetPath,'.json');
+                        datagen[currentDataGen].filePath = targetPath;
+                        createExportModel(targetPath);
+                    }
+                });
+            } else {
+                createExportModel(datagen[currentDataGen].filePath);
+            }
+            break;
+        case "saveas":
+            dialog.showSaveDialog({title:"Save Model As", filters:[{name: 'json', extensions: ['json']}]}, function(targetPath) {
+                if(targetPath){
+                    if(datagen[currentDataGen].filePath === undefined) {datagen[currentDataGen].filePath = targetPath; datagen[currentDataGen].name = require('path').basename(targetPath,'.json');}
+                    createExportModel(targetPath);
+                }
+            });
+            //TODO: Perguntar se quer mudar para o modelo salvo.
+            break;
+    }
 });
 
 ipc.on('getDataModel', function(event, arg){
@@ -467,6 +495,13 @@ $("html").ready(function(){
         },
         items: configureMenuOfGens()
     });
+
+    $(".context-menu-item").not(".context-menu-submenu").on("mouseover", function(e){
+        $(this).find("span").attr("title",DataGen.listOfGensHelp[$(this).find("span").text()])
+    });
+    // $(".context-menu-item").not(".context-menu-submenu").on("mouseout", function(e){
+    //
+    // });
     $("#selectGeneratorType").on("click", function(e){
         $(this).contextMenu();
     });
@@ -1100,7 +1135,6 @@ function putGeneratorOptions(select, selected, noise) {
 }
 
 function configGenProps(){
-
     //muda a cor do chip para ativo e desativa outro clicado anteriormente.
     $("div.md-chip").removeClass("active-md-chip");
     $(this).addClass("active-md-chip");
@@ -1169,7 +1203,8 @@ function createExportModel (path) {
     fs.writeFile(path, datagen[currentDataGen].exportModel(), (err) => {
         if (err) throw err;
     });
-    alert('Model Exported Successfully!');
+    showModels();
+    alert('Model Saved Successfully!'); //TODO: Trocar por icone verde.
 }
 
 function createImportModel (modelName, data) {
