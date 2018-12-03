@@ -23,7 +23,6 @@
   },
   "dependencies": {
     "@labvis-ufpa/vistechlib": "^1.0.20",
-    "@sindresorhus/df": "^2.1.0",
     "asar": "^0.14.5",
     "cross-spawn": "^6.0.5",
     "csv-write-stream": "^2.0.0",

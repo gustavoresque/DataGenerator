@@ -194,9 +194,13 @@ select#selectGeneratorType:focus > option {
 #percentageGD{
     width: 108px;
 }
-.fa-upload {
+.fa-upload, .fa-circle {
     visibility: hidden;
     margin: 0 0 0 5px;
+}
+.fa-circle {
+    font-size: 11px !important;
+    color: gray;
 }
 .icon-chart-line {
     cursor:pointer;

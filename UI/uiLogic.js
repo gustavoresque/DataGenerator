@@ -497,7 +497,12 @@ $("html").ready(function(){
     });
 
     $(".context-menu-item").not(".context-menu-submenu").on("mouseover", function(e){
-        $(this).find("span").attr("title",DataGen.listOfGensHelp[$(this).find("span").text()])
+        try {
+            $(this).find("span").attr("title",DataGen.listOfGensHelp[$(this).find("span").text()])
+        } catch (e) {
+            $(this).find("span").attr("title","There's no tooltip for this yet :(")
+        }
+
     });
     // $(".context-menu-item").not(".context-menu-submenu").on("mouseout", function(e){
     //
@@ -632,8 +637,6 @@ $("html").ready(function(){
 
 let modal = document.getElementById('myModal');
 let child = [];
-let freeSpace = 0;
-let neededSpace = 0;
 
 function sizeFormatter(size) {
     if(Number(size)<1024) {
@@ -701,11 +704,11 @@ function generateDatas(){
                                     alert("Something bad happened!")
                                     child = [];
                                     break;
-                                case 'size':
-                                    $("#percentageGD").text("Failed!");
-                                    $("#percentageCancelIcon").css("display","none");
-                                    alert("No free space available!\nFree space: "+sizeFormatter(freeSpace)+"\nNeeded space: "+sizeFormatter(neededSpace))
-                                    break;
+                                // case 'size':
+                                //     $("#percentageGD").text("Failed!");
+                                //     $("#percentageCancelIcon").css("display","none");
+                                //     alert("No free space available!\nFree space: "+sizeFormatter(freeSpace)+"\nNeeded space: "+sizeFormatter(neededSpace))
+                                //     break;
                             }
                         })
                     }
@@ -743,96 +746,66 @@ function generateDatas(){
                             }
                         });
                     }
-                    console.log(path.dirname(targetPath));
-                    require('@sindresorhus/df').file(path.dirname(targetPath)).then(info => {
-                        freeSpace = info.available;
 
-                        $("#percentageGD").text("Starting...");
-                        if (datagen[currentDataGen].configs.iterator.hasIt) {
-                            let it = datagen[currentDataGen].configs.iterator;
-                            let prevValue = it.generator[it.parameterIt];
-                            it.generator[it.parameterIt] = it.beginIt;
+                    $("#percentageGD").text("Starting...");
+                    if (datagen[currentDataGen].configs.iterator.hasIt) {
+                        let it = datagen[currentDataGen].configs.iterator;
+                        let prevValue = it.generator[it.parameterIt];
+                        it.generator[it.parameterIt] = it.beginIt;
 
-                            if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
-                                $("#percentageCancelIcon").css("display","block");
-                                promiseRecursiveGS(0,prevValue)
-                            } else {
-                                promiseRecursiveGWS(0,prevValue)
-                            }
+                        if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
+                            $("#percentageCancelIcon").css("display","block");
+                            promiseRecursiveGS(0,prevValue)
+                        } else {
+                            promiseRecursiveGWS(0,prevValue)
+                        }
+
+                    } else {
+                        if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
+                            $("#percentageCancelIcon").css("display","block");
+                            new Promise( (resolve,reject) => {
+                                generateStream(targetPath,resolve,reject);
+                            }).then( () => {
+                                $("#percentageGD").text("Finished!");
+                                $("#percentageCancelIcon").css("display","none");
+                                alert('Data Saved!');
+                            }).catch((err) => {
+                                switch (err) {
+                                    case 'abort':
+                                        $("#percentageGD").text("Aborted!");
+                                        $("#percentageCancelIcon").css("display","none");
+                                        alert("The writing was aborted!")
+                                        break;
+                                    case 'error':
+                                        $("#percentageGD").text("Failed!");
+                                        $("#percentageCancelIcon").css("display","none");
+                                        alert("Something bad happened!")
+                                        break;
+                                }
+                            })
 
                         } else {
-                            if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
-                                $("#percentageCancelIcon").css("display","block");
-                                new Promise( (resolve,reject) => {
-                                    generateStream(targetPath,resolve,reject);
-                                }).then( () => {
-                                    $("#percentageGD").text("Finished!");
-                                    $("#percentageCancelIcon").css("display","none");
-                                    alert('Data Saved!');
-                                }).catch((err) => {
-                                    switch (err) {
-                                        case 'abort':
-                                            $("#percentageGD").text("Aborted!");
-                                            $("#percentageCancelIcon").css("display","none");
-                                            alert("The writing was aborted!")
-                                            break;
-                                        case 'error':
-                                            $("#percentageGD").text("Failed!");
-                                            $("#percentageCancelIcon").css("display","none");
-                                            alert("Something bad happened!")
-                                            break;
-                                        case 'size':
-                                            $("#percentageGD").text("Failed!");
-                                            $("#percentageCancelIcon").css("display","none");
-                                            alert("No free space available!\nFree space: "+sizeFormatter(freeSpace)+"\nNeeded space: "+sizeFormatter(neededSpace))
-                                            break;
-                                    }
-                                })
+                            new Promise( (resolve,reject) => {
+                                generateWritingSimple(targetPath,resolve,reject);
+                            }).then( () => {
+                                $("#percentageGD").text("Finished!");
+                                alert('Data Saved!');
+                            }).catch((err) => {
 
-                            } else {
-                                new Promise( (resolve,reject) => {
-                                    generateWritingSimple(targetPath,resolve,reject);
-                                }).then( () => {
-                                    $("#percentageGD").text("Finished!");
-                                    alert('Data Saved!');
-                                }).catch((err) => {
+                                switch (err) {
+                                    case 'abort':
+                                        alert("The writing was aborted!")
+                                        $("#percentageGD").text("Aborted!");
+                                        break;
+                                    case 'error':
+                                        alert("Something bad happened!")
+                                        $("#percentageGD").text("Failed!");
+                                        break;
+                                }
+                            })
 
-                                    switch (err) {
-                                        case 'abort':
-                                            alert("The writing was aborted!")
-                                            $("#percentageGD").text("Aborted!");
-                                            break;
-                                        case 'error':
-                                            alert("Something bad happened!")
-                                            $("#percentageGD").text("Failed!");
-                                            break;
-                                    }
-                                })
-
-                            }
                         }
-                    }).catch(function(err){
-                        //TODO: resolver o problema dessa biblioteca.
-                        console.log(err);
-                        new Promise( (resolve,reject) => {
-                            generateWritingSimple(targetPath,resolve,reject);
-                        }).then( () => {
-                            $("#percentageGD").text("Finished!");
-                            alert('Data Saved!');
-                        }).catch((err) => {
-
-                            switch (err) {
-                                case 'abort':
-                                    alert("The writing was aborted!")
-                                    $("#percentageGD").text("Aborted!");
-                                    break;
-                                case 'error':
-                                    alert("Something bad happened!")
-                                    $("#percentageGD").text("Failed!");
-                                    break;
-                            }
-                        })
-                    });
+                    }
                 }
             });
 
@@ -852,8 +825,9 @@ $("#percentageCancelIcon").click(function(e){
         $("#percentageCancelIcon").css("display","none");
     }
 });
-
+let quit = false;
 ipc.on("quit-child-process", () => {
+    quit = true;
     killProcess();
 });
 
@@ -902,20 +876,17 @@ function generateStream(targetPath,resolve,reject) {
     } else {
         currentIteration = 0;
     }
-    child[currentIteration] = require('child_process').fork("./Stream",[datagen[currentDataGen].exportModel(),it.hasIt ? currentIteration : "",targetPath,freeSpace]);
+    child[currentIteration] = require('child_process').fork("./Stream",[datagen[currentDataGen].exportModel(),it.hasIt ? currentIteration : "",targetPath]);
     child[currentIteration].on('exit', (code) => {
         if(code == 0) {
             datagen[currentDataGen].resetAll();
+            ipc.sendSync("child-process-ended");
             resolve(true);
         } else {
-            if(code == 99) {
-                fs.unlink(targetPath);
-                reject('size');
-            }
-            else if(child[currentIteration].killed) {
+            if(child[currentIteration].killed) {
                 fs.unlink(targetPath);
                 reject('abort');
-                ipc.sendSync("child-process-killed");
+                if(quit) {ipc.sendSync("child-process-killed");} else {ipc.sendSync("child-process-ended");}
             } else {
                 fs.unlink(targetPath);
                 reject('error');
@@ -1159,7 +1130,7 @@ function showModels(){
     for(let i = 0; i < datagen.length; i++){
         let idNameModel = datagen[i].name.toLowerCase().replace(' ','');
 
-        let modelButton = $("<span/>").attr('id', idNameModel).addClass("nav-group-item").text(datagen[i].name).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv")).append($("<span/>").addClass("fa").addClass("fa-upload"));
+        let modelButton = $("<span/>").attr('id', idNameModel).addClass("nav-group-item").text(datagen[i].name).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv")).append($("<span/>").addClass("fa").addClass("fa-upload")).append($("<span/>").addClass("fa").addClass("fa-circle"));
 
         if (currentDataGen === i)
             modelButton.addClass("active");

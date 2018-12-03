@@ -33,6 +33,11 @@ ipcMain.on("active-child-process", (event) => {
     event.returnValue = 1;
 })
 
+ipcMain.on("child-process-ended", (event) => {
+    isCPActive = false;
+    event.returnValue = 1;
+})
+
 ipcMain.on("child-process-killed", (event) => {
     isCPActive = false;
     app.quit();
