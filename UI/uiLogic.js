@@ -43,15 +43,21 @@ ipc.on('open-datagen', function(event, data, path){
 });
 
 ipc.on('undo-datagen', function(event, data, path){
+    let idChange = activeGenerator.ID;
     datagen[currentDataGen].restore();
+    activeGenerator = datagen[currentDataGen].findGenByID(idChange);
     showGenerators();
     showModels();
+    propsConfigs(activeGenerator, activeGenerator.getRootGenerator().parent);
 });
 
 ipc.on('redo-datagen', function(event, data, path){
+    let idChange = activeGenerator.ID;
     datagen[currentDataGen].forward();
+    activeGenerator = datagen[currentDataGen].findGenByID(idChange);
     showGenerators();
     showModels();
+    propsConfigs(activeGenerator, activeGenerator.getRootGenerator().parent);
 });
 
 ipc.on('export-datagen', function(event, type){
@@ -457,7 +463,7 @@ $("html").ready(function(){
         hasChanged(true);
     });
 
-    $("#generatorPropertiesForm").on("change blur", "input,select", function(){
+    $("#generatorPropertiesForm").on("change", "input,select", function(){
         let $input = $(this);
         if($input.attr("data-type") === "number")
             this.__node__[$input.attr("data-variable")] = parseFloat($input.val());
@@ -1215,29 +1221,29 @@ function createExportModel (path) {
 }
 
 //Verifica a cada minuto se é preciso salvar automaticamente.
-setInterval(() => {
-    if(datagen[currentDataGen].datagenChange) {
-        const path = require("path");
-
-        let targetpath = process.platform == "linux" || process.platform == "darwin" ? "/var/tmp/" : process.platform == "win32" ? String(process.env.temp) : false; //TODO: verificar windows!!!
-        if(targetpath != false) {
-            targetpath += "B_DataGen_AS/" + datagen[currentDataGen].ID + ".json";
-
-            if (!fs.existsSync(path.dirname(targetpath))) {
-                fs.mkdirSync(path.dirname(targetpath));
-                createExportModel(targetpath);
-            } else {
-                if (fs.existsSync(targetpath)) {
-                    fs.readFile(targetpath, (err, data) => {
-                        console.log(data.toString("utf8"));
-                    });
-                }
-                createExportModel(targetpath);
-            }
-            datagen[currentDataGen].datagenChange = false;
-        }
-    }
-},6000);
+// setInterval(() => {
+//     if(datagen[currentDataGen].datagenChange) {
+//         const path = require("path");
+//
+//         let targetpath = process.platform == "linux" || process.platform == "darwin" ? "/var/tmp/" : process.platform == "win32" ? String(process.env.temp) : false; //TODO: verificar windows!!!
+//         if(targetpath != false) {
+//             targetpath += "B_DataGen_AS/" + datagen[currentDataGen].ID + ".json";
+//
+//             if (!fs.existsSync(path.dirname(targetpath))) {
+//                 fs.mkdirSync(path.dirname(targetpath));
+//                 createExportModel(targetpath);
+//             } else {
+//                 if (fs.existsSync(targetpath)) {
+//                     fs.readFile(targetpath, (err, data) => {
+//                         console.log(data.toString("utf8"));
+//                     });
+//                 }
+//                 createExportModel(targetpath);
+//             }
+//             datagen[currentDataGen].datagenChange = false;
+//         }
+//     }
+// },6000);
 
 function createImportModel (modelName, data) {
 
