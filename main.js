@@ -262,6 +262,17 @@ function createWindow () {
             {label: 'Quit App', accelerator: 'Cmd+Q', click: () => {mainWindow.webContents.send('quit-child-process');app.quit();}}
         ]
     };
+    const menuTemplateEdit = {
+        label: "Edit",
+        submenu: [
+            {label: 'Undo', accelerator: process.platform === "darwin" ? 'Cmd+Z' : 'Ctrl+Z', click () {
+                mainWindow.webContents.send('undo-datagen');
+            }},
+            {label: 'Redo', accelerator: process.platform === "darwin" ? 'Cmd+Y' : 'Ctrl+Y', click () {
+                mainWindow.webContents.send('redo-datagen');
+            }}
+        ]
+    };
     const menuTemplateVisualize = {
         label: 'Visualize',
         submenu: [
@@ -330,13 +341,14 @@ function createWindow () {
     //Work on Mac.
     if(process.platform === 'darwin'){
         mainWindow.on("focus", ()=>{
-            const menuTemplate = [menuTemplateFile, menuTemplateVisualize, menuTemplateDebug];
+            const menuTemplate = [menuTemplateFile, menuTemplateEdit, menuTemplateVisualize, menuTemplateDebug];
             Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
         });
     }
 
     //Work on Windows.
     menu.append(new MenuItem(menuTemplateFile));
+    menu.append(new MenuItem(menuTemplateEdit));
     menu.append(new MenuItem(menuTemplateVisualize));
     menu.append(new MenuItem(menuTemplateDebug));
     mainWindow.setMenu(menu);

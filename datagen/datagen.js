@@ -2443,6 +2443,11 @@ class DataGen {
         this.ID = "MODEL_"+uniqueID();
         this.columnsCounter = 1; //If delete a not last column, the new colum will the same name as the last but one column and this make the preview have a bug.
         this.filePath = undefined;
+        this.datagenChange = false;
+        this.memento = {
+            index: 0,
+            snapshot: [this.exportModel()]
+        }
     }
 
     get configs(){
@@ -2656,6 +2661,31 @@ class DataGen {
             this.columns.push(col);
         }
     }
+
+    saveState() {
+        if(this.memento.index !== this.memento.snapshot.length-1) {
+            let remove = this.memento.snapshot.length - (this.memento.index + 1);
+            this.memento.snapshot.splice(this.memento.index+1,remove);
+        }
+        this.memento.index++;
+        this.memento.snapshot.push(this.exportModel());
+        console.log(this.memento,"State");
+    }
+    forward() {
+        if(this.memento.index !== this.memento.snapshot.length-1) {
+            this.memento.index++;
+            this.importModel(this.memento.snapshot[this.memento.index], true);
+            console.log(this.memento,"Forward");
+        }
+    }
+    restore() {
+        if(this.memento.index !== 0) {
+            this.memento.index--;
+            this.importModel(this.memento.snapshot[this.memento.index], true);
+            console.log(this.memento,"Restore");
+        }
+    }
+
 
     exportDot(){
 

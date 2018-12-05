@@ -28,7 +28,6 @@ const Json2csvParser = require('json2csv').Parser;
 
 ipc.on('call-datagen', function(event, data){
     // ipc.send('receive-datagen', activeGenerator.getGenParams());
-
 });
 
 ipc.on('open-datagen', function(event, data, path){
@@ -43,6 +42,18 @@ ipc.on('open-datagen', function(event, data, path){
     showGenerators();
 });
 
+ipc.on('undo-datagen', function(event, data, path){
+    datagen[currentDataGen].restore();
+    showGenerators();
+    showModels();
+});
+
+ipc.on('redo-datagen', function(event, data, path){
+    datagen[currentDataGen].forward();
+    showGenerators();
+    showModels();
+});
+
 ipc.on('export-datagen', function(event, type){
     switch(type) {
         case "save":
@@ -52,6 +63,7 @@ ipc.on('export-datagen', function(event, type){
                         if(confirm("Do you want to change the model name to '"+ require('path').basename(targetPath,'.json')+"'?")) datagen[currentDataGen].name = require('path').basename(targetPath,'.json');
                         datagen[currentDataGen].filePath = targetPath;
                         createExportModel(targetPath);
+                        hasChanged(false);
                     }
                 });
             } else {
@@ -75,6 +87,7 @@ ipc.on('getDataModel', function(event, arg){
     ipc.send('receive-dimension-generator', datagen[currentDataGen].exportModel());
 
 });
+
 ipc.on('change-datagen', function(event, arg){
     for(let dtg of datagen){
         if(dtg.ID === arg.modelID){
@@ -82,6 +95,7 @@ ipc.on('change-datagen', function(event, arg){
             break;
         }
     }
+    hasChanged(true);
     //console.log(datagen[currentDataGen].configs);
 });
 
@@ -111,6 +125,7 @@ ipc.on('change-WebService', function(event, arg){
         }
     }
 });
+
 ipc.on('update-sampledata', function () {
     if(current_sample)
         ipc.send('change-datasample', current_sample);
@@ -267,7 +282,6 @@ function propsConfigs(generator,coluna){
     tippy('.tooltip-label');
 }
 
-
 $("html").ready(function(){
     showModels();
 
@@ -283,6 +297,7 @@ $("html").ready(function(){
     $("#hidePreview").on("click", "", function(e){
         $(".previewPanel").hide();
     });
+
     $("#showPreview").on("click", "", function(e){
         if($(".previewPanel").is(":visible")){
             $(".previewPanel").hide();
@@ -317,6 +332,7 @@ $("html").ready(function(){
                         datagen[i].name = $(this).val();
                         showModels();
                     }));
+                    hasChanged(true);
                     break;
                 case "Delete": {
                     let index = datagen.indexOf(this.get(0).__node__);
@@ -327,6 +343,7 @@ $("html").ready(function(){
                         else if (index < currentDataGen)
                             currentDataGen--;
                     }
+                    //TODO: verificar lógica para salvamento automático
                     showModels();
                     showGenerators();
                     break;
@@ -425,6 +442,7 @@ $("html").ready(function(){
             $('#comboBoxPreview option:contains('+title+')').text(cor).val(cor); //Change the option name according with dimension name.
             $(this).parent().parent().get(0).__node__.name = cor;
             $(this).parent().text(cor);
+            hasChanged(true);
         }));
     });
 
@@ -436,6 +454,7 @@ $("html").ready(function(){
             $(this).parent().parent().get(0).__node__.type = cor;
             $(this).parent().text(cor);
         }));
+        hasChanged(true);
     });
 
     $("#generatorPropertiesForm").on("change blur", "input,select", function(){
@@ -473,6 +492,7 @@ $("html").ready(function(){
         }
         datagen[currentDataGen].resetAll();
         setTimeout(()=>{ showGenerators(); }, 500);
+        hasChanged(true);
         // showGenerators();
     });
 
@@ -492,6 +512,7 @@ $("html").ready(function(){
             let $active_chip = showGenerators();
             configGenProps.apply($active_chip.get(0));
             datagen[currentDataGen].resetAll();
+            hasChanged(true);
         },
         items: configureMenuOfGens()
     });
@@ -504,9 +525,7 @@ $("html").ready(function(){
         }
 
     });
-    // $(".context-menu-item").not(".context-menu-submenu").on("mouseout", function(e){
-    //
-    // });
+
     $("#selectGeneratorType").on("click", function(e){
         $(this).contextMenu();
     });
@@ -537,7 +556,7 @@ $("html").ready(function(){
             }
             showGenerators();
         }
-
+        hasChanged(true);
     }).on("click", "span.btnAddGen", function(){
         let l = $(this).parent().find("div.md-chip").length-1;
         $(this).parent().find("div.md-chip").get(l).__node__.addGenerator(new UniformGenerator());
@@ -549,10 +568,12 @@ $("html").ready(function(){
 
         let coluna = $(this).closest(".columnTr").get(0).__node__;
         propsConfigs(generators[generators.length-1],coluna)
+        hasChanged(true);
 
     }).on("click", "span.btnRemoveColumn", function(){
         datagen[currentDataGen].removeColumn(parseInt($(this).parent().parent().find(".tdIndex").text()) - 1);
         showGenerators();
+        hasChanged(true);
 
     }).on("click", "span.btnFilter", function(){
         //Get the selected dimension.
@@ -628,6 +649,7 @@ $("html").ready(function(){
             }
             collumnsSelected = [];
             showGenerators();
+            hasChanged(true);
         }
     });
 
@@ -825,6 +847,7 @@ $("#percentageCancelIcon").click(function(e){
         $("#percentageCancelIcon").css("display","none");
     }
 });
+
 let quit = false;
 ipc.on("quit-child-process", () => {
     quit = true;
@@ -910,6 +933,7 @@ function generateStream(targetPath,resolve,reject) {
 function addGenerator(){
     datagen[currentDataGen].addColumn("Dimension "+(++datagen[currentDataGen].columnsCounter));
     showGenerators();
+    hasChanged(true);
 }
 
 function dragGenerator(evt){
@@ -970,6 +994,18 @@ function dragAndDropGens(){
         console.log(event.target.__node__);
         dragged = event.target.__node__;
     });
+}
+
+function hasChanged(type) { //permite o Auto Save.
+
+    if(type) {
+        datagen[currentDataGen].datagenChange = true;
+        $(".fa-circle").css("visibility","visible");
+        datagen[currentDataGen].saveState();
+    } else {
+        datagen[currentDataGen].datagenChange = false;
+        $(".fa-circle").css("visibility","hidden");
+    }
 }
 
 /*Desenha na tela principal as colunas e seus respectivos geradores baseados nos dados armazendos no array datagen*/
@@ -1175,8 +1211,33 @@ function createExportModel (path) {
         if (err) throw err;
     });
     showModels();
-    alert('Model Saved Successfully!'); //TODO: Trocar por icone verde.
+    // alert('Model Saved Successfully!'); //TODO: Trocar por icone verde.
 }
+
+//Verifica a cada minuto se é preciso salvar automaticamente.
+setInterval(() => {
+    if(datagen[currentDataGen].datagenChange) {
+        const path = require("path");
+
+        let targetpath = process.platform == "linux" || process.platform == "darwin" ? "/var/tmp/" : process.platform == "win32" ? String(process.env.temp) : false; //TODO: verificar windows!!!
+        if(targetpath != false) {
+            targetpath += "B_DataGen_AS/" + datagen[currentDataGen].ID + ".json";
+
+            if (!fs.existsSync(path.dirname(targetpath))) {
+                fs.mkdirSync(path.dirname(targetpath));
+                createExportModel(targetpath);
+            } else {
+                if (fs.existsSync(targetpath)) {
+                    fs.readFile(targetpath, (err, data) => {
+                        console.log(data.toString("utf8"));
+                    });
+                }
+                createExportModel(targetpath);
+            }
+            datagen[currentDataGen].datagenChange = false;
+        }
+    }
+},6000);
 
 function createImportModel (modelName, data) {
 
@@ -1263,7 +1324,6 @@ function exportResultsJSON(data){
         }
     });
 }
-
 
 function createModelFromDataSet(path){
 
@@ -1357,6 +1417,7 @@ function optionsPreview() {
     }
     $combox.val(selectColumnPreview);
 }
+
 let selectColumnPreview = "Dimension 1"; //Inicialize according the first columns's name.
 
 $('#comboBoxPreview').change(() => {
@@ -1502,7 +1563,6 @@ function preview(data2){
     */
 
 }
-
 
 function configureMenuOfGens(){
     let types = ["Sequence", "Random", "Function", "Accessory"];
