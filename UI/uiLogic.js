@@ -43,22 +43,25 @@ ipc.on('open-datagen', function(event, data, path){
 });
 
 ipc.on('undo-datagen', function(event, data, path){
-    let idChange = activeGenerator.ID;
-    datagen[currentDataGen].restore();
-    activeGenerator = datagen[currentDataGen].findGenByID(idChange);
-    showGenerators();
-    showModels();
-    propsConfigs(activeGenerator, activeGenerator.getRootGenerator().parent);
+    desrefazer("restore");
 });
 
 ipc.on('redo-datagen', function(event, data, path){
-    let idChange = activeGenerator.ID;
-    datagen[currentDataGen].forward();
-    activeGenerator = datagen[currentDataGen].findGenByID(idChange);
+    desrefazer("forward");
+});
+
+function desrefazer (act){
+    let idChange;
+    if(activeGenerator)
+        idChange = activeGenerator.ID;
+    datagen[currentDataGen][act]();
+    if(activeGenerator)
+        activeGenerator = datagen[currentDataGen].findGenByID(idChange);
     showGenerators();
     showModels();
-    propsConfigs(activeGenerator, activeGenerator.getRootGenerator().parent);
-});
+    if(activeGenerator)
+        propsConfigs(activeGenerator, activeGenerator.getRootGenerator().parent)
+}
 
 ipc.on('export-datagen', function(event, type){
     switch(type) {

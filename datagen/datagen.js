@@ -2267,8 +2267,8 @@ class SinusoidalSequence extends Sequence{
     }
 }
 
-//TODO: Precisa dessa variável? Se não, remover...
-var auxiliary = 0;
+// //TODO: Precisa dessa variável? Se não, remover...
+// var auxiliary = 0;
 class CustomSequence extends Sequence{
 
     constructor(begin, step, sent){
