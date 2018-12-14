@@ -2,8 +2,6 @@
 let randgen = require("randgen");
 let moment = require("moment");
 
-
-
 class Generator{
     constructor(name){
         this.name = name;
@@ -552,7 +550,6 @@ class RandomCauchyGenerator extends Generator{
         return newGen;
     }
 }
-
 
 class FixedTimeGenerator extends Generator{
     constructor(initTime, step, timeMask){
@@ -1387,7 +1384,6 @@ class RandomWeightedCategorical extends Generator {
     }
 }
 
-
 class CubicBezierGenerator extends Generator{
     constructor(x0, y0, x1, y1, x2, y2, x3, y3, proportional){
         super("CubicBezier Generator");
@@ -1548,7 +1544,6 @@ class GetExtraValue extends Generator{
         return newGen;
     }
 }
-
 
 class Function extends Generator{
 
@@ -2557,7 +2552,6 @@ class DataGen {
         }
     }
 
-
     generateSample(){
         let lb = this.n_lines;
         let sb = this.save_as;
@@ -2663,29 +2657,33 @@ class DataGen {
     }
 
     saveState() {
+
         if(this.memento.index !== this.memento.snapshot.length-1) {
             let remove = this.memento.snapshot.length - (this.memento.index + 1);
             this.memento.snapshot.splice(this.memento.index+1,remove);
         }
-        this.memento.index++;
+        if(this.memento.snapshot.length === 500) {
+            this.memento.snapshot.pop(0);
+        } else {
+            this.memento.index++;
+        }
         this.memento.snapshot.push(this.exportModel());
         console.log(this.memento,"State");
     }
+
     forward() {
         if(this.memento.index !== this.memento.snapshot.length-1) {
-            this.memento.index++;
-            this.importModel(this.memento.snapshot[this.memento.index], true);
+            this.importModel(this.memento.snapshot[++this.memento.index], true);
             console.log(this.memento,"Forward");
         }
     }
+
     restore() {
         if(this.memento.index !== 0) {
-            this.memento.index--;
-            this.importModel(this.memento.snapshot[this.memento.index], true);
+            this.importModel(this.memento.snapshot[--this.memento.index], true);
             console.log(this.memento,"Restore");
         }
     }
-
 
     exportDot(){
 
@@ -2773,7 +2771,6 @@ class DataGen {
         str += "}";
         return str;
     }
-
 
     findGenByID(ID){
         for(let i=0; i<this.columns.length; i++){

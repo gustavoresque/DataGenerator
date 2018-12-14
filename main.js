@@ -26,7 +26,8 @@ let visDimensionWindow;
 let file_path = undefined;
 
 let sockets = [];
-let isCPActive = false; //isChildProcessActive
+let isCPActive = false; //isChildProcessActive;
+let dtSaved = false; // Blocks de Application do quit. Set false only if the html load successfully!
 
 ipcMain.on("active-child-process", (event) => {
     isCPActive = true;
@@ -40,6 +41,12 @@ ipcMain.on("child-process-ended", (event) => {
 
 ipcMain.on("child-process-killed", (event) => {
     isCPActive = false;
+    app.quit();
+    event.returnValue = 1;
+})
+
+ipcMain.on("autosave-verified", (event) => {
+    dtSaved = true;
     app.quit();
     event.returnValue = 1;
 })
@@ -259,7 +266,7 @@ function createWindow () {
             {type: 'separator'},
             {role: 'close'},
             {type: 'separator'},
-            {label: 'Quit App', accelerator: 'Cmd+Q', click: () => {mainWindow.webContents.send('quit-child-process');app.quit();}}
+            {label: 'Quit App', accelerator: process.platform === "darwin" ? 'Cmd+Q' : '', click: () => {mainWindow.webContents.send('quit-child-process');app.quit();}}
         ]
     };
     const menuTemplateEdit = {
@@ -268,7 +275,7 @@ function createWindow () {
             {label: 'Undo', accelerator: process.platform === "darwin" ? 'Cmd+Z' : 'Ctrl+Z', click () {
                 mainWindow.webContents.send('undo-datagen');
             }},
-            {label: 'Redo', accelerator: process.platform === "darwin" ? 'Cmd+Y' : 'Ctrl+Y', click () {
+            {label: 'Redo', accelerator: process.platform === "darwin" ? 'Cmd+Shift+Z' : 'Ctrl+Shift+Z', click () {
                 mainWindow.webContents.send('redo-datagen');
             }}
         ]
@@ -361,18 +368,22 @@ function createWindow () {
             e.preventDefault();
             mainWindow.webContents.send('quit-child-process');
         }
+        if(!dtSaved) {
+            e.preventDefault();
+            mainWindow.webContents.send('verify-autosave');
+        }
     });
     // Emitted when the window is closed.
-  // mainWindow.on('closed', function () {
-  //
-  //   // Dereference the window object, usually you would store windows
-  //   // in an array if your app supports multi windows, this is the time
-  //   // when you should delete the corresponding element.
-  //
-  //     mainWindow = null;
-  //
-  //   // app.quit();
-  // });
+  mainWindow.on('closed', function () {
+
+    // Dereference the window object, usually you would store windows
+    // in an array if your app supports multi windows, this is the time
+    // when you should delete the corresponding element.
+
+      mainWindow = null;
+
+    // app.quit();
+  });
 
 }
 

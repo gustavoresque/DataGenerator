@@ -22,12 +22,55 @@ let pc;
 const {createServer,closeServer,changePort} = require('./WebService');
 let wsActive = false;
 let wsPort = 8000;
-let WSMA = {};//It stores the models that is avaliable to web server (Web Server Model Available). It receives the model id, the boolean and the currentDatagen. Model is the Key.
+let WSMA = {};//Note: It must be out of DataGen library! It stores the models that is avaliable to web server (Web Server Model Available). It receives the model id, the boolean and the currentDatagen. Model is the Key.
 
 const Json2csvParser = require('json2csv').Parser;
 
 ipc.on('call-datagen', function(event, data){
     // ipc.send('receive-datagen', activeGenerator.getGenParams());
+});
+
+ipc.on('verify-autosave', function(event, data, path) {
+
+    let targetPath = process.platform === "darwin" || process.platform === "linux" ? "/var/tmp/B_DataGen_AS/" : process.platform === "win32" ? String(process.env.temp+"B_DataGen_AS/") : false;
+
+    let saveModal = new tingle.modal({
+        footer: true,
+        onOpen: function() {
+            saveModal.setContent(`
+                <h1 style="margin-left: auto; margin-right: auto;">Are you Sure?<h1/>
+            `);
+
+            saveModal.addFooterBtn("Discart unsave changes", 'tingle-btn tingle-btn--danger', function() {
+                if(datagen.length === 0) {ipc.sendSync("autosave-verified"); saveModal.close();}
+                else if(datagen.length === 1) {
+                    let curTargetPath = `${targetPath}${datagen[0].ID}.json`;
+                    if(fs.existsSync(curTargetPath)) {fs.unlink(curTargetPath)}
+                    ipc.sendSync("autosave-verified");
+                    saveModal.close();
+                }
+                else {
+                    for (let dt in datagen) {
+                        let curTargetPath = `${targetPath}${datagen[dt].ID}.json`;
+                        if(fs.existsSync(curTargetPath)) {fs.unlink(curTargetPath)};
+                        if(Number(dt) === datagen.length-1) { ipc.sendSync("autosave-verified"); saveModal.close();}
+                    }
+                }
+
+            });
+        }
+    });
+
+    for (let dt in datagen) {
+        let curTargetPath = `${targetPath}${datagen[dt].ID}.json`;
+        if(fs.existsSync(curTargetPath)) {fs.unlink(curTargetPath)};
+        if(datagen[dt].datagenChange) {
+            saveModal.open(); //Open the modal!
+            break;
+        } else if(Number(dt) === datagen.length-1) {
+            ipc.sendSync("autosave-verified");
+        }
+    }
 });
 
 ipc.on('open-datagen', function(event, data, path){
@@ -60,33 +103,54 @@ ipc.on('redo-datagen', function(event, data, path){
     propsConfigs(activeGenerator, activeGenerator.getRootGenerator().parent);
 });
 
-ipc.on('export-datagen', function(event, type){
-    switch(type) {
-        case "save":
-            if(datagen[currentDataGen].filePath === undefined) {
-                dialog.showSaveDialog({title:"Save Model", filters:[{name: 'json', extensions: ['json']}]}, function(targetPath) {
+ipc.on('export-datagen', function(event, type, dtIndex){save(type,dtIndex);});
+
+function save(type,dtIndex) {
+    return new Promise((resolve,reject) => {
+        let index = dtIndex != undefined ? dtIndex : currentDataGen;
+        switch(type) {
+            case "save":
+                if(datagen[index].datagenChange) {
+                    if(datagen[index].filePath === undefined) {
+                        let saveScreen = new BrowserWindow({show: false, alwaysOnTop: true});
+                        dialog.showSaveDialog(saveScreen,{title:"Save Model", filters:[{name: 'json', extensions: ['json']}]}, function(targetPath) {
+                            if(targetPath){
+                                datagen[index].filePath = targetPath;
+                                if(confirm("Do you want to change the model name to '"+ require('path').basename(targetPath,'.json')+"'?")) datagen[index].name = require('path').basename(targetPath,'.json');
+                                createExportModel(targetPath,index).then(() => {
+                                    datagen[index].datagenChange = false;
+                                    // fs.unlink(); //TODO: Apagar arquivo de backup.
+                                    resolve();
+                                }).catch((e) => {
+                                    console.log(e);
+                                    reject();
+                                })
+                            } else {
+                                reject("Did not want to save :(");
+                            }
+                        });
+                    } else {
+                        createExportModel(datagen[index].filePath);
+                        resolve();
+                    }
+                }
+                break;
+            case "saveas":
+                let saveScreen = new BrowserWindow({show: false, alwaysOnTop: true});
+                dialog.showSaveDialog(saveScreen,{title:"Save Model As", filters:[{name: 'json', extensions: ['json']}]}, function(targetPath) {
                     if(targetPath){
-                        if(confirm("Do you want to change the model name to '"+ require('path').basename(targetPath,'.json')+"'?")) datagen[currentDataGen].name = require('path').basename(targetPath,'.json');
-                        datagen[currentDataGen].filePath = targetPath;
+                        if(datagen[index].filePath === undefined) {datagen[index].filePath = targetPath; datagen[index].name = require('path').basename(targetPath,'.json');}
                         createExportModel(targetPath);
-                        hasChanged(false);
+                        resolve();
+                    } else {
+                        reject();
                     }
                 });
-            } else {
-                createExportModel(datagen[currentDataGen].filePath);
-            }
-            break;
-        case "saveas":
-            dialog.showSaveDialog({title:"Save Model As", filters:[{name: 'json', extensions: ['json']}]}, function(targetPath) {
-                if(targetPath){
-                    if(datagen[currentDataGen].filePath === undefined) {datagen[currentDataGen].filePath = targetPath; datagen[currentDataGen].name = require('path').basename(targetPath,'.json');}
-                    createExportModel(targetPath);
-                }
-            });
-            //TODO: Perguntar se quer mudar para o modelo salvo.
-            break;
-    }
-});
+                //TODO: Perguntar se quer mudar para o modelo salvo.
+                break;
+        }
+    });
+}
 
 ipc.on('getDataModel', function(event, arg){
     // ipc.send('receive-datagen', activeGenerator.getGenParams());
@@ -685,13 +749,15 @@ function generateDatas(){
     try {
         modal.style.display = "block";
         let saveas = datagen[currentDataGen].save_as;
-            dialog.showSaveDialog(new BrowserWindow({
-                show: false,
-                alwaysOnTop: true
-            }),{
+
+        //Cancelar ao clicar fora
+        let saveScreen = new BrowserWindow({show: false, alwaysOnTop: true});
+        if(process.platform === "darwin") {saveScreen.show(); saveScreen.maximize(); saveScreen.focus();}
+        dialog.showSaveDialog(saveScreen,{
                 title: "Save Data",
                 filters: [{name: saveas, extensions: [saveas]}]
             }, function (targetPath) {
+                saveScreen.close();
                 modal.style.display = "none";
                 if (targetPath) {
                     //generateStream(targetPath);
@@ -861,7 +927,7 @@ ipc.on("quit-child-process", () => {
 });
 
 function killProcess() {
-    if(child) {
+    if(child.length !== 0) {
         const it = datagen[currentDataGen].configs.iterator;
         if(it.hasIt) {
             for(let i = 0; i < it.numberIt; i++) {
@@ -1006,12 +1072,11 @@ function hasChanged(type) { //permite o Auto Save.
 
     if(type) {
         datagen[currentDataGen].datagenChange = true;
-        $(".fa-circle").css("visibility","visible");
         datagen[currentDataGen].saveState();
     } else {
         datagen[currentDataGen].datagenChange = false;
-        $(".fa-circle").css("visibility","hidden");
     }
+    reloadModelsIcon();
 }
 
 /*Desenha na tela principal as colunas e seus respectivos geradores baseados nos dados armazendos no array datagen*/
@@ -1158,10 +1223,22 @@ function configGenProps(){
     propsConfigs(generator,coluna)
 }
 
-function reloadWSIcon () {
-    for(let item in WSMA) {
-        if(WSMA[item][0]) {
-            $(".fa-upload").eq(WSMA[item][1]).css("visibility","visible");
+function reloadModelsIcon () {
+    //WebService
+    $(".fa-upload").css("visibility","hidden");
+    if(Object.keys(WSMA).length !== 0) {
+        for(let item in WSMA) {
+            if(WSMA[item][0]) {
+                $(".fa-upload").eq(WSMA[item][1]).css("visibility","visible");
+            }
+        }
+    }
+
+    //Model Change Icon
+    $(".fa-circle").css("visibility","hidden");
+    for(let i in datagen) {
+        if(datagen[i].datagenChange) {
+            $(".fa-circle").eq(i).css("visibility","visible");
         }
     }
 }
@@ -1201,7 +1278,7 @@ function showModels(){
         modelButton.get(0).__node__ = datagen[i];
         $("#modelsPane").append(modelButton);
     }
-    reloadWSIcon();
+    reloadModelsIcon();
 }
 
 function createNewModel () {
@@ -1212,38 +1289,40 @@ function createNewModel () {
     showGenerators();
 }
 
-function createExportModel (path) {
-    fs.writeFile(path, datagen[currentDataGen].exportModel(), (err) => {
-        if (err) throw err;
-    });
-    showModels();
+function createExportModel (path,dtIndex) {
+    let index = dtIndex;
+    if(dtIndex === undefined) index = currentDataGen;
+    return new Promise((resolve,reject) => {
+        fs.writeFile(path, datagen[currentDataGen].exportModel(), (err) => {
+            if (err) {reject(); throw err;}
+            showModels();
+            resolve();
+        });
+    })
     // alert('Model Saved Successfully!'); //TODO: Trocar por icone verde.
 }
 
 //Verifica a cada minuto se é preciso salvar automaticamente.
-// setInterval(() => {
-//     if(datagen[currentDataGen].datagenChange) {
-//         const path = require("path");
-//
-//         let targetpath = process.platform == "linux" || process.platform == "darwin" ? "/var/tmp/" : process.platform == "win32" ? String(process.env.temp) : false; //TODO: verificar windows!!!
-//         if(targetpath != false) {
-//             targetpath += "B_DataGen_AS/" + datagen[currentDataGen].ID + ".json";
-//
-//             if (!fs.existsSync(path.dirname(targetpath))) {
-//                 fs.mkdirSync(path.dirname(targetpath));
-//                 createExportModel(targetpath);
-//             } else {
-//                 if (fs.existsSync(targetpath)) {
-//                     fs.readFile(targetpath, (err, data) => {
-//                         console.log(data.toString("utf8"));
-//                     });
-//                 }
-//                 createExportModel(targetpath);
-//             }
-//             datagen[currentDataGen].datagenChange = false;
-//         }
-//     }
-// },6000);
+
+setInterval(() => {
+
+    let targetpath = process.platform == "linux" || process.platform == "darwin" ? "/var/tmp/B_DataGen_AS/" : process.platform == "win32" ? String(process.env.temp+"B_DataGen_AS/") : false; //TODO: verificar windows!!!
+    if(targetpath != false) {
+        for(let dt of datagen) {
+            // if(dt.datagenChange && dt.filePath !== undefined) {
+            if(true) {
+                const path = require("path");
+                let p = targetpath + dt.ID + ".json";
+
+                if (!fs.existsSync(path.dirname(p)))
+                    fs.mkdirSync(path.dirname(p));
+                createExportModel(p);
+            }
+        }
+    }
+
+
+},6000);
 
 function createImportModel (modelName, data) {
 

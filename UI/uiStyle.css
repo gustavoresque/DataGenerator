@@ -195,7 +195,7 @@ select#selectGeneratorType:focus > option {
     width: 108px;
 }
 .fa-upload, .fa-circle {
-    visibility: hidden;
+    /*visibility: hidden;*/
     margin: 0 0 0 5px;
 }
 .fa-circle {
