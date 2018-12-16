@@ -285,28 +285,7 @@ function createWindow () {
         submenu: [
             {
                 label: "Sample",
-                submenu: [
-                    {
-                        label: 'Parallel Coordinates',
-                        click(){ funcOpenVisWindow('ParallelCoordinates'); }
-                    },
-                    {
-                        label: 'Bundled Parallel Coordinates',
-                        click(){ funcOpenVisWindow('ParallelBundling'); }
-                    },
-                    {
-                        label: 'Scatterplot Matrix',
-                        click(){ funcOpenVisWindow('ScatterplotMatrix'); }
-                    },
-                    {
-                        label: 'Beeswarm Plot',
-                        click(){ funcOpenVisWindow('BeeswarmPlot'); }
-                    },
-                    {
-                        label: 'Treemap',
-                        click(){ funcOpenVisWindow('Treemap'); }
-                    }
-                ]
+                click(){ funcOpenVisWindow(); }
             },
             {
                 label: "Dimension",
@@ -581,11 +560,11 @@ function initServerWebSocket() {
     ws.on('open', function () {
         sockets.push(ws);
         console.log("WebSocket Opened!");
-        ws.send('something');
+        mainWindow.webContents.send('update-sampledata');
     });
 
     ws.on('message', function (data) {
-        console.log(data);
+        console.log("WS Message: ", data);
     });
 
     ws.on('close', function(){
