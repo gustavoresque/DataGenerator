@@ -233,14 +233,10 @@ function createWindow () {
                         properties: ['openFile']
                     });
                     if(pathFile){
-                        fs.readFile(pathFile.toString(), 'utf8', (err, data) => {
-                            if (err) throw err;
+                        mainWindow.webContents.send('open-datagen', pathFile.toString());
+                        // let name = pathFile.toString().split('\\')[pathFile.toString().split('\\').length-1];
+                        // mainWindow.webContents.executeJavaScript("createImportModel('"+ name.split('.')[0] +"','"+ data +"');");
 
-                            console.log("foi aqui");
-                            mainWindow.webContents.send('open-datagen', data, pathFile.toString());
-                            // let name = pathFile.toString().split('\\')[pathFile.toString().split('\\').length-1];
-                            // mainWindow.webContents.executeJavaScript("createImportModel('"+ name.split('.')[0] +"','"+ data +"');");
-                        });
                     }
                     //mainWindow.webContents.executeJavaScript('createImportModel("'+ str +'");');
                 }},

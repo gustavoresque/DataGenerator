@@ -26,64 +26,112 @@ let WSMA = {};//Note: It must be out of DataGen library! It stores the models th
 
 const Json2csvParser = require('json2csv').Parser;
 
+const platformASpath = process.platform === "darwin" || process.platform === "linux" ? "/var/tmp/B_DataGen_AS/" : process.platform === "win32" ? String(process.env.temp+"/B_DataGen_AS/") : false;
+
 ipc.on('call-datagen', function(event, data){
     // ipc.send('receive-datagen', activeGenerator.getGenParams());
 });
 
-ipc.on('verify-autosave', function(event, data, path) {
+function alertModal(body,buttons, onOpen, onClose) { //Don't forget the '.open()' !!!!
+    //body : String. Receive html
+    //buttons: Array. receive a list of object. Each object represent a Button.
+    //button: Object. { name: String, color: String (default, danger, primary), float: String (left, right), func: Function }
 
-    let targetPath = process.platform === "darwin" || process.platform === "linux" ? "/var/tmp/B_DataGen_AS/" : process.platform === "win32" ? String(process.env.temp+"B_DataGen_AS/") : false;
-
-    let saveModal = new tingle.modal({
-        footer: true,
+    return new tingle.modal({
+        footer: Array(buttons).length !== 0 ? true : false,
         onOpen: function() {
-            saveModal.setContent(`
-                <h1 style="margin-left: auto; margin-right: auto;">Are you Sure?<h1/>
-            `);
+            this.setContent(String(body));
 
-            saveModal.addFooterBtn("Discart unsave changes", 'tingle-btn tingle-btn--danger', function() {
-                if(datagen.length === 0) {ipc.sendSync("autosave-verified"); saveModal.close();}
-                else if(datagen.length === 1) {
-                    let curTargetPath = `${targetPath}${datagen[0].ID}.json`;
-                    if(fs.existsSync(curTargetPath)) {fs.unlink(curTargetPath)}
-                    ipc.sendSync("autosave-verified");
-                    saveModal.close();
-                }
-                else {
-                    for (let dt in datagen) {
-                        let curTargetPath = `${targetPath}${datagen[dt].ID}.json`;
-                        if(fs.existsSync(curTargetPath)) {fs.unlink(curTargetPath)};
-                        if(Number(dt) === datagen.length-1) { ipc.sendSync("autosave-verified"); saveModal.close();}
-                    }
-                }
+            console.log(buttons);
 
-            });
+            if(Array(buttons).length !== 0) {
+                buttons.forEach(button => {
+                    console.log(button.func);
+                    this.addFooterBtn( button.name ? button.name : "", `tingle-btn tingle-btn--${button.color ? button.color : "default"} tingle-btn--${button.float ? button.float : "left"}`, button.func ? button.func : function () {return undefined;} )
+                });
+            }
+            if(onOpen) onOpen();
+        },
+        onClose: function () {
+            if(onClose) onClose();
         }
     });
+}
 
-    for (let dt in datagen) {
-        let curTargetPath = `${targetPath}${datagen[dt].ID}.json`;
-        if(fs.existsSync(curTargetPath)) {fs.unlink(curTargetPath)};
-        if(datagen[dt].datagenChange) {
-            saveModal.open(); //Open the modal!
-            break;
-        } else if(Number(dt) === datagen.length-1) {
-            ipc.sendSync("autosave-verified");
+ipc.on('verify-autosave', function(event, data, path) {
+
+    let saveModal = alertModal(`<h1 style="margin-left: auto; margin-right: auto;">Are you Sure?<h1/>`,[
+        {
+            name: "Save Later",
+            color: "primary",
+            float: "left",
+            func: function () {
+                //TODO: Falta Terminar!
+                ipc.sendSync("autosave-verified"); saveModal.close();
+            }
+        },
+        {
+            name: "Discard All Unsave Changes",
+            color: "danger",
+            float: "right",
+            func: function () {
+                    if(datagen.length === 0) {ipc.sendSync("autosave-verified"); saveModal.close();}
+                    else if(datagen.length === 1) {
+                        let curTargetPath = `${platformASpath}${datagen[0].ID}.json`;
+                        if(fs.existsSync(curTargetPath)) {fs.unlink(curTargetPath)}
+                        ipc.sendSync("autosave-verified");
+                        saveModal.close();
+                    }
+                    else {
+                        for (let dt in datagen) {
+                            let curTargetPath = `${platformASpath}${datagen[dt].ID}.json`;
+                            if(fs.existsSync(curTargetPath)) {fs.unlink(curTargetPath)};
+                            if(Number(dt) === datagen.length-1) { ipc.sendSync("autosave-verified"); saveModal.close(); }
+                        }
+                    }
+            }
+        }
+    ]);
+
+    if(platformASpath !== false) {
+        if (datagen.length === 0) ipc.sendSync("autosave-verified");
+        for (let dt in datagen) {
+            let curTargetPath = `${platformASpath}${datagen[dt].ID}.json`;
+            if(fs.existsSync(curTargetPath)) {fs.unlink(curTargetPath)};
+            if(datagen[dt].datagenChange) {
+                saveModal.open(); //Open the modal!
+                break;
+            } else if(Number(dt) === datagen.length-1) {
+                ipc.sendSync("autosave-verified");
+            }
         }
     }
 });
 
-ipc.on('open-datagen', function(event, data, path){
-    let dg = new DataGen();
-    dg.columns = [];
-    dg.importModel(data);
-    datagen.push(dg);
-    let pos = (datagen.length-1);
-    currentDataGen = pos;
-    datagen[currentDataGen].filePath = path;
-    showModels();
-    showGenerators();
-});
+ipc.on('open-datagen', function(event, path){openModel(path);});
+
+function openModel (path,backup) {
+    fs.readFile(path.toString(), 'utf8', (err, data) => {
+        if (err) throw err;
+        console.log("foi aqui");
+
+        let dg = new DataGen();
+        dg.columns = [];
+        dg.importModel(data);
+        datagen.push(dg);
+        currentDataGen = (datagen.length-1);
+
+        if(backup) {
+            datagen[currentDataGen].name = `${datagen[currentDataGen].name} [Backup]`;
+            datagen[currentDataGen].datagenChange = true;
+            fs.unlinkSync(path);
+        } else {
+            datagen[currentDataGen].filePath = path;
+        }
+        showModels();
+        showGenerators();
+    });
+}
 
 ipc.on('undo-datagen', function(event, data, path){
     desrefazer("restore");
@@ -122,7 +170,6 @@ function save(type,dtIndex) {
                                 if(confirm("Do you want to change the model name to '"+ require('path').basename(targetPath,'.json')+"'?")) datagen[index].name = require('path').basename(targetPath,'.json');
                                 createExportModel(targetPath,index).then(() => {
                                     datagen[index].datagenChange = false;
-                                    // fs.unlink(); //TODO: Apagar arquivo de backup.
                                     resolve();
                                 }).catch((e) => {
                                     console.log(e);
@@ -410,13 +457,21 @@ $("html").ready(function(){
                 case "Delete": {
                     let index = datagen.indexOf(this.get(0).__node__);
                     if (index > -1) {
+
+                        if(platformASpath !== false) {
+                            let inPath = platformASpath + datagen[index].ID + ".json";
+                            if(fs.existsSync(inPath)) {
+                                fs.unlink(inPath);
+                            }
+                        }
+
                         datagen.splice(index, 1);
                         if (index === currentDataGen)
                             currentDataGen = (index === 0) ? 0 : (index - 1);
                         else if (index < currentDataGen)
                             currentDataGen--;
                     }
-                    //TODO: verificar lógica para salvamento automático
+
                     showModels();
                     showGenerators();
                     break;
@@ -685,7 +740,6 @@ $("html").ready(function(){
         let col = $(this).parent().parent().get(0).__node__;
         let i = collumnsSelected.indexOf(col);
         if ($(this).is(':checked')){
-            //TODO: colocar o filtro em outro componente gráfico.
             col.display = true;
             if (i === -1){
                 collumnsSelected.push(col);
@@ -727,8 +781,24 @@ $("html").ready(function(){
     });
 
     dragAndDropGens();
+    verifyUnsaveModels();
 
 });
+
+function verifyUnsaveModels() {
+
+    if(fs.existsSync(platformASpath)) {
+        let files = fs.readdirSync(platformASpath);
+        console.log(files);
+        if(files.length !== 0) {
+            files.forEach(file => {
+                console.log(platformASpath+file);
+                openModel(platformASpath+file,true);
+            })
+            alertModal("You have unsave models! Please, check them and, if want, save, because we deleted the backup file.").open();
+        }
+    }
+}
 
 let modal = document.getElementById('myModal');
 let child = [];
@@ -1302,20 +1372,18 @@ function createExportModel (path,dtIndex) {
             resolve();
         });
     })
-    // alert('Model Saved Successfully!'); //TODO: Trocar por icone verde.
 }
 
 //Verifica a cada minuto se é preciso salvar automaticamente.
 
 setInterval(() => {
 
-    let targetpath = process.platform == "linux" || process.platform == "darwin" ? "/var/tmp/B_DataGen_AS/" : process.platform == "win32" ? String(process.env.temp+"B_DataGen_AS/") : false; //TODO: verificar windows!!!
-    if(targetpath != false) {
+    if(platformASpath != false) {
         for(let dt of datagen) {
             // if(dt.datagenChange && dt.filePath !== undefined) {
             if(true) {
                 const path = require("path");
-                let p = targetpath + dt.ID + ".json";
+                let p = platformASpath + dt.ID + ".json";
 
                 if (!fs.existsSync(path.dirname(p)))
                     fs.mkdirSync(path.dirname(p));
