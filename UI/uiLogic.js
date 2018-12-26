@@ -56,71 +56,59 @@ function boxModal(body,buttons, onOpen, onClose) { //Don't forget the '.open()' 
     });
 }
 
-function alertModal(message,buttons) {const modal = boxModal(`<p style="text-align: center; font-size: large; font-family: 'Adobe Garamond Pro'">${message}</p>`); modal.open(); const interval = setInterval(() => {modal.close(); clearInterval(interval);}, 5000)}
+function alertModal(message,time) {if(time === undefined) {time = 5000} const modal = boxModal(`<p style="text-align: center; font-size: large; font-family: 'Adobe Garamond Pro'">${message}</p>`); modal.open(); if(time > 0) {const interval = setInterval(() => {modal.close(); clearInterval(interval);},time)}}
 
 function confirmModal(message,buttons) {const modal = boxModal(`<p style="text-align: center; font-size: large; font-family: 'Adobe Garamond Pro'">${message}</p>`,buttons); modal.open(); return modal;}
 
-ipc.on('verify-autosave', function(event, data, path) {
-    //TODO: Refatorar. Criar apenas um array com booleanos no main.JS
+ipc.on('verify-autosave', function(event, saved, unsaved) {
+    console.log(saved,unsaved);
 
-    let saveModal = boxModal(`<h1 style="text-align: center;">Are you Sure?<h1/>`,[
-        {
-            name: "Save Later",
-            color: "primary",
-            float: "left",
-            func: function () {
-                if (!fs.existsSync(platformASpath))
-                    fs.mkdirSync(platformASpath);
-                let i=0;
-                datagen.forEach(dt => {
-                    if(dt.datagenChange) {
-                        try {
-                            createExportModel(platformASpath + dt.ID + ".json",i);
-                        } catch(e) {
-                            alertModal("The process failed!"); saveModal.close(); ipc.sendSync("autosave-verified");
-                        }
-                    }
-                    i++;
-                });
-                 saveModal.close(); ipc.sendSync("autosave-verified");
-            }
-        },
-        {
-            name: "Discard All Unsave Changes",
-            color: "danger",
-            float: "right",
-            func: function () {
-                    if(datagen.length === 0) {ipc.sendSync("autosave-verified"); saveModal.close();}
-                    else if(datagen.length === 1) {
-                        let curTargetPath = `${platformASpath}${datagen[0].ID}.json`;
-                        if(fs.existsSync(curTargetPath)) {fs.unlink(curTargetPath)}
-                        ipc.sendSync("autosave-verified");
-                        saveModal.close();
-                    }
-                    else {
-                        for (let dt in datagen) {
-                            let curTargetPath = `${platformASpath}${datagen[dt].ID}.json`;
-                            if(fs.existsSync(curTargetPath)) {fs.unlink(curTargetPath)};
-                            if(Number(dt) === datagen.length-1) { ipc.sendSync("autosave-verified"); saveModal.close(); }
-                        }
-                    }
-            }
-        }
-    ]);
+   let buttons = [];
 
-    if(platformASpath !== false) {
-        if (datagen.length === 0) ipc.sendSync("autosave-verified");
-        for (let dt in datagen) {
-            let curTargetPath = `${platformASpath}${datagen[dt].ID}.json`;
+   if(platformASpath !== false) {
+       buttons.push({
+           name: "Save Later",
+           color: "primary",
+           float: "left",
+           func: function () {
+               if (!fs.existsSync(platformASpath))
+                   fs.mkdirSync(platformASpath);
+               unsaved.forEach(i => {
+                   try {
+                       createExportModel(platformASpath + datagen[i].ID + ".json",i);
+                   } catch(e) {
+                       alertModal("The process failed!"); saveModal.close(); ipc.sendSync("autosave-verified");
+                   }
+               });
+               saveModal.close(); ipc.sendSync("autosave-verified");
+           }
+       });
+   }
+   buttons.push({
+       name: "Discard All Unsave Changes",
+       color: "danger",
+       float: "right",
+       func: function () {
+           for (let i in unsaved) {
+               let curTargetPath = `${platformASpath}${datagen[unsaved[i]].ID}.json`;
+               if(fs.existsSync(curTargetPath)) {fs.unlinkSync(curTargetPath)};
+           }
+           ipc.sendSync("autosave-verified"); saveModal.close();
+       }
+   });
+
+    let saveModal = boxModal(`<h1 style="text-align: center;">Are you Sure?<h1/>`,buttons);
+
+    if(platformASpath !== false && saved.length !== 0) {
+        for (let i in saved) {
+            let curTargetPath = `${platformASpath}${datagen[saved[i]].ID}.json`;
             if(fs.existsSync(curTargetPath)) {fs.unlink(curTargetPath)};
-            if(datagen[dt].datagenChange) {
-                saveModal.open(); //Open the modal!
-                break;
-            } else if(Number(dt) === datagen.length-1) {
+            if(Number(i) === datagen.length-1) {
                 ipc.sendSync("autosave-verified");
             }
         }
     }
+    if(unsaved.length !== 0) {saveModal.open();} else {ipc.sendSync("autosave-verified");}
 });
 
 ipc.on('open-datagen', function(event, path){openModel(path);});
@@ -474,7 +462,7 @@ $("html").ready(function(){
                 case "Delete": {
                     let index = datagen.indexOf(this.get(0).__node__);
                     if (index > -1) {
-
+                        ipc.send("dtChanges-del",index);
                         if(platformASpath !== false) {
                             let inPath = platformASpath + datagen[index].ID + ".json";
                             if(fs.existsSync(inPath)) {
@@ -580,7 +568,7 @@ $("html").ready(function(){
                 if (cor === datagen[currentDataGen].columns[i].name){
                     $(this).parent().parent().get(0).__node__.name = title;
                     $(this).parent().text(title);
-                    alert("Dimension name already exists");
+                    alertModal("Dimension name already exists");
                     return;
                 }
             }
@@ -810,6 +798,7 @@ function verifyUnsaveModels() {
             try {
                 files.forEach(file => {
                     openModel(platformASpath+file,true);
+                    ipc.sendSync("dtChanges-add", true);
                 });
                 alertModal("You have unsave models! Please, check them.");
             } catch (e) {
@@ -827,163 +816,157 @@ function generateDatas(){
         modal.style.display = "block";
         let saveas = datagen[currentDataGen].save_as;
 
-        //TODO: Abrir dentro do boxModal
         let saveScreen = new BrowserWindow({show: false, alwaysOnTop: true});
         if(process.platform === "darwin") {saveScreen.show(); saveScreen.maximize(); saveScreen.focus();}
         dialog.showSaveDialog(saveScreen,{
-                title: "Save Data",
-                filters: [{name: saveas, extensions: [saveas]}]
-            }, function (targetPath) {
-                saveScreen.close();
-                modal.style.display = "none";
-                if (targetPath) {
-                    //generateStream(targetPath);
-                    const path = require("path");
-                    if(path.dirname(targetPath) == "/") {
-                        alert("Invalid Directory!");
-                        $("#percentageGD").text("Aborted!");
-                        return ;
-                    }
-                    function promiseRecursiveGS(i,prevValue) {
-                        return new Promise( (resolve,reject) => {
-                            generateStream(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
-                                return p1 + "[" + i + "]" + p2;
-                            }), resolve, reject);
-                        }).then( () => {
-                            if(datagen[currentDataGen].configs.iterator.numberIt == i+1) {
+            title: "Save Data",
+            filters: [{name: saveas, extensions: [saveas]}]
+        }, function (targetPath) {
+            modal.style.display = "none";
+            if (targetPath) {
+                //generateStream(targetPath);
+                const path = require("path");
+                if(path.dirname(targetPath) == "/") {
+                    alertModal("Invalid Directory!");
+                    $("#percentageGD").text("Aborted!");
+                    return ;
+                }
+                function promiseRecursiveGS(i,prevValue) {
+                    return new Promise( (resolve,reject) => {
+                        generateStream(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
+                            return p1 + "[" + i + "]" + p2;
+                        }), resolve, reject);
+                    }).then( () => {
+                        if(datagen[currentDataGen].configs.iterator.numberIt == i+1) {
+                            $("#percentageGD").text("Finished!");
+                            $("#percentageCancelIcon").css("display","none");
+                            alertModal('All Files Saved!');
+                            datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] = prevValue;
+                            child = [];
+                        } else {
+                            datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] += datagen[currentDataGen].configs.iterator.stepIt;
+                            promiseRecursiveGS((i+1),prevValue)
+                        }
+
+                    }).catch((err) => {
+                        switch (err) {
+                            case 'abort':
+                                $("#percentageCancelIcon").css("display","none");
+                                $("#percentageGD").text("Aborted!");
+                                child = [];
+                                break;
+                            case 'error':
                                 $("#percentageGD").text("Finished!");
                                 $("#percentageCancelIcon").css("display","none");
-                                alert('All Files Saved!');
-                                datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] = prevValue;
+                                alertModal("Something bad happened!");
                                 child = [];
-                            } else {
-                                datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] += datagen[currentDataGen].configs.iterator.stepIt;
-                                promiseRecursiveGS((i+1),prevValue)
-                            }
+                                break;
+                            // case 'size':
+                            //     $("#percentageGD").text("Failed!");
+                            //     $("#percentageCancelIcon").css("display","none");
+                            //     alertModal("No free space available!\nFree space: "+sizeFormatter(freeSpace)+"\nNeeded space: "+sizeFormatter(neededSpace))
+                            //     break;
+                        }
+                    })
+                }
 
+                function promiseRecursiveGWS(i,prevValue) {
+                    return new Promise( (resolve,reject) => {
+                        generateWritingSimple(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
+                            return p1 + "[" + i + "]" + p2;
+                        }), resolve, reject);
+                    }).then( () => {
+                        console.log(datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt])
+                        if(datagen[currentDataGen].configs.iterator.numberIt == i+1) {
+                            $("#percentageCancelIcon").css("display","none");
+                            $("#percentageGD").text("Finished!");
+                            datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] = prevValue;
+                            child = [];
+                            alertModal('All Files Saved!');
+                        } else {
+                            datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] += datagen[currentDataGen].configs.iterator.stepIt;
+                            promiseRecursiveGWS((i+1),prevValue)
+                        }
+
+                    }).catch( (err) => {
+                        switch (err) {
+                            case 'abort':
+                                $("#percentageGD").text("Aborted!");
+                                child = [];
+                                break;
+                            case 'error':
+                                alertModal("Something bad happened!")
+                                $("#percentageGD").text("Finished!");
+                                child = [];
+                                break;
+                        }
+                    });
+                }
+
+                $("#percentageGD").text("Starting...");
+                if (datagen[currentDataGen].configs.iterator.hasIt) {
+                    let it = datagen[currentDataGen].configs.iterator;
+                    let prevValue = it.generator[it.parameterIt];
+                    it.generator[it.parameterIt] = it.beginIt;
+
+                    if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
+                        $("#percentageCancelIcon").css("display","block");
+                        promiseRecursiveGS(0,prevValue)
+                    } else {
+                        promiseRecursiveGWS(0,prevValue)
+                    }
+
+                } else {
+                    if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
+                        $("#percentageCancelIcon").css("display","block");
+                        new Promise( (resolve,reject) => {
+                            generateStream(targetPath,resolve,reject);
+                        }).then( () => {
+                            $("#percentageGD").text("Finished!");
+                            $("#percentageCancelIcon").css("display","none");
+                            alertModal('Data Saved!');
                         }).catch((err) => {
                             switch (err) {
                                 case 'abort':
-                                    $("#percentageCancelIcon").css("display","none");
                                     $("#percentageGD").text("Aborted!");
-                                    alert("The writing was aborted!")
-                                    child = [];
+                                    $("#percentageCancelIcon").css("display","none");
                                     break;
                                 case 'error':
-                                    $("#percentageGD").text("Finished!");
+                                    $("#percentageGD").text("Failed!");
                                     $("#percentageCancelIcon").css("display","none");
-                                    alert("Something bad happened!")
-                                    child = [];
+                                    alertModal("Something bad happened!")
                                     break;
-                                // case 'size':
-                                //     $("#percentageGD").text("Failed!");
-                                //     $("#percentageCancelIcon").css("display","none");
-                                //     alert("No free space available!\nFree space: "+sizeFormatter(freeSpace)+"\nNeeded space: "+sizeFormatter(neededSpace))
-                                //     break;
                             }
                         })
-                    }
-
-                    function promiseRecursiveGWS(i,prevValue) {
-                        return new Promise( (resolve,reject) => {
-                            generateWritingSimple(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
-                                return p1 + "[" + i + "]" + p2;
-                            }), resolve, reject);
-                        }).then( () => {
-                            console.log(datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt])
-                            if(datagen[currentDataGen].configs.iterator.numberIt == i+1) {
-                                $("#percentageCancelIcon").css("display","none");
-                                $("#percentageGD").text("Finished!");
-                                datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] = prevValue;
-                                child = [];
-                                alert('All Files Saved!');
-                            } else {
-                                datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] += datagen[currentDataGen].configs.iterator.stepIt;
-                                promiseRecursiveGWS((i+1),prevValue)
-                            }
-
-                        }).catch( (err) => {
-                            switch (err) {
-                                case 'abort':
-                                    alert("The writing was aborted!")
-                                    $("#percentageGD").text("Aborted!");
-                                    child = [];
-                                    break;
-                                case 'error':
-                                    alert("Something bad happened!")
-                                    $("#percentageGD").text("Finished!");
-                                    child = [];
-                                    break;
-                            }
-                        });
-                    }
-
-                    $("#percentageGD").text("Starting...");
-                    if (datagen[currentDataGen].configs.iterator.hasIt) {
-                        let it = datagen[currentDataGen].configs.iterator;
-                        let prevValue = it.generator[it.parameterIt];
-                        it.generator[it.parameterIt] = it.beginIt;
-
-                        if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
-                            $("#percentageCancelIcon").css("display","block");
-                            promiseRecursiveGS(0,prevValue)
-                        } else {
-                            promiseRecursiveGWS(0,prevValue)
-                        }
 
                     } else {
-                        if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
-                            $("#percentageCancelIcon").css("display","block");
-                            new Promise( (resolve,reject) => {
-                                generateStream(targetPath,resolve,reject);
-                            }).then( () => {
-                                $("#percentageGD").text("Finished!");
-                                $("#percentageCancelIcon").css("display","none");
-                                alert('Data Saved!');
-                            }).catch((err) => {
-                                switch (err) {
-                                    case 'abort':
-                                        //TODO: Perguntar ao usuário se tem certeza e se quer manter o arquivo ou excluir.
-                                        $("#percentageGD").text("Aborted!");
-                                        $("#percentageCancelIcon").css("display","none");
-                                        alert("The writing was aborted!")
-                                        break;
-                                    case 'error':
-                                        $("#percentageGD").text("Failed!");
-                                        $("#percentageCancelIcon").css("display","none");
-                                        alert("Something bad happened!")
-                                        break;
-                                }
-                            })
+                        new Promise( (resolve,reject) => {
+                            generateWritingSimple(targetPath,resolve,reject);
+                        }).then( () => {
+                            $("#percentageGD").text("Finished!");
+                            alertModal('Data Saved!');
+                        }).catch((err) => {
 
-                        } else {
-                            new Promise( (resolve,reject) => {
-                                generateWritingSimple(targetPath,resolve,reject);
-                            }).then( () => {
-                                $("#percentageGD").text("Finished!");
-                                alert('Data Saved!');
-                            }).catch((err) => {
+                            switch (err) {
+                                case 'abort':
+                                    $("#percentageGD").text("Aborted!");
+                                    break;
+                                case 'error':
+                                    alertModal("Something bad happened!")
+                                    $("#percentageGD").text("Failed!");
+                                    break;
+                            }
+                        })
 
-                                switch (err) {
-                                    case 'abort':
-                                        alert("The writing was aborted!")
-                                        $("#percentageGD").text("Aborted!");
-                                        break;
-                                    case 'error':
-                                        alert("Something bad happened!")
-                                        $("#percentageGD").text("Failed!");
-                                        break;
-                                }
-                            })
-
-                        }
                     }
                 }
-            });
+            }
+        })
+
 
     }catch (e) {
         console.log(e);
-        alert('Some problem happened!!! Verify generators properties.\n' +
+        alertModal('Some problem happened!!! Verify generators properties.\n' +
             'Tips:\n' +
             '     * Be sure that Input Property of Function Generators isn\'t null ');
 
@@ -1176,6 +1159,7 @@ function dragAndDropGens(){
 
 function hasChanged(type) { //permite o Auto Save.
 
+    type = Boolean(type);
     if(type) {
         datagen[currentDataGen].datagenChange = true;
         datagen[currentDataGen].saveState();
@@ -1183,6 +1167,7 @@ function hasChanged(type) { //permite o Auto Save.
         datagen[currentDataGen].datagenChange = false;
     }
     reloadModelsIcon();
+    ipc.send("dtChanges-alter",currentDataGen,type);
 }
 
 /*Desenha na tela principal as colunas e seus respectivos geradores baseados nos dados armazendos no array datagen*/
@@ -1293,7 +1278,7 @@ function redrawPreview(){
 
         switch (e) {
             case 'Please, insert a sentence.':
-                alert(e);
+                alertModal(e);
         }
         console.log(e);
 
@@ -1393,6 +1378,7 @@ function createNewModel () {
     currentDataGen = datagen.length-1;
     showModels();
     showGenerators();
+    ipc.send("dtChanges-add",false);
 }
 
 function createExportModel (path,dtIndex) {
@@ -1514,8 +1500,8 @@ function createModelFromDataSet(path){
 
     fs.readFile(path, "utf-8", (err, strdata) => {
         if(err){
-            alert("Failed to load the dataSet. Verify if it is UTF-8 encoded.");
-            alert(err);
+            alertModal("Failed to load the dataSet. Verify if it is UTF-8 encoded.");
+            alertModal(err);
             // data
         }else{
             let data = [];

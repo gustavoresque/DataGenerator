@@ -51,6 +51,24 @@ ipcMain.on("autosave-verified", (event) => {
     event.returnValue = 1;
 })
 
+let dtChanges = [false];
+
+ipcMain.on("dtChanges-add", (event,value) => {
+    dtChanges.push(value);
+    console.log("added");
+    event.returnValue = 1;
+})
+ipcMain.on("dtChanges-del", (event,index) => {
+    dtChanges.pop(index);
+    console.log("deled");
+    event.returnValue = 1;
+})
+ipcMain.on("dtChanges-alter", (event,index,value) => {
+    dtChanges[index] = value;
+    console.log("altered",dtChanges[index]);
+    event.returnValue = 1;
+})
+
 function saveExport(targetPath) {
 
     let partsOfStr = targetPath.split('\\');
@@ -348,7 +366,19 @@ function createWindow () {
         }
         if(!dtSaved) {
             e.preventDefault();
-            mainWindow.webContents.send('verify-autosave');
+            if(dtChanges.length !== 0) {
+                console.log(2222222);
+                console.log(dtChanges);
+                let saved = [], unsaved = [];
+                for(let i in dtChanges) {if(dtChanges[i]) {unsaved.push(Number(i));} else {saved.push(Number(i));}}
+                console.log(saved,unsaved);
+                mainWindow.webContents.send('verify-autosave',saved,unsaved);
+            } else {
+                console.log(11111)
+                dtSaved = true;
+                app.quit();
+            }
+
         }
     });
     // Emitted when the window is closed.
