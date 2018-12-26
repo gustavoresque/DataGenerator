@@ -10,7 +10,7 @@ let datagen = [new DataGen()];
 
 let currentDataGen = 0;
 let current_sample;
-let activeGenerator;
+let activeGenerator = [];
 let collumnsSelected = [];
 let collumnsCopied = [];
 let ipc = require('electron').ipcRenderer;
@@ -28,7 +28,7 @@ const Json2csvParser = require('json2csv').Parser;
 
 const platformASpath = process.platform === "darwin" || process.platform === "linux" ? "/var/tmp/B_DataGen_AS/" : process.platform === "win32" ? String(process.env.temp+"/B_DataGen_AS/") : false;
 
-ipc.on('call-datagen', function(event, data){// ipc.send('receive-datagen', activeGenerator.getGenParams());
+ipc.on('call-datagen', function(event, data){// ipc.send('receive-datagen', activeGenerator[currentDataGen].getGenParams());
 });
 
 function boxModal(body,buttons, onOpen, onClose) { //Don't forget the '.open()' !!!!
@@ -61,8 +61,6 @@ function alertModal(message,time) {if(time === undefined) {time = 5000} const mo
 function confirmModal(message,buttons) {const modal = boxModal(`<p style="text-align: center; font-size: large; font-family: 'Adobe Garamond Pro'">${message}</p>`,buttons); modal.open(); return modal;}
 
 ipc.on('verify-autosave', function(event, saved, unsaved) {
-    console.log(saved,unsaved);
-
    let buttons = [];
 
    if(platformASpath !== false) {
@@ -115,8 +113,6 @@ ipc.on('open-datagen', function(event, path){openModel(path);});
 
 function openModel (path,backup) {
     let data = fs.readFileSync(path.toString(), 'utf8');
-    console.log("foi aqui");
-
     try {
         let dg = new DataGen();
         dg.columns = [];
@@ -144,15 +140,15 @@ ipc.on('redo-datagen', function(event, data, path){desrefazer("forward");});
 
 function desrefazer (act){
     let idChange;
-    if(activeGenerator)
-        idChange = activeGenerator.ID;
+    if(activeGenerator[currentDataGen])
+        idChange = activeGenerator[currentDataGen].ID;
     datagen[currentDataGen][act]();
-    if(activeGenerator)
-        activeGenerator = datagen[currentDataGen].findGenByID(idChange);
+    if(activeGenerator[currentDataGen])
+        activeGenerator[currentDataGen] = datagen[currentDataGen].findGenByID(idChange);
     showGenerators();
     showModels();
-    if(activeGenerator)
-        propsConfigs(activeGenerator, activeGenerator.getRootGenerator().parent)
+    if(activeGenerator[currentDataGen])
+        propsConfigs(activeGenerator[currentDataGen], activeGenerator[currentDataGen].getRootGenerator().parent)
 }
 
 ipc.on('export-datagen', function(event, type, dtIndex){save(type,dtIndex);});
@@ -205,7 +201,7 @@ function save(type,dtIndex) {
 }
 
 ipc.on('getDataModel', function(event, arg){
-    // ipc.send('receive-datagen', activeGenerator.getGenParams());
+    // ipc.send('receive-datagen', activeGenerator[currentDataGen].getGenParams());
     ipc.send('receive-dimension-generator', datagen[currentDataGen].exportModel());
 
 });
@@ -218,7 +214,6 @@ ipc.on('change-datagen', function(event, arg){
         }
     }
     hasChanged(true);
-    //console.log(datagen[currentDataGen].configs);
 });
 
 ipc.on('change-WebService', function(event, arg){
@@ -400,7 +395,6 @@ function propsConfigs(generator,coluna){
             }
 
             $tr.append($("<td/>").append($select));
-            console.log(datagen[currentDataGen].columns);
         }
     }
     tippy('.tooltip-label');
@@ -498,7 +492,6 @@ $("html").ready(function(){
                     let i = datagen.indexOf(this.get(0).__node__);
                     let varModelID = datagen[i].ID;
                     if(process.platform === 'darwin') {
-                        console.log(varModelID);
                         clipboard.writeText(varModelID,'selection');
                     }else {
                         clipboard.writeText(varModelID);
@@ -518,7 +511,6 @@ $("html").ready(function(){
                        htmlItem.css("visibility","hidden");
                     } else {
                         WSMA[varModelID] = [true,i];
-                        console.log( WSMA[varModelID][1]);
                         htmlItem.css("visibility","visible");
                     }
                     if(!wsActive) {
@@ -639,11 +631,11 @@ $("html").ready(function(){
             let newGen = new (DataGen.listOfGens[nameNewGenerator])();
             //substitui o gerador na estrutura.
             this[0].__node__.changeGenerator(newGen);
-            activeGenerator = newGen;
 
-            console.log(activeGenerator);
+            activeGenerator[currentDataGen] = newGen;
+
             let $active_chip = showGenerators();
-            configGenProps.apply($active_chip.get(0));
+            configGenProps.apply($active_chip.get(0),[true]);
             datagen[currentDataGen].resetAll();
             hasChanged(true);
         },
@@ -680,9 +672,9 @@ $("html").ready(function(){
         if ($(this).parent().find("div.md-chip").length > 1){
 
             let generators = [];
-            if(generators.includes(activeGenerator)){
-                activeGenerator.unlink()
-                activeGenerator = undefined;
+            if(generators.includes(activeGenerator[currentDataGen])){
+                activeGenerator[currentDataGen].unlink()
+                activeGenerator[currentDataGen] = undefined;
             } else {
                 let l = $(this).parent().find("div.md-chip").length-2;
                 $(this).parent().find("div.md-chip").get(l).__node__.removeLastGenerator();
@@ -696,7 +688,7 @@ $("html").ready(function(){
 
         let generators = [];
         datagen[currentDataGen].columns[$(this).parent().parent().index()].generator.getFullGenerator(generators);
-        activeGenerator = generators[generators.length-1];
+        activeGenerator[currentDataGen] = generators[generators.length-1];
         showGenerators();
 
         let coluna = $(this).closest(".columnTr").get(0).__node__;
@@ -876,7 +868,6 @@ function generateDatas(){
                             return p1 + "[" + i + "]" + p2;
                         }), resolve, reject);
                     }).then( () => {
-                        console.log(datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt])
                         if(datagen[currentDataGen].configs.iterator.numberIt == i+1) {
                             $("#percentageCancelIcon").css("display","none");
                             $("#percentageGD").text("Finished!");
@@ -1172,7 +1163,8 @@ function hasChanged(type) { //permite o Auto Save.
 
 /*Desenha na tela principal as colunas e seus respectivos geradores baseados nos dados armazendos no array datagen*/
 function showGenerators(){
-    function displayGens($tdGen, generator, active_gen_chip){
+    let active_gen_chip = {};
+    function displayGens($tdGen, generator){
         let generators = [];
         generator.getFullGenerator(generators);
 
@@ -1184,8 +1176,9 @@ function showGenerators(){
                     .attr("draggable","true");
 
                 $chip.get(0).ondragstart = dragGenerator;
-                if(gen === activeGenerator)
+                if(gen === activeGenerator[currentDataGen])
                     active_gen_chip.obj = $chip.addClass("active-md-chip");
+
                 $chip.get(0).__node__ = gen;
                 $tdGen.append($chip);
 
@@ -1212,7 +1205,7 @@ function showGenerators(){
             }else{
                 let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name).attr("draggable","true");
                 $chip.get(0).ondragstart = dragGenerator;
-                if(gen === activeGenerator)
+                if(gen === activeGenerator[currentDataGen])
                     active_gen_chip.obj = $chip.addClass("active-md-chip");
                 $chip.get(0).__node__ = gen;
                 $tdGen.append($chip);
@@ -1226,7 +1219,7 @@ function showGenerators(){
         );
     }
 
-    let active_gen_chip = {};
+
     let $tbody = $("#tbody").empty();
     if (datagen.length > 0){
         for(let i = 0; i < datagen[currentDataGen].columns.length; i++){
@@ -1249,7 +1242,7 @@ function showGenerators(){
             let $tdGen = $("<td/>").addClass("columnGen");
 
             //chama a função recursiva de desenho.
-            displayGens($tdGen, datagen[currentDataGen].columns[i].generator, active_gen_chip);
+            displayGens($tdGen, datagen[currentDataGen].columns[i].generator);
 
             $tr.append($tdGen);
 
@@ -1309,10 +1302,23 @@ function configGenProps(){
     $(this).addClass("active-md-chip");
 
     let generator = this.__node__;
-    activeGenerator = generator;
-    let coluna = $(this).closest(".columnTr").get(0).__node__;
-    propsConfigs(generator,coluna)
+
+    if(activeGenerator[currentDataGen] == generator && arguments[0] !== true) {
+        $('#selectGeneratorType').empty().attr("disabled", true);
+        $('#generatorPropertiesForm').empty();
+        activeGenerator[currentDataGen] = undefined;
+        $(this).removeClass("active-md-chip");
+        showModels();
+        showGenerators();
+    } else {
+        activeGenerator[currentDataGen] = generator;
+        let coluna = $(this).closest(".columnTr").get(0).__node__;
+        propsConfigs(generator,coluna)
+    }
+
 }
+
+$(window).bind('beforeunload',function(){ipc.send("dtChanges-reload");});
 
 function reloadModelsIcon () {
     //WebService
@@ -1353,6 +1359,8 @@ function showModels(){
                         $(this).addClass("active");
                         $('#selectGeneratorType').empty().attr("disabled", true);
                         $('#generatorPropertiesForm').empty();
+
+                        if(activeGenerator[currentDataGen]) propsConfigs(activeGenerator[currentDataGen],activeGenerator[currentDataGen].getRootGenerator().parent);
                         showGenerators();
                     }
                     break;
@@ -1376,6 +1384,8 @@ function createNewModel () {
     datagen.push(new DataGen());
     datagen[datagen.length-1].name += " " + datagen.length;
     currentDataGen = datagen.length-1;
+    $('#selectGeneratorType').empty().attr("disabled", true);
+    $('#generatorPropertiesForm').empty();
     showModels();
     showGenerators();
     ipc.send("dtChanges-add",false);
