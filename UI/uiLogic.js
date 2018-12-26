@@ -56,9 +56,12 @@ function boxModal(body,buttons, onOpen, onClose) { //Don't forget the '.open()' 
     });
 }
 
-function alertModal(message) {boxModal(`<p style="text-align: center; font-size: large; font-family: 'Adobe Garamond Pro'">${message}</p>`).open();}
+function alertModal(message,buttons) {const modal = boxModal(`<p style="text-align: center; font-size: large; font-family: 'Adobe Garamond Pro'">${message}</p>`); modal.open(); const interval = setInterval(() => {modal.close(); clearInterval(interval);}, 5000)}
+
+function confirmModal(message,buttons) {const modal = boxModal(`<p style="text-align: center; font-size: large; font-family: 'Adobe Garamond Pro'">${message}</p>`,buttons); modal.open(); return modal;}
 
 ipc.on('verify-autosave', function(event, data, path) {
+    //TODO: Refatorar. Criar apenas um array com booleanos no main.JS
 
     let saveModal = boxModal(`<h1 style="text-align: center;">Are you Sure?<h1/>`,[
         {
@@ -70,20 +73,16 @@ ipc.on('verify-autosave', function(event, data, path) {
                     fs.mkdirSync(platformASpath);
                 let i=0;
                 datagen.forEach(dt => {
-                    console.log(i);
-                    console.log(datagen.length);
-                    console.log(i == datagen.length-1);
                     if(dt.datagenChange) {
                         try {
                             createExportModel(platformASpath + dt.ID + ".json",i);
-                            console.log(123123123);
                         } catch(e) {
                             alertModal("The process failed!"); saveModal.close(); ipc.sendSync("autosave-verified");
                         }
                     }
                     i++;
                 });
-                console.log("Foi, porra!"); saveModal.close(); ipc.sendSync("autosave-verified");
+                 saveModal.close(); ipc.sendSync("autosave-verified");
             }
         },
         {
@@ -402,22 +401,25 @@ function propsConfigs(generator,coluna){
                     if(generator[p.variableName] === datagen[currentDataGen].columns[i].generator){
                         $option.attr("selected", "selected");
                     }
+
                     $select.append($option);
                 }else{
                     break;
                 }
             }
             if (!generator[p.variableName]){
-                $select.prepend($("<option/>").attr("selected", "selected").text("null"));
+                $select.prepend($("<option/>").attr("selected", "selected").attr("value","null").text("Null"));
             }
 
             $tr.append($("<td/>").append($select));
+            console.log(datagen[currentDataGen].columns);
         }
     }
     tippy('.tooltip-label');
 }
 
 $("html").ready(function(){
+
     showModels();
 
     $("#reloadPreview").on("click", "", function(e){
@@ -820,27 +822,12 @@ function verifyUnsaveModels() {
 let modal = document.getElementById('myModal');
 let child = [];
 
-function sizeFormatter(size) {
-    if(Number(size)<1024) {
-        size = String(size).substr(0,6) + " B";
-    } else if(Number(size)<1024*1024) {
-        size = String(size/(1024)).substr(0,6) + " KB";
-    } else if(Number(size)<1024*1024*1024) {
-        size = String(size/(1024*1024)).substr(0,6) + " MB";
-    } else if(Number(size)<1024*1024*1024*1024) {
-        size = String(size/(1024*1024*1024)).substr(0,6) + " GB";
-    } else {
-        size = size/(1024*1024*1024*1024) + " TB";
-    }
-    return size;
-}
-
 function generateDatas(){
     try {
         modal.style.display = "block";
         let saveas = datagen[currentDataGen].save_as;
 
-        //Cancelar ao clicar fora
+        //TODO: Abrir dentro do boxModal
         let saveScreen = new BrowserWindow({show: false, alwaysOnTop: true});
         if(process.platform === "darwin") {saveScreen.show(); saveScreen.maximize(); saveScreen.focus();}
         dialog.showSaveDialog(saveScreen,{
@@ -956,6 +943,7 @@ function generateDatas(){
                             }).catch((err) => {
                                 switch (err) {
                                     case 'abort':
+                                        //TODO: Perguntar ao usuário se tem certeza e se quer manter o arquivo ou excluir.
                                         $("#percentageGD").text("Aborted!");
                                         $("#percentageCancelIcon").css("display","none");
                                         alert("The writing was aborted!")
@@ -1002,17 +990,39 @@ function generateDatas(){
         modal.style.display = "none";
     }
 }
+let keepDSFile = false;
 
 $("#percentageCancelIcon").click(function(e){
-    if(confirm("Are you sure you want to abort writing?")) {
-        killProcess();
-        $("#percentageCancelIcon").css("display","none");
-    }
+    const confirm = confirmModal("You going to abort the writing. What do you want to do about the file(s)?",[
+        {
+            name: "Discard",
+            color: "danger",
+            float: "left",
+            func: function () {
+                keepDSFile = false;
+                killProcess();
+                $("#percentageCancelIcon").css("display","none");
+                confirm.close();
+            }
+        },
+        {
+            name: "Keep",
+            color: "primary",
+            float: "right",
+            func: function () {
+                keepDSFile = true;
+                killProcess();
+                $("#percentageCancelIcon").css("display","none");
+                confirm.close();
+            }
+        }
+    ]);
 });
 
 let quit = false;
 ipc.on("quit-child-process", () => {
     quit = true;
+    //TODO: perguntar ao usuário se deseja fechar a aplicação, mas manter o DS.
     killProcess();
 });
 
@@ -1069,23 +1079,29 @@ function generateStream(targetPath,resolve,reject) {
             resolve(true);
         } else {
             if(child[currentIteration].killed) {
-                fs.unlink(targetPath);
+                if(!keepDSFile) {
+                    if(it.hasIt){
+                        let ini = targetPath.substring(0,targetPath.lastIndexOf("[") ), fim = targetPath.substring(targetPath.lastIndexOf("]")+1);
+                        for(let i in child) {
+                            fs.unlink(ini + i + fim);
+                        }
+                    }
+                    else {
+                        fs.unlink(targetPath);
+                    }
+                }
                 reject('abort');
                 if(quit) {ipc.sendSync("child-process-killed");} else {ipc.sendSync("child-process-ended");}
             } else {
                 fs.unlink(targetPath);
                 reject('error');
+                //TODO: Tratar error EBUSY // See: https://github.com/danielgindi/node-memory-lock
             }
         }
 
     })
     .on('message',(message) => {
-        if( String(message).includes("size:") ) {
-            neededSpace = Number( String(message).substr(5) )
-            console.log(neededSpace);
-        }else {
-            $("#percentageGD").text(message);
-        }
+        $("#percentageGD").text(message);
     })
     .on("error", (err) => {
         throw err;

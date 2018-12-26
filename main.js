@@ -225,8 +225,11 @@ function createWindow () {
     const menuTemplateFile = {
         label: 'File',
         submenu: [
-            {label: 'New Model', click (){
+            {label: 'New Model', accelerator: process.platform === "darwin" ? 'Cmd+M' : 'Ctrl+M', click (){
                     mainWindow.webContents.executeJavaScript('createNewModel();');
+                }},
+            {label: 'New Dimension', accelerator: process.platform === "darwin" ? 'Cmd+D' : 'Ctrl+D', click (){
+                    mainWindow.webContents.executeJavaScript('addGenerator();');
                 }},
             {label: 'Open Model', click (){
                     let pathFile = dialog.showOpenDialog(mainWindow, {

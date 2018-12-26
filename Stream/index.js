@@ -37,7 +37,7 @@ for(let i = 0;i<datagenBackup.n_lines;i++) {
     if(i%onePercent==0 && i>0) {
         let usedSpace = fs.statSync(file).size;
         // /10000*datagenBackup.n_lines
-        process.send("Progress"+(numberProcess == "" ? ": " : " ["+numberProcess+"]: ")+String(sizeFormatter(usedSpace*fat,false) +"/"+(sizeFormatter(usedSpace*datagenBackup.n_lines*fat/i,true))));
+        process.send("Progress"+(numberProcess == "" ? ": " : " ["+numberProcess+"]: ")+String(i*100/(datagenBackup.n_lines))+"%/"+(sizeFormatter(usedSpace*datagenBackup.n_lines*fat/i,true)));
     }
 
     let data = datagenBackup.save_as == "json" ? datagenBackup.header ? {} : [] : {};
