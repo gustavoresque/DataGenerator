@@ -670,7 +670,6 @@ $("html").ready(function(){
 
     $("#tableCollumn").on("click", "span.btnRemoveGen", function(){
         if ($(this).parent().find("div.md-chip").length > 1){
-
             let generators = [];
             if(generators.includes(activeGenerator[currentDataGen])){
                 activeGenerator[currentDataGen].unlink()
@@ -697,6 +696,12 @@ $("html").ready(function(){
 
     }).on("click", "span.btnRemoveColumn", function(){
         datagen[currentDataGen].removeColumn(parseInt($(this).parent().parent().find(".tdIndex").text()) - 1);
+        $(this).parent().parent().find(".columnGen").children().each(function() {
+            if($(this).hasClass("active-md-chip")) {
+                $('#selectGeneratorType').empty().attr("disabled", true);
+                $('#generatorPropertiesForm').empty();
+            }
+        })
         showGenerators();
         hasChanged(true);
 
@@ -1303,18 +1308,22 @@ function configGenProps(){
 
     let generator = this.__node__;
 
-    if(activeGenerator[currentDataGen] == generator && arguments[0] !== true) {
-        $('#selectGeneratorType').empty().attr("disabled", true);
-        $('#generatorPropertiesForm').empty();
-        activeGenerator[currentDataGen] = undefined;
-        $(this).removeClass("active-md-chip");
-        showModels();
-        showGenerators();
-    } else {
-        activeGenerator[currentDataGen] = generator;
-        let coluna = $(this).closest(".columnTr").get(0).__node__;
-        propsConfigs(generator,coluna)
-    }
+    // if(activeGenerator[currentDataGen] == generator && arguments[0] !== true) {
+    //     $('#selectGeneratorType').empty().attr("disabled", true);
+    //     $('#generatorPropertiesForm').empty();
+    //     activeGenerator[currentDataGen] = undefined;
+    //     $(this).removeClass("active-md-chip");
+    //     showModels();
+    //     showGenerators();
+    // } else {
+    //     activeGenerator[currentDataGen] = generator;
+    //     let coluna = $(this).closest(".columnTr").get(0).__node__;
+    //     propsConfigs(generator,coluna)
+    // }
+
+    activeGenerator[currentDataGen] = generator;
+    let coluna = $(this).closest(".columnTr").get(0).__node__;
+    propsConfigs(generator,coluna)
 
 }
 
