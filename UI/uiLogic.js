@@ -533,7 +533,7 @@ $("html").ready(function(){
                         createServer();
                         changePort(wsPort);
                     }
-                    require("electron").shell.openExternal("http://localhost:"+wsPort+"/?modelID="+datagen[i].ID+"&nsample="+datagen[i].n_lines);
+                    require("electron").shell.openExternal(`"http://localhost:${wsPort}/?modelID=${datagen[i].ID}&nsample=${datagen[i].n_lines}&format=${datagen[i].save_as}`);
                     break;
                 }
                 default:
@@ -814,6 +814,7 @@ function generateDatas(){
             title: "Save Data",
             filters: [{name: saveas, extensions: [saveas]}]
         }, function (targetPath) {
+            saveScreen.close();
             modal.style.display = "none";
             if (targetPath) {
                 //generateStream(targetPath);

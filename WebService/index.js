@@ -1,6 +1,7 @@
 
 const http = require('http');
 let server = null;
+const formats = ['json','tsv','csv']
 let createServer = () => {
     server = http.createServer((request, response) => {
 
@@ -15,9 +16,10 @@ let createServer = () => {
         switch(request.method) {
             case "GET":
                 let params = getUrlVars(url);
+                console.log(params);
                 let WSCurrDataGen;
                 if(params.hasOwnProperty('modelID')) {
-                    if(params.modelID in WSMA) {
+                    if(WSMA.hasOwnProperty(params.modelID)) {
                         if(!WSMA[params.modelID][0]) response.end('Model is not avaliable!');
                         WSCurrDataGen = WSMA[params.modelID][1];
                     } else {
@@ -25,7 +27,10 @@ let createServer = () => {
                     }
                     let numSam = datagen[WSCurrDataGen].n_lines;
                     if(params.hasOwnProperty('nsample')) {
-                        datagen[WSCurrDataGen].n_lines = params.nsample;
+                        if(!isNaN(Number(params.nsample)) && isFinite(Number(params.nsample))) datagen[WSCurrDataGen].n_lines = params.nsample;
+                    }
+                    if(params.hasOwnProperty('format')) {
+                        if(formats.includes(params.format)) datagen[WSCurrDataGen].save_as = params.format;
                     }
                     switch(datagen[WSCurrDataGen].save_as) {
                         case "json":
