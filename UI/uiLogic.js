@@ -13,6 +13,8 @@ let current_sample;
 let activeGenerator = [];
 let collumnsSelected = [];
 let collumnsCopied = [];
+let lastCollumnSelected;
+let lastCollumnSelectedColor;
 let ipc = require('electron').ipcRenderer;
 
 let vis = require("@labvis-ufpa/vistechlib");
@@ -30,6 +32,10 @@ const platformASpath = process.platform === "darwin" || process.platform === "li
 
 ipc.on('call-datagen', function(event, data){// ipc.send('receive-datagen', activeGenerator[currentDataGen].getGenParams());
 });
+
+ipc.on('delete-dimension', function(){
+    deleteCollumn();
+})
 
 function boxModal(body,buttons, onOpen, onClose) { //Don't forget the '.open()' !!!!
 
@@ -439,7 +445,7 @@ $("html").ready(function(){
     });
 
     $.contextMenu({
-        selector: 'span.nav-group-item',
+        selector: 'ul li.tabButton',
         trigger: 'right',
         callback: function (key, options) {
             switch (key){
@@ -551,7 +557,7 @@ $("html").ready(function(){
         }
     });
 
-    $("#tableCollumn").on("dblclick", "td.columnName", function(){
+    /*$("#tableCollumn").on("dblclick", "td.columnName", function(){
         let title = $(this).text();
         $(this).empty();
         $(this).append($("<input/>").attr("type", "text").attr("value", title).blur(function(){
@@ -580,6 +586,134 @@ $("html").ready(function(){
             $(this).parent().text(cor);
         }));
         hasChanged(true);
+    });*/
+
+    $("#leftSideBar").on("blur", "#collumnName", function(){
+        let newName = $(this).val();
+        let colID = $("#collumnID").text();
+        let flag = true; let index = 0; let index2 = 0;
+
+        for (let i = 0; i < datagen[currentDataGen].columns.length; i++){
+            if (newName === datagen[currentDataGen].columns[i].name){
+                if (colID !== datagen[currentDataGen].columns[i].ID){
+                    alertModal("Dimension name already exists");
+                }
+                flag = false;
+            }else{
+                if (colID === datagen[currentDataGen].columns[i].ID){
+                    index2 = i;
+                    if (flag) index = i;
+                }
+            }
+        }
+
+        if (flag){
+            datagen[currentDataGen].columns[index].name = newName;
+            showGenerators();
+        }else{
+            $(this).val(datagen[currentDataGen].columns[index2].name);
+        }
+
+        hasChanged(true);
+    });
+
+    $("#trashDeleteCollumn").on("click", function(){
+        deleteCollumn();
+    });
+
+    $("#upArrowButton").on("click", function(){
+        if (lastCollumnSelected){
+            let index = parseInt(lastCollumnSelected.find(".tdIndex").text()) - 1;
+            if (index > 0){
+                let genTemp = datagen[currentDataGen].columns[index-1];
+                datagen[currentDataGen].columns[index-1] = datagen[currentDataGen].columns[index];
+                datagen[currentDataGen].columns[index] = genTemp;
+                showGenerators();
+                hasChanged(true);
+
+                lastCollumnSelected = $($("#tbody").find(".tdIndex")[index-1]).parent();
+                lastCollumnSelected.css("background-color", "cornflowerblue");
+            }
+        }
+    });
+
+    $("#downArrowButton").on("click", function(){
+        if (lastCollumnSelected){
+            let index = parseInt(lastCollumnSelected.find(".tdIndex").text()) - 1;
+            if (index < datagen[currentDataGen].columns.length-1){
+                let genTemp = datagen[currentDataGen].columns[index+1];
+                datagen[currentDataGen].columns[index+1] = datagen[currentDataGen].columns[index];
+                datagen[currentDataGen].columns[index] = genTemp;
+                showGenerators();
+                hasChanged(true);
+
+                lastCollumnSelected = $($("#tbody").find(".tdIndex")[index+1]).parent();
+                lastCollumnSelected.css("background-color", "cornflowerblue");
+            }
+        }
+    });
+
+    $("tr.columTr").keyup(function (event){
+        console.log("Teste");
+    });
+
+    $("#tableCollumn").on("keyup", "tr.columnTr", function(event){
+        console.log(event);
+    });
+
+    $("#tableCollumn").on("click", "tr.columnTr", function(){
+        if (lastCollumnSelected){
+            lastCollumnSelected.css("background-color", lastCollumnSelectedColor)
+        }
+
+        lastCollumnSelected = $(this);
+        lastCollumnSelectedColor = $(this).css("background-color");
+
+        $(this).css("background-color", "cornflowerblue");
+        $('#leftSideBar').empty();
+        $('#leftSideBar').append(
+            $("<table/>").append(
+                $("<tr/>").append(
+                    $("<td/>").append(
+                        $("<label/>").addClass("tooltip-label").text("Name ")
+                    )
+                ).append(
+                    $("<td/>").css("padding", "0px").append(
+                        $("<input>").addClass("form-control smallInput").attr("id", "collumnName").attr("type", "text").attr("value", $(this).get(0).__node__.name)
+                    )
+                )
+            ).append(
+                $("<tr/>").append(
+                    $("<td/>").append(
+                        $("<label/>").addClass("tooltip-label").text("Type ")
+                    )
+                ).append(
+                    $("<td/>").css("padding", "0px").append(
+                        $("<label/>").addClass("tooltip-label").text($(this).get(0).__node__.type)
+                    )
+                )
+            ).append(
+                $("<tr/>").append(
+                    $("<td/>").append(
+                        $("<label/>").addClass("tooltip-label").text("ID ")
+                    )
+                ).append(
+                    $("<td/>").css("padding", "0px").append(
+                        $("<label/>").addClass("tooltip-label").attr("id", "collumnID").text($(this).get(0).__node__.ID)
+                    )
+                )
+            ).append(
+                $("<tr/>").append(
+                    $("<td/>").append(
+                        $("<label/>").addClass("tooltip-label").text("Display ")
+                    )
+                ).append(
+                    $("<td/>").css("padding", "0px").append(
+                        $("<label/>").addClass("tooltip-label").text($(this).get(0).__node__.display)
+                    )
+                )
+            )
+        );
     });
 
     $("#generatorPropertiesForm").on("change", "input,select", function(){
@@ -786,6 +920,15 @@ $("html").ready(function(){
     verifyUnsaveModels();
 
 });
+
+function deleteCollumn(){
+    if (lastCollumnSelected){
+        datagen[currentDataGen].removeColumn(parseInt(lastCollumnSelected.find(".tdIndex").text()) - 1);
+        lastCollumnSelected = null;
+        showGenerators();
+        hasChanged(true);
+    }
+}
 
 function verifyUnsaveModels() {
 
@@ -1351,22 +1494,59 @@ function reloadModelsIcon () {
 }
 
 function showModels(){
-    $("#modelsPane").empty();
-    $("#modelsPane").append($("<h5/>").addClass("nav-group-title").text("Models"));
+    $("#tabs").empty();
+
     for(let i = 0; i < datagen.length; i++){
         let idNameModel = datagen[i].name.toLowerCase().replace(' ','');
 
-        let modelButton = $("<span/>").attr('id', idNameModel).addClass("nav-group-item").text(datagen[i].name).append($("<span/>").addClass("icon").addClass("icon-doc-text-inv")).append($("<span/>").addClass("fa").addClass("fa-upload")).append($("<span/>").addClass("fa").addClass("fa-circle"));
+        let tabButton = $("<li/>").attr('id', idNameModel).text(datagen[i].name).append(
+            $("<span/>").addClass("icon")).append(
+                $("<span/>").addClass("fa fa-upload")
+        ).append(
+                $("<span/>").addClass("fa fa-circle")
+        ).append(
+            $("<span/>").addClass("icon icon-cancel-circled")
+        );
 
-        if (currentDataGen === i)
-            modelButton.addClass("active");
-        modelButton.mouseup(function(e) {
+        tabButton.addClass("tabButton");
+        tabButton.get(0).__node__ = datagen[i];
+
+        tabButton.on("click", "span.icon-cancel-circled", function () {
+            console.log($(this).parent().get(0).__node__);
+
+            let index = datagen.indexOf($(this).parent().get(0).__node__);
+            if (index > -1) {
+                ipc.send("dtChanges-del",index);
+                if(platformASpath !== false) {
+                    let inPath = platformASpath + datagen[index].ID + ".json";
+                    if(fs.existsSync(inPath)) {
+                        fs.unlink(inPath);
+                    }
+                }
+
+                datagen.splice(index, 1);
+                if (index === currentDataGen)
+                    currentDataGen = (index === 0) ? 0 : (index - 1);
+                else if (index < currentDataGen)
+                    currentDataGen--;
+            }
+
+            showModels();
+            showGenerators();
+        });
+
+        if (currentDataGen === i){
+            tabButton.addClass("selected");
+        }
+
+        tabButton.mouseup(function(e) {
             switch (event.which) {
                 case 1:
                     if (currentDataGen !== i){
                         currentDataGen = i;
-                        $("#modelsPane").children().removeClass('active');
-                        $(this).addClass("active");
+                        $("#leftSideBar").empty();
+                        $("#tabs").children().removeClass('selected');
+                        $(this).addClass("selected");
                         $('#selectGeneratorType').empty().attr("disabled", true);
                         $('#generatorPropertiesForm').empty();
 
@@ -1384,9 +1564,13 @@ function showModels(){
                     console.log('You have a strange Mouse!');
             }
         });
-        modelButton.get(0).__node__ = datagen[i];
-        $("#modelsPane").append(modelButton);
+
+        tabButton.get(0).__node__ = datagen[i];
+        $("#tabs").append(tabButton);
     }
+
+    let tabPlus = $("<li/>").attr('id', '+').text('+').click(function(){createNewModel ();});
+    $("#tabs").append(tabPlus);
     reloadModelsIcon();
 }
 
@@ -1394,8 +1578,10 @@ function createNewModel () {
     datagen.push(new DataGen());
     datagen[datagen.length-1].name += " " + datagen.length;
     currentDataGen = datagen.length-1;
+    $("#leftSideBar").empty();
     $('#selectGeneratorType').empty().attr("disabled", true);
     $('#generatorPropertiesForm').empty();
+    lastCollumnSelected = null;
     showModels();
     showGenerators();
     ipc.send("dtChanges-add",false);

@@ -8,6 +8,7 @@ const Menu = electron.Menu;
 const MenuItem = electron.MenuItem;
 
 const app = electron.app;
+const globalShortcut = electron.globalShortcut;
 const ipcMain = require('electron').ipcMain;
 // Module to create native browser window.
 const BrowserWindow = electron.BrowserWindow;
@@ -604,6 +605,12 @@ function initServerWebSocket() {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', createWindow);
+
+app.on('ready', () => {
+    globalShortcut.register('Delete', () => {
+        mainWindow.webContents.send('delete-dimension');
+    })
+});
 
 // Quit when all windows are closed.
 app.on('window-all-closed', function () {

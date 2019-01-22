@@ -82,16 +82,16 @@ button.floatButton:active{
     background: white;
 }
 
-#generatorPropertiesForm{
+.propertiesForm{
     padding: 10px;
 }
-#generatorPropertiesForm label{
+.propertiesForm label{
     display: inline;
 }
 
-#generatorPropertiesDiv{
+.propertiesDiv{
     position: absolute;
-    bottom: 28px;
+    bottom: 35px;
     top: 80px;
     border-top: 1px solid gray;
     border-bottom: 1px solid gray;
@@ -206,3 +206,32 @@ select#selectGeneratorType:focus > option {
     cursor:pointer;
     background-color: #EDEBED;
 }
+
+/*------------- Tabs ------------------http://htmldog.com/examples/tabs7/*/
+
+#tabDiv ul {
+    list-style: none;
+    padding: 0 0 0 10px;
+    min-width: 460px;
+}
+
+#tabDiv li {
+    float: left;
+    position: relative;
+    height: 30px;
+    border-radius: 10px 10px 0 0;
+    transition: .2s;
+    text-align: center;
+    padding: 5px 10px 0px 10px;
+    background: #aaa;
+}
+
+#tabDiv li:not(.selected):hover{
+    background: #ccc;
+    color: #000;
+}
+
+#tabDiv li.selected{
+    background: #ddd;
+}
+/*-------------------------------------*/
