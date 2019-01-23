@@ -18,10 +18,10 @@ let createServer = () => {
                 let params = getUrlVars(url);
                 console.log(params);
                 let WSCurrDataGen;
-                if(params.hasOwnProperty('modelID')) {
-                    if(WSMA.hasOwnProperty(params.modelID)) {
-                        if(!WSMA[params.modelID][0]) response.end('Model is not avaliable!');
-                        WSCurrDataGen = WSMA[params.modelID][1];
+                if(params.hasOwnProperty('modelid')) {
+                    if(WSMA.hasOwnProperty(params.modelid)) {
+                        if(!WSMA[params.modelid][0]) response.end('Model is not avaliable!');
+                        WSCurrDataGen = WSMA[params.modelid][1];
                     } else {
                         response.end('Model is not valid!');
                     }
@@ -54,7 +54,8 @@ let createServer = () => {
                     datagen[WSCurrDataGen].n_lines = numSam;
                 }
                 else{
-                    response.end('Model is not defined!')
+                    // response.end('Model is not defined!')
+                    response.end(JSON.stringify(WSMA));
                 }
                 break;
 

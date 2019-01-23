@@ -214,7 +214,7 @@ ipc.on('getDataModel', function(event, arg){
 
 ipc.on('change-datagen', function(event, arg){
     for(let dtg of datagen){
-        if(dtg.ID === arg.modelID){
+        if(dtg.ID === arg.modelid){
             dtg.configs = arg;
             break;
         }
@@ -539,7 +539,17 @@ $("html").ready(function(){
                         createServer();
                         changePort(wsPort);
                     }
-                    require("electron").shell.openExternal(`"http://localhost:${wsPort}/?modelID=${datagen[i].ID}&nsample=${datagen[i].n_lines}&format=${datagen[i].save_as}`);
+                    require("electron").shell.openExternal(`http://localhost:${wsPort}/?modelid=${datagen[i].ID}&nsample=${datagen[i].n_lines}&format=${datagen[i].save_as}`);
+                    break;
+                }
+                case "URIWS": {
+                    const {clipboard} = require('electron');
+                    let i = datagen.indexOf(this.get(0).__node__);
+                    if(process.platform === 'darwin') {
+                        clipboard.writeText(`http://localhost:${wsPort}/?modelid=${datagen[i].ID}&nsample=${datagen[i].n_lines}&format=${datagen[i].save_as}`,'selection');
+                    }else {
+                        clipboard.writeText(`http://localhost:${wsPort}/?modelid=${datagen[i].ID}&nsample=${datagen[i].n_lines}&format=${datagen[i].save_as}`);
+                    }
                     break;
                 }
                 default:
@@ -552,8 +562,9 @@ $("html").ready(function(){
             "Delete": {name: "Delete"},
             "exportDot": {name: "Export .DOT File"},
             "CopyModelId": {name: "Copy Model Id"},
-            "ToggleWS": {name: "Toggle WebService"},
-            "OpenWS": {name: "Open out WebService"}
+            "URIWS": {name: "Copy URI Web Service"},
+            "ToggleWS": {name: "Toggle Web Service"},
+            "OpenWS": {name: "Open out Web Service"}
         }
     });
 
@@ -795,7 +806,7 @@ $("html").ready(function(){
 
     $("#btnConfigGeneration").click(function(){
         let configs = datagen[currentDataGen].configs;
-        configs.modelID = datagen[currentDataGen].ID;
+        configs.modelid = datagen[currentDataGen].ID;
         configs.modelName = datagen[currentDataGen].name;
         configs.wsActive = wsActive;
         configs.wsPort = wsPort;
