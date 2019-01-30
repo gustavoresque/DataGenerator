@@ -9,7 +9,7 @@ npm install -g electron-packager
 ```
 You can run the application locally running the code below:
 ```
-npm install start
+npm start
 ```
 After that you can run the following codes:
 ### Windows
