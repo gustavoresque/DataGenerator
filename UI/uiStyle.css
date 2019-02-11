@@ -77,10 +77,13 @@ button.floatButton:active{
 }
 
 .canvas{
-    overflow-y: hidden;
-    height: 100%;
     outline: 1px solid #ccc;
     background: white;
+    bottom: -30px;
+    position: absolute;
+    top: 43px;
+    left: 0;
+    right: 0;
 }
 
 .propertiesForm{
@@ -100,14 +103,14 @@ button.floatButton:active{
     left: 5px;
 }
 
-#propertiesTable td {
+.propTable td {
     padding: 0px;
 }
-#propertiesTable tr > td:not(:first-child) {
+.propTable tr > td:not(:first-child) {
     padding-left: 5px;
 }
 
-#propertiesTable tr:not(:first-child) > td{
+.propTable tr:not(:first-child) > td{
     padding-top: 5px;
 }
 
