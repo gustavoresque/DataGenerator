@@ -2668,20 +2668,20 @@ class DataGen {
             this.memento.index++;
         }
         this.memento.snapshot.push(this.exportModel());
-        console.log(this.memento,"State");
+        //console.log(this.memento,"State");
     }
 
     forward() {
         if(this.memento.index !== this.memento.snapshot.length-1) {
             this.importModel(this.memento.snapshot[++this.memento.index], true);
-            console.log(this.memento,"Forward");
+            //console.log(this.memento,"Forward");
         }
     }
 
     restore() {
         if(this.memento.index !== 0) {
             this.importModel(this.memento.snapshot[--this.memento.index], true);
-            console.log(this.memento,"Restore");
+            //console.log(this.memento,"Restore");
         }
     }
 

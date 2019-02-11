@@ -46,7 +46,8 @@ button.floatButton:active{
 }
 
 .icon.btn{
-    float: right;
+    /*Tem se ser mais específico*/
+    /*float: right;*/
 }
 .icon.btn:hover{
     color: black;
@@ -234,4 +235,63 @@ select#selectGeneratorType:focus > option {
 #tabDiv li.selected{
     background: #ddd;
 }
+
+
+.divControlBelowButtons{
+    position: absolute;
+    bottom: 6px;
+    left: 5px;
+    right: 5px;
+}
+
+.btn.btn-default.active {
+    background-image: linear-gradient(to bottom,#6db3fd 0,#f1f1f1 100%);
+}
+.btn.btn-default.superactive {
+    background-image: linear-gradient(to bottom,#0636ec 0,#6db3fd 100%);
+}
+
+.img-icon{
+    padding: 0.2em 0.3em;
+}
+.img-icon > img{
+    vertical-align: middle;
+}
+
+.fixed-window{
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+.fixed-window.modal{
+    background-color: rgba(47, 47, 47, 0.83);
+    text-align: center;
+}
+.fixed-window-content >.toolbar.toolbar-header{
+    border-top-right-radius: 5px;
+    border-top-left-radius: 5px;
+    padding: 4px 7px 2px 7px;
+}
+.fixed-window-content >.toolbar.toolbar-footer{
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    padding: 5px;
+}
+.fixed-window-content >.toolbar.toolbar-footer > .btn{
+    float: right;
+    margin-left: 5px;
+}
+
+.fixed-window-content{
+    display: inline-block;
+    text-align: initial;
+}
+.fixed-window-content > .content{
+    width: 300px;
+    height: 200px;
+    background-color: white;
+}
+
 /*-------------------------------------*/

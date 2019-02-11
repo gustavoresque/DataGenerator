@@ -45,10 +45,10 @@
                     <form id="leftSideBar" class="propertiesForm">
                     </form>
                 </div>
-                <div style="position: absolute; bottom: 4px; margin-left: 37px;">
-                    <button id="trashDeleteCollumn" class="icon icon-trash"></button>
-                    <button id="upArrowButton" class="icon icon-up-thin"></button>
-                    <button id="downArrowButton" class="icon icon-down-thin"></button>
+                <div class="divControlBelowButtons">
+                    <button id="trashDeleteCollumn" class="btn btn-default icon icon-trash"></button>
+                    <button id="upArrowButton" class="btn btn-default icon icon-up"></button>
+                    <button id="downArrowButton" class="btn btn-default icon icon-down"></button>
                 </div>
             </div>
 
@@ -103,6 +103,14 @@
                     Properties
                     <form id="generatorPropertiesForm" class="propertiesForm">
                     </form>
+                </div>
+                <div class="divControlBelowButtons">
+                    <button id="btnPincelGerador" class="btn btn-default img-icon">
+                        <img src="UI/img/format_painter.png">
+                    </button>
+                    <button id="btnPincelMagico" class="btn btn-default img-icon">
+                        <img src="UI/img/magic_painter.png">
+                    </button>
                 </div>
             </div>
 
@@ -169,5 +177,20 @@
     showGenerators();
 </script>
 <img id="iconDown" src="resources/down.png" style="display: none;position: fixed">
+
+<div id="windowModalPadrao" class="modal fixed-window">
+    <div class="fixed-window-content">
+        <div id="windowModalPadrao-title" class="toolbar toolbar-header">
+            Configure Magic Painter
+        </div>
+        <div id="windowModalPadrao-content" class="content">
+        </div>
+        <div class="toolbar toolbar-footer">
+            <button class="btn btn-negative">Cancel</button>
+            <button class="btn btn-primary">Let go!</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

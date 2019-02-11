@@ -15,6 +15,11 @@ let collumnsSelected = [];
 let collumnsCopied = [];
 let lastCollumnSelected;
 let lastCollumnSelectedColor;
+
+let generatorEspecialPaste;
+let especialPasteState = 0; //0-Desativado, 1-Cola uma vez, 2-Cola até clicar de voltano botão, 3-Magic
+
+
 let ipc = require('electron').ipcRenderer;
 
 let vis = require("@labvis-ufpa/vistechlib");
@@ -254,7 +259,7 @@ ipc.on('update-sampledata', function () {
         ipc.send('change-datasample', current_sample);
 });
 
-function propsConfigs(generator,coluna){
+function propsConfigs(generator,coluna, new_place){
     let params = generator.getGenParams();
 
     //Ativa o <select> e coloca as opções de Geradores para trocar o tipo do gerador.
@@ -262,7 +267,7 @@ function propsConfigs(generator,coluna){
     putGeneratorOptions($selectGenType, generator.name);
     $selectGenType.get(0).__node__ = generator;
 
-    let $propForms = $("#generatorPropertiesForm");
+    let $propForms = $(new_place || "#generatorPropertiesForm");
     $propForms.empty();
 
     let $table = $("<table/>").attr("id","propertiesTable");
@@ -664,6 +669,41 @@ $("html").ready(function(){
         }
     });
 
+    $("#btnPincelGerador").on("click", function(){
+        if(activeGenerator[currentDataGen] && (especialPasteState===0 || especialPasteState===3)){
+            generatorEspecialPaste = activeGenerator[currentDataGen];
+            especialPasteState=1;
+            $(this).addClass("active");
+            $("#btnPincelMagico").removeClass("active superactive");
+        }else if(especialPasteState>0){
+            especialPasteState=0;
+            $(this).removeClass("active superactive");
+        }
+    }).on("dblclick", function(){
+        if(activeGenerator[currentDataGen] && (especialPasteState===0 || especialPasteState===3)){
+            generatorEspecialPaste = activeGenerator[currentDataGen];
+            especialPasteState=2;
+            $(this).addClass("superactive");
+            $("#btnPincelMagico").removeClass("active superactive");
+        }else if(especialPasteState>0){
+            especialPasteState=0;
+            $(this).removeClass("active superactive");
+        }
+    });
+
+    $("#btnPincelMagico").on("click", function(){
+        if(activeGenerator[currentDataGen] && especialPasteState<3){
+            generatorEspecialPaste = activeGenerator[currentDataGen];
+            especialPasteState=3;
+            $("#windowModalPadrao").show();
+            $(this).addClass("superactive");
+            $("#btnPincelGerador").removeClass("active superactive");
+        }else if(especialPasteState>0){
+            especialPasteState=0;
+            $(this).removeClass("superactive");
+        }
+    });
+
     $("tr.columTr").keyup(function (event){
         console.log("Teste");
     });
@@ -766,7 +806,16 @@ $("html").ready(function(){
         // showGenerators();
     });
 
-    $("#tableCollumn").on("click", "div.md-chip", configGenProps);
+    $("#tableCollumn").on("click", "div.md-chip", function(){
+        if(especialPasteState>0){
+            if(especialPasteState===1) {especialPasteState=0; $("#btnPincelGerador").removeClass("active");}
+            let newEspGen = generatorEspecialPaste.copy();
+            this.__node__.changeGenerator(newEspGen);
+            this.__node__ = newEspGen;
+        }
+        configGenProps.apply(this,arguments);
+        showGenerators();
+    });
 
     $.contextMenu({
         selector: '#selectGeneratorType',
