@@ -148,12 +148,12 @@ function createWindow () {
     });
 
     ipcMain.on('change-datasample', (event, message) => {
-        // if(message)
-        //     for(let w of visWindows)
-        //         w.webContents.send('change-datasample', message);
         if(message)
             for(let s of sockets)
-                s.send(JSON.stringify({act:'change-datasample', msg: message}));
+                s.send(JSON.stringify({
+                    act:'change-datasample',
+                    msg: message
+                }));
     });
     ipcMain.on('update-sampledata', function () {
         mainWindow.webContents.send('update-sampledata');
@@ -187,18 +187,15 @@ function createWindow () {
         });
     };
 
-    let funcOpenVisWindow = (visType) => {
-        // let visWindow = new BrowserWindow({width: 900, height: 600, show: false,});
-        // addVisWindowMenu(visWindow);
-        // visWindows.push(visWindow);
+    let funcOpenVisWindow = () => {
 
-
-        child = spawn('npm', ['start', 'websocketmode=on'], {cwd: "../VisApplication"});
+        child = spawn('npm', ['start', 'websocketmode=on', 'port=6661'], {cwd: "../VisApplication"});
         child.on("error", (message)=>{
             console.log(message);
+        }).on("close", ()=>{
+            console.log("child closed!");
         });
-
-
+        initServerWebSocket();
 
         child.stdout.setEncoding('utf8');
         child.stdout.on('data', (data) => {
@@ -214,7 +211,7 @@ function createWindow () {
                     switch (obj.act){
                         case "init":
                             console.log("foi aqui");
-                            initServerWebSocket();
+
                             break;
                         case "cl":
                             console.log("cl", obj.msg);
@@ -223,22 +220,6 @@ function createWindow () {
                 }
             }
         });
-
-        // visWindow.loadURL(url.format({
-        //     pathname: path.join(__dirname, 'pages/visualization.html'),
-        //     protocol: 'file:',
-        //     slashes: true
-        // }));
-        // visWindow.on('closed', function () {
-        //     let i = visWindows.indexOf(visWindow);
-        //     visWindows.splice(i,1);
-        //     visWindow = undefined;
-        // });
-        // visWindow.once('ready-to-show', () => {
-        //     visWindow.show();
-        //     visWindow.webContents.send('add-vis', visType);
-        //     mainWindow.webContents.send('update-sampledata');
-        // });
     };
 
 
@@ -580,26 +561,34 @@ function addVisWindowMenu(visWindow){
     }
 }
 
+let wss;
 function initServerWebSocket() {
-    const WebSocket = require('ws');
+    if(!wss){
+        let WebSocketServer = require('ws').Server;
+        wss = new WebSocketServer({port: 6661});
+        wss.on("connection", (ws)=>{
+            sockets.push(ws);
+            console.log("WebSocket Opened!");
+            mainWindow.webContents.send('update-sampledata');
+            ws.on('message', function (data) {
+                console.log("WS Message: ", data);
+            });
+            ws.on('close', function(){
+                let i = sockets.indexOf(ws);
+                sockets.splice(i,1);
+                if(sockets.length === 0){
+                    wss.close(()=>console.log("WSS Closed!"));
+                    wss = undefined;
+                }
+            });
+        });
+    }
 
-    const ws = new WebSocket('ws://127.0.0.1:6661/');
-
-    ws.on('open', function () {
-        sockets.push(ws);
-        console.log("WebSocket Opened!");
-        mainWindow.webContents.send('update-sampledata');
-    });
-
-    ws.on('message', function (data) {
-        console.log("WS Message: ", data);
-    });
-
-    ws.on('close', function(){
-        let i = sockets.indexOf(ws);
-        sockets.splice(i,1);
-    });
 }
+function uniqueID() {
+    return (Math.random()*Date.now()/Math.random()).toString(36);
+}
+
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
