@@ -265,9 +265,7 @@ function createWindow () {
                 }
             },
             {type: 'separator'},
-            {role: 'close'},
-            {type: 'separator'},
-            {label: 'Quit App', accelerator: process.platform === "darwin" ? 'Cmd+Q' : '', click: () => {mainWindow.webContents.send('quit-child-process');app.quit();}}
+            {role: 'close', accelerator: process.platform === "darwin" ? 'Cmd+Q' : '', click: () => {mainWindow.webContents.send('quit-child-process');app.quit();}}
         ]
     };
     const menuTemplateEdit = {
@@ -584,9 +582,6 @@ function initServerWebSocket() {
         });
     }
 
-}
-function uniqueID() {
-    return (Math.random()*Date.now()/Math.random()).toString(36);
 }
 
 
