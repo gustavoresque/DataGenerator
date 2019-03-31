@@ -24,10 +24,22 @@ let createServer = () => {
                         WSCurrDataGen = WSMA[params.modelid][1];
                     } else {
                         response.end('Model is not valid!');
+                        return;
+                    }
+
+                    if(datagen[WSCurrDataGen].n_lines > 10000) {
+                        response.end('You can not receive more than 10000 lines at one time. You can generate a data base instead.');
+                        return;
                     }
                     let numSam = datagen[WSCurrDataGen].n_lines;
                     if(params.hasOwnProperty('nsample')) {
-                        if(!isNaN(Number(params.nsample)) && isFinite(Number(params.nsample))) datagen[WSCurrDataGen].n_lines = params.nsample;
+                        if(!isNaN(Number(params.nsample)) && isFinite(Number(params.nsample))) {
+                            if(params.nsample > 10000) {
+                                response.end('You can not receive more than 10000 lines at one time. You can generate a data base instead.');
+                                return;
+                            }
+                            datagen[WSCurrDataGen].n_lines = params.nsample;
+                        }
                     }
                     if(params.hasOwnProperty('format')) {
                         if(formats.includes(params.format)) datagen[WSCurrDataGen].save_as = params.format;
