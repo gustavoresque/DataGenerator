@@ -224,6 +224,11 @@ function createWindow () {
 
 
 
+    const menuTemplateElectron = {
+        label: 'Electron',
+        submenu: [
+            {label: 'Quit App', accelerator: process.platform === "darwin" ? 'Cmd+Q' : '', click: () => {mainWindow.webContents.send('quit-child-process');app.quit();}
+    }]}
     const menuTemplateFile = {
         label: 'File',
         submenu: [
@@ -263,9 +268,7 @@ function createWindow () {
                         }
                     );
                 }
-            },
-            {type: 'separator'},
-            {role: 'close', accelerator: process.platform === "darwin" ? 'Cmd+Q' : '', click: () => {mainWindow.webContents.send('quit-child-process');app.quit();}}
+            }
         ]
     };
     const menuTemplateEdit = {
@@ -326,7 +329,7 @@ function createWindow () {
     //Work on Mac.
     if(process.platform === 'darwin'){
         mainWindow.on("focus", ()=>{
-            const menuTemplate = [menuTemplateFile, menuTemplateEdit, menuTemplateVisualize, menuTemplateDebug];
+            const menuTemplate = [menuTemplateElectron,menuTemplateFile, menuTemplateEdit, menuTemplateVisualize, menuTemplateDebug];
             Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
         });
     }

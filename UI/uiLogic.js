@@ -42,6 +42,28 @@ ipc.on('delete-dimension', function(){
     deleteCollumn();
 })
 
+
+function newModal(header="Are you Sure?",content="",buttons=[{'label' : 'Cancel', 'returning': 0},{'label': 'Ok', 'returning': 1}]) {
+    let modal = '#windowModalPadrao';
+    $(modal).show();
+    $(`${modal}-title`).html(header);
+    $(`${modal}-content`).html(content);
+    let btns = ``;
+    let i = 0;
+    return new Promise((resolve) => {
+        for (let b of buttons) {
+            btns += `<button id="btn-modal-${i}" class="btn btn-primary">${b.label}</button>`;
+        }
+        $(`${modal}-footer`).html(btns);
+        for(let j = 0; j < i; j++) {
+            $(`#btn-modal-${j}`).off('click').on('click',() => {
+                $(modal).hide();
+                resolve(b.returning);
+            })
+        }
+    })
+}
+
 function boxModal(body,buttons, onOpen, onClose) { //Don't forget the '.open()' !!!!
 
     //body : String. Receive html
@@ -70,6 +92,10 @@ function boxModal(body,buttons, onOpen, onClose) { //Don't forget the '.open()' 
 function alertModal(message,time) {if(time === undefined) {time = 5000} const modal = boxModal(`<p style="text-align: center; font-size: large; font-family: 'Adobe Garamond Pro'">${message}</p>`); modal.open(); if(time > 0) {const interval = setInterval(() => {modal.close(); clearInterval(interval);},time)}}
 
 function confirmModal(message,buttons) {const modal = boxModal(`<p style="text-align: center; font-size: large; font-family: 'Adobe Garamond Pro'">${message}</p>`,buttons); modal.open(); return modal;}
+
+ipc.on('alert', function(event,message) {
+    alert(message);
+})
 
 ipc.on('verify-autosave', function(event, saved, unsaved) {
    let buttons = [];
@@ -980,6 +1006,11 @@ $("html").ready(function(){
 
     dragAndDropGens();
     verifyUnsaveModels();
+
+    // let a = newModal();
+    // a.then( function (res){
+    //     console.log(`Jairo`);
+    // })
 
 });
 
