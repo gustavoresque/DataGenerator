@@ -38,12 +38,10 @@
     <div class="window-content">
         <div class="pane-group">
             <div class="pane pane-sm sidebar">
-                <nav id="modelsPane" class="nav-group">
+                <div class="propertiesDiv" style="top: 0px;border-top: 0;">
                     <h5 class="nav-group-title">Dimension Properties</h5>
-                </nav>
-                <div class="propertiesDiv" style="top:40px;">
-                    <form id="leftSideBar" class="propertiesForm">
-                    </form>
+                    <div id="leftSideBar" class="propertiesForm">
+                    </div>
                 </div>
                 <div class="divControlBelowButtons">
                     <button id="trashDeleteCollumn" class="btn btn-default icon icon-trash"></button>
@@ -100,7 +98,7 @@
                 </form>
 
                 <div id="generatorPropertiesDiv" class="propertiesDiv">
-                    Properties
+                    <h5 class="nav-group-title">Properties</h5>
                     <form id="generatorPropertiesForm" class="propertiesForm">
                     </form>
                 </div>
@@ -180,7 +178,7 @@
 </script>
 <img id="iconDown" src="resources/down.png" style="display: none;position: fixed">
 
-<div id="windowModalPadrao" class="modal fixed-window">
+<div id="windowModalPadrao" onclick="$(this).hide()" class="modal fixed-window">
     <div class="fixed-window-content">
         <div id="windowModalPadrao-title" class="toolbar toolbar-header">
             Configure Magic Painter

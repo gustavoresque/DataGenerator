@@ -270,7 +270,9 @@ function propsConfigs(generator,coluna, new_place){
     let $propForms = $(new_place || "#generatorPropertiesForm");
     $propForms.empty();
 
-    let $table = $("<table/>").attr("id","propertiesTable");
+    let $table = $("<table/>")
+        .attr("id","propertiesTable")
+        .attr("class", "propTable");
     $propForms.append($table);
 
     for(let p of params){
@@ -723,7 +725,7 @@ $("html").ready(function(){
         $(this).css("background-color", "cornflowerblue");
         $('#leftSideBar').empty();
         $('#leftSideBar').append(
-            $("<table/>").append(
+            $("<table/>").attr("class","propTable").append(
                 $("<tr/>").append(
                     $("<td/>").append(
                         $("<label/>").addClass("tooltip-label").text("Name ")
@@ -739,7 +741,7 @@ $("html").ready(function(){
                         $("<label/>").addClass("tooltip-label").text("Type ")
                     )
                 ).append(
-                    $("<td/>").css("padding", "0px").append(
+                    $("<td/>").append(
                         $("<label/>").addClass("tooltip-label").text($(this).get(0).__node__.type)
                     )
                 )
@@ -749,7 +751,7 @@ $("html").ready(function(){
                         $("<label/>").addClass("tooltip-label").text("ID ")
                     )
                 ).append(
-                    $("<td/>").css("padding", "0px").append(
+                    $("<td/>").append(
                         $("<label/>").addClass("tooltip-label").attr("id", "collumnID").text($(this).get(0).__node__.ID)
                     )
                 )
@@ -759,7 +761,7 @@ $("html").ready(function(){
                         $("<label/>").addClass("tooltip-label").text("Display ")
                     )
                 ).append(
-                    $("<td/>").css("padding", "0px").append(
+                    $("<td/>").append(
                         $("<label/>").addClass("tooltip-label").text($(this).get(0).__node__.display)
                     )
                 )
