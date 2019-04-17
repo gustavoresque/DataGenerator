@@ -1398,30 +1398,8 @@ class CubicBezierGenerator extends Generator{
         this.proportional = typeof proportional === "boolean" ? proportional : true;
 
 
-        let x=0, y=0;
-        this.prob = [];
-        let lastx = this.x0;
-        let lasty = this.y0;
-        for(let t =0.01; t<1.01; t+=0.01){
-            x = Math.pow(1-t,3)*this.x0 + 3*Math.pow(1-t,2)*t*this.x1 + 3*(1-t)*Math.pow(t,2)*this.x2 + Math.pow(t,3)*this.x3;
-            y = Math.pow(1-t,3)*this.y0 + 3*Math.pow(1-t,2)*t*this.y1 + 3*(1-t)*Math.pow(t,2)*this.y2 + Math.pow(t,3)*this.y3;
-            this.prob.push( Math.sqrt(Math.pow(x-lastx, 2)+Math.pow(y-lasty, 2)) );
-            lastx = x;
-            lasty = y;
-        }
-        let sum=0;
-        for(let v of this.prob)
-            sum+=v;
+        this.updateProb();
 
-        for(let i=0;i<this.prob.length;i++)
-            this.prob[i] = this.prob[i]/sum;
-
-        for(let i=1;i<this.prob.length;i++)
-            this.prob[i] = this.prob[i]+this.prob[i-1];
-
-
-
-        console.log(this.prob);
     }
 
     generate(){
@@ -1441,7 +1419,6 @@ class CubicBezierGenerator extends Generator{
         let x = Math.pow(1-t,3)*this.x0 + 3*Math.pow(1-t,2)*t*this.x1 + 3*(1-t)*Math.pow(t,2)*this.x2 + Math.pow(t,3)*this.x3;
         this.lastGenerated1 = Math.pow(1-t,3)*this.y0 + 3*Math.pow(1-t,2)*t*this.y1 + 3*(1-t)*Math.pow(t,2)*this.y2 + Math.pow(t,3)*this.y3;
 
-
         return super.generate(x);
     }
 
@@ -1451,13 +1428,13 @@ class CubicBezierGenerator extends Generator{
             params.push(
                 {
                     shortName: "x"+i,
-                    variableName: "x"+i,
+                    variableName: "accessx"+i,
                     name: "Control Point X"+i,
                     type: "number"
                 },
                 {
                     shortName: "y"+i,
-                    variableName: "y"+i,
+                    variableName: "accessy"+i,
                     name: "Control Point Y"+i,
                     type: "number"
                 }
@@ -1478,17 +1455,395 @@ class CubicBezierGenerator extends Generator{
             model["x"+i] = this["x"+i];
             model["y"+i] = this["y"+i];
         }
+        model.proportional = this.proportional;
+        model.arclength = this.arclength;
         return model;
     }
 
     copy(){
-        let newGen = new CubicBezierGenerator(this.x0, this.y0, this.x1, this.y1, this.x2, this.y2, this.x3, this.y3);
+        let newGen = new CubicBezierGenerator(this.x0, this.y0, this.x1, this.y1, this.x2, this.y2, this.x3, this.y3, this.proportional);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
         return newGen;
     }
+
+
+    get accessx0() {
+        return this.x0;
+    }
+
+    set accessx0(x0) {
+        this.x0 = x0;
+        this.updateProb();
+    }
+
+    get accessy0() {
+        return this.y0;
+    }
+
+    set accessy0(y0) {
+        this.y0 = y0;
+        this.updateProb();
+    }
+
+    get accessx1() {
+        return this.x1;
+    }
+
+    set accessx1(x1) {
+        this.x1 = x1;
+        this.updateProb();
+    }
+
+    get accessy1() {
+        return this.y1;
+    }
+
+    set accessy1(y1) {
+        this.y1 = y1;
+        this.updateProb();
+    }
+
+    get accessx2() {
+        return this.x2;
+    }
+
+    set accessx2(x2) {
+        this.x2 = x2;
+        this.updateProb();
+    }
+
+    get accessy2() {
+        return this.y2;
+    }
+
+    set accessy2(y2) {
+        this.y2 = y2;
+        this.updateProb();
+    }
+
+    get accessx3() {
+        return this.x3;
+    }
+
+    set accessx3(x3) {
+        this.x3 = x3;
+        this.updateProb();
+    }
+
+    get accessy3() {
+        return this.y3;
+    }
+
+    set accessy3(y3) {
+        this.y3 = y3;
+        this.updateProb();
+    }
+
+    updateProb (){
+        let x=0, y=0;
+        this.prob = [];
+        let lastx = this.x0;
+        let lasty = this.y0;
+        for(let t =0.01; t<1.01; t+=0.01){
+            x = Math.pow(1-t,3)*this.x0 + 3*Math.pow(1-t,2)*t*this.x1 + 3*(1-t)*Math.pow(t,2)*this.x2 + Math.pow(t,3)*this.x3;
+            y = Math.pow(1-t,3)*this.y0 + 3*Math.pow(1-t,2)*t*this.y1 + 3*(1-t)*Math.pow(t,2)*this.y2 + Math.pow(t,3)*this.y3;
+            this.prob.push( Math.sqrt(Math.pow(x-lastx, 2)+Math.pow(y-lasty, 2)) );
+            lastx = x;
+            lasty = y;
+        }
+        let sum=0;
+        for(let v of this.prob)
+            sum+=v;
+
+        this.arclength = sum;
+
+        for(let i=0;i<this.prob.length;i++)
+            this.prob[i] = this.prob[i]/sum;
+
+        for(let i=1;i<this.prob.length;i++)
+            this.prob[i] = this.prob[i]+this.prob[i-1];
+    }
+
 }
+
+
+class LineGenerator extends Generator{
+    constructor(x0, y0, x1, y1){
+        super("LineGenerator Generator");
+        this.x0 = typeof x0 === "number" ? x0 : 0;
+        this.y0 = typeof y0 === "number" ? y0 : 0;
+        this.x1 = typeof x1 === "number" ? x1 : 5;
+        this.y1 = typeof y1 === "number" ? y1 : 5;
+
+        this.vertical = this.x1-this.x0 === 0;
+        if(!this.vertical){
+            this.m = (this.y1-this.y0)/(this.x1-this.x0);
+            this.b = this.y0-this.m*this.x0;
+            this.arclength = Math.sqrt(Math.pow(this.x1-this.x2,2) + Math.pow(this.y1-this.y2,2));
+        }
+    }
+
+    generate(){
+        if(this.vertical){
+            this.lastGenerated1 = Math.random()*(this.y1-this.y0) + this.y0;
+            return super.generate(this.x0);
+        }
+        let x = Math.random()*(this.x1-this.x0) + this.x0;
+        //calc y e guarda no lastGenerated1
+        this.lastGenerated1 = this.m*x + this.b;
+        return super.generate(x);
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "x0",
+                variableName: "accessx0",
+                name: "Initial X",
+                type: "number"
+            },
+            {
+                shortName: "y0",
+                variableName: "accessy0",
+                name: "Initial Y",
+                type: "number"
+            },
+            {
+                shortName: "x1",
+                variableName: "accessx1",
+                name: "Final X",
+                type: "number"
+            },
+            {
+                shortName: "y1",
+                variableName: "accessy1",
+                name: "Final Y",
+                type: "number"
+            }
+        );
+        return params;
+    }
+
+    get accessx0(){
+        return this.x0;
+    }
+    set accessx0(x0){
+        this.x0 = x0;
+        this.vertical = this.x1-this.x0 === 0;
+        if(!this.vertical){
+            updateLineParams();
+        }
+    }
+    get accessy0(){
+        return this.y0;
+    }
+    set accessy0(y0){
+        this.y0 = y0;
+        updateLineParams();
+    }
+
+    get accessx1(){
+        return this.x1;
+    }
+    set accessx1(x1){
+        this.x1 = x1;
+        this.vertical = this.x1-this.x0 === 0;
+        if(!this.vertical){
+            updateLineParams();
+        }
+    }
+    get accessy1(){
+        return this.y1;
+    }
+    set accessy1(y1){
+        this.y1 = y1;
+        updateLineParams();
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.x0 = this.x0;
+        model.y0 = this.y0;
+        model.x1 = this.x1;
+        model.y1 = this.y1;
+        return model;
+    }
+
+    copy(){
+        let newGen = new LineGenerator(this.x0, this.y0, this.x1, this.y1);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+
+    updateLineParams(){
+        this.m = (this.y1-this.y0)/(this.x1-this.x0);
+        this.b = this.y0-this.m*this.x0;
+        this.arclength = Math.sqrt(Math.pow(this.x1-this.x2,2) + Math.pow(this.y1-this.y2,2));
+    }
+}
+
+
+
+class Path2DStrokeGenerator extends Generator{
+    constructor(path){
+        super("CubicBezier Generator");
+        this.path = path;
+
+        this.updatePath();
+    }
+
+    generate(){
+
+        let t = Math.random();
+        let index =0;
+        for(let i=0; i<this.prob.length; i++){
+            if(t < this.prob[i]) {
+                index = i;
+                break;
+            }
+        }
+        let x = this.elements[index].generate();
+        this.lastGenerated1 = this.elements[index].lastGenerated1;
+
+        return super.generate(x);
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push({
+            shortName: "path",
+            variableName: "accessPath",
+            name: "Path encoded as 'd' property of a path in SVG.",
+            type: "string"
+        });
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.path = this.path;
+        return model;
+    }
+
+    copy(){
+        let newGen = new Path2DStrokeGenerator(this.path);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+
+    get accessPath(){
+        return this.path;
+    }
+    set accessPath(path){
+        this.path = path;
+        this.updatePath();
+    }
+
+    updatePath(){
+        this.elements = [];
+        let lastPoint = [0,0];
+
+        let commands = this.path.match(/[ACLMZaclmz][^ACLMZaclmz]*/g);
+        for(let c of commands){
+            switch (c[0]){
+                case "M":
+                    let params = c.substring(1).trim().split(/[,\s]+/);
+                    let quant = params/2;
+                    for(let i=0;i<quant;i++){
+                        lastPoint[0] = +params[i*2];
+                        lastPoint[1] = +params[i*2+1];
+                    }
+                    break;
+
+                case "m":
+                    let params = c.substring(1).trim().split(/[,\s]+/);
+                    let quant = params/2;
+                    for(let i=0;i<quant;i++){
+                        lastPoint[0] += +params[i*2];
+                        lastPoint[1] += +params[i*2+1];
+                    }
+                    break;
+
+                case "L":
+                    let params = c.substring(1).trim().split(/[,\s]+/);
+                    let quant = params/2;
+                    for(let i=0;i<quant;i++){
+                        let x = +params[i*2], y = +params[i*2+1];
+                        this.elements.push(new LineGenerator(lastPoint[0], lastPoint[1], x, y));
+                        lastPoint[0] = x;
+                        lastPoint[1] = y;
+                    }
+                    break;
+
+                case "l":
+                    let params = c.substring(1).trim().split(/[,\s]+/);
+                    let quant = params/2;
+                    for(let i=0;i<quant;i++){
+                        let x = (+params[i*2])+lastPoint[0], y = (+params[i*2+1])+lastPoint[1];
+                        this.elements.push(new LineGenerator(lastPoint[0], lastPoint[1], x, y));
+                        lastPoint[0] = x;
+                        lastPoint[1] = y;
+                    }
+                    break;
+
+                case "C":
+                    let params = c.substring(1).trim().split(/[,\s]+/);
+                    let quant = params/6;
+                    for(let i=0;i<quant;i++){
+                        let x1 = +params[i*6], y1 = +params[i*6+1];
+                        let x2 = +params[i*6+2], y2 = +params[i*6+3];
+                        let x3 = +params[i*6+4], y3 = +params[i*6+5];
+                        this.elements.push(new CubicBezierGenerator(lastPoint[0], lastPoint[1],
+                            x1,y1,x2,y2,x3,y3, true));
+                        lastPoint[0]=x3;
+                        lastPoint[1]=y3;
+                    }
+                    break;
+                case "c":
+                    let params = c.substring(1).trim().split(/[,\s]+/);
+                    let quant = params/6;
+                    for(let i=0;i<quant;i++){
+                        let x1 = +params[i*6]; x1 = x1+lastPoint[0];
+                        let y1 = +params[i*6+1]; y1 = y1+lastPoint[1];
+
+                        let x2 = +params[i*6+2]; x2 = x2+x1;
+                        let y2 = +params[i*6+3]; y2 = y2+y1;
+
+                        let x3 = +params[i*6+4]; x3 = x3+x2;
+                        let y3 = +params[i*6+5]; y3 = y3+y2;
+                        this.elements.push(new CubicBezierGenerator(lastPoint[0], lastPoint[1],
+                            x1,y1,x2,y2,x3,y3, true));
+                        lastPoint[0]=x3;
+                        lastPoint[1]=y3;
+                    }
+                    break;
+
+            }
+        }
+
+        let sum = 0;
+        this.prob = [];
+        for(let e of this.elements){
+            this.prob.push(e.arclength);
+            sum+=e.arclength;
+        }
+
+        for(let i=0;i<this.prob.length;i++)
+            this.prob[i] = this.prob[i]/sum;
+
+        for(let i=1;i<this.prob.length;i++)
+            this.prob[i] = this.prob[i]+this.prob[i-1];
+    }
+}
+
+
 
 class GetExtraValue extends Generator{
     constructor(extra_index, srcGen){
