@@ -40,7 +40,7 @@ ipc.on('call-datagen', function(event, data){// ipc.send('receive-datagen', acti
 
 ipc.on('delete-dimension', function(){
     deleteCollumn();
-})
+});
 
 
 function newModal(header="Are you Sure?",content="",buttons=[{'label' : 'Cancel', 'returning': 0},{'label': 'Ok', 'returning': 1}]) {
@@ -735,6 +735,7 @@ $("html").ready(function(){
     $("#btnDesenho").on("click", function(){
         if(activeGenerator[currentDataGen] instanceof DataGen.superTypes["Geometric"]){
             console.log("Tudo certo.")
+            //TODO: Aqui Yvan!
         }
     });
 
@@ -1506,6 +1507,11 @@ function showGenerators(){
     }
     optionsPreview();
     redrawPreview();
+
+    if(activeGenerator[currentDataGen] instanceof DataGen.superTypes.Geometric)
+        $("#btnDesenho").removeAttr("disabled");
+    else
+        $("#btnDesenho").attr("disabled", "true");
 
     return active_gen_chip.obj;
 }

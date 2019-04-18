@@ -254,6 +254,15 @@ select#selectGeneratorType:focus > option {
 .btn.btn-default.superactive {
     background-image: linear-gradient(to bottom,#0636ec 0,#6db3fd 100%);
 }
+button.btn[disabled] {
+    background-color: #d0cece;
+    background-image: none;
+    box-shadow: none;
+    border-color: #d0cece;
+}
+button.btn[disabled] > img {
+    opacity: 0.6;
+}
 
 .img-icon{
     padding: 0.2em 0.3em;
