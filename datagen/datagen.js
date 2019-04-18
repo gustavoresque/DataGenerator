@@ -13,7 +13,7 @@ class Generator{
         this.ID = "GEN_"+uniqueID();
     }
 
-    addGenerator(gen, order){
+    addGenerator(gen){
         if (this.generator){
             this.generator.addGenerator(gen);
         } else {
@@ -117,19 +117,10 @@ class Generator{
         if(gen.parent instanceof SwitchCaseFunction){
             for(let cat in gen.parent.listOfGenerators){
                 if(gen.parent.listOfGenerators.hasOwnProperty(cat) && gen.parent.listOfGenerators[cat] === this) {
-                    console.log("depois");
-                    console.log(gen.parent.listOfGenerators[cat]);
                     gen.parent.listOfGenerators[cat] = gen;
-                    console.log("antes");
-                    console.log(gen.parent.listOfGenerators[cat]);
                 }
             }
         }
-        // let genSub = this.generator.generator;
-        // this.generator = gen;
-        // this.generator.generator = genSub;
-        //
-        // return true;
     }
 
 
@@ -229,102 +220,13 @@ class Generator{
     }
 }
 
-class ConstantValue extends Generator{
-
-    constructor(value){
-        super("Constant Value");
-        this.value = value || 1;
-    }
-
-    generate(){
-        return super.generate(this.value);
-    }
-
-    getGenParams(){
-        let params = super.getGenParams();
-        params.push(
-            {
-                shortName: "Value",
-                variableName: "value",
-                name: "The Constant Value",
-                type: "number",
-            }
-        );
-        return params;
-    }
-
-    getModel(){
-        let model = super.getModel();
-        model.value = this.value;
-        return model;
-    }
-
-    copy(){
-        let newGen = new ConstantValue(this.value);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
-        return newGen;
-    }
-
-    getEstimatedRange(){
-        return [this.value];
+class Random extends Generator{
+    constructor(name){
+        super(name);
     }
 }
 
-class MissingValue extends Generator{
-
-    constructor(value, probability){
-        super("Missing Value");
-        this.value = value || "Miss";
-        this.probability = probability || 0.1;
-    }
-
-    generate(){
-        if(Math.random() < this.probability) {
-            this.lastGenerated = this.value;
-            return this.value;
-        }else{
-            return super.generate(0);
-        }
-    }
-
-    getGenParams(){
-        let params = super.getGenParams();
-        params.push(
-            {
-                shortName: "Value",
-                variableName: "value",
-                name: "The Constant Value",
-                type: "auto"
-            },
-            {
-                shortName: "Prob",
-                variableName: "probability",
-                name: "Occurrence Probability\n Must be between 0 and 1",
-                type: "number"
-            }
-        );
-        return params;
-    }
-
-    getModel(){
-        let model = super.getModel();
-        model.value = this.value;
-        model.probability = this.probability;
-        return model;
-    }
-
-    copy(){
-        let newGen = new MissingValue(this.value, this.probability);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
-        return newGen;
-    }
-}
-
-class RandomUniformGenerator extends Generator{
+class RandomUniformGenerator extends Random{
     constructor(min, max, disc){
         super("Uniform Generator");
         this.min = min || 0;
@@ -379,7 +281,7 @@ class RandomUniformGenerator extends Generator{
     }
 }
 
-class RandomGaussianGenerator extends Generator{
+class RandomGaussianGenerator extends Random{
     constructor(mean, std){
         super("Gaussian Generator");
         this.mean = mean || 0;
@@ -426,7 +328,7 @@ class RandomGaussianGenerator extends Generator{
     }
 }
 
-class RandomPoissonGenerator extends Generator{
+class RandomPoissonGenerator extends Random{
     constructor(lambda){
         super("Poisson Generator");
         this.lambda = lambda || 1;
@@ -465,7 +367,7 @@ class RandomPoissonGenerator extends Generator{
     }
 }
 
-class RandomBernoulliGenerator extends Generator{
+class RandomBernoulliGenerator extends Random{
     constructor(p){
         super("Bernoulli Generator");
         this.p = p || 0.5;
@@ -504,7 +406,7 @@ class RandomBernoulliGenerator extends Generator{
     }
 }
 
-class RandomCauchyGenerator extends Generator{
+class RandomCauchyGenerator extends Random{
     constructor(loc, scale){
         super("Cauchy Generator");
         this.loc = loc || 0;
@@ -551,70 +453,31 @@ class RandomCauchyGenerator extends Generator{
     }
 }
 
-class FixedTimeGenerator extends Generator{
-    constructor(initTime, step, timeMask){
-        super("Fixed Time Generator");
-        this.initTime = initTime || "00:00:00";
-        this.step = step || "00:00:10";
-        this.timeMask = timeMask || "HH:mm:ss";
-        this.time = moment(this.initTime, this.timeMask);
-        this.timeStep = moment(this.step, this.timeMask);
+class RandomCategorical extends Random {
+    constructor(array) {
+        super("Categorical");
+        this.array = array || ["Banana", "Apple", "Orange"];
     }
 
-    set accessInitTime(initTime){
-        this.initTime = initTime;
-        this.time = moment(this.initTime, this.timeMask);
-    }
-    get accessInitTime(){
-        return this.initTime;
-    }
-    set accessStepTime(step){
-        this.step = step;
-        this.timeStep = moment(this.step, this.timeMask);
-    }
-    get accessStepTime(){
-        return this.step;
-    }
-    set accessMaskTime(timeMask){
-        this.timeMask = timeMask;
-        this.time = moment(this.initTime, this.timeMask);
-        this.timeStep = moment(this.step, this.timeMask);
-    }
-    get accessMaskTime(){
-        return this.timeMask;
+    generate() {
+        let result =  this.generator ? parseInt(super.generate(0)) : -1;
+        if(isNaN(result) || result >= this.array.length || result < 0){
+            this.lastGenerated = this.array[Math.floor(Math.random() * this.array.length)];
+            return this.lastGenerated;
+        } else{
+            this.lastGenerated = this.array[result];
+            return this.lastGenerated;
+        }
     }
 
-    generate(){
-        let v = this.time.format(this.timeMask);
-        console.log(v);
-        this.time.add(this.timeStep.seconds(), "s");
-        this.time.add(this.timeStep.minutes(), "m");
-        this.time.add(this.timeStep.hours(), "h");
-        this.time.add(super.generate(0), "s");
-        this.lastGenerated = v;
-        return this.lastGenerated;
-    }
-
-    getGenParams(){
+    getGenParams() {
         let params = super.getGenParams();
         params.push(
             {
-                shortName: "Init",
-                variableName: "accessInitTime",
-                name: "Initial Time",
-                type: "string"
-            },
-            {
-                shortName: "Step",
-                variableName: "accessStepTime",
-                name: "Time Step",
-                type: "string"
-            },
-            {
-                shortName: "Mask",
-                variableName: "accessMaskTime",
-                name: "Time Mask according to Moment.js",
-                type: "string"
+                shortName: "List",
+                variableName: "array",
+                name: "List of Categories",
+                type: "array"
             }
         );
         return params;
@@ -622,32 +485,161 @@ class FixedTimeGenerator extends Generator{
 
     getModel(){
         let model = super.getModel();
-        model.initTime = this.initTime;
-        model.step = this.step;
-        model.timeMask = this.timeMask;
+        model.array = this.array;
         return model;
     }
 
+    getReturnedType(){
+        return "Categorical";
+    }
+
     copy(){
-        let newGen = new FixedTimeGenerator(this.initTime, this.step, this.timeMask);
+        let newGen = new RandomCategorical(this.array);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
         return newGen;
     }
+}
+
+class RandomCategoricalQtt extends Random {
+    constructor(array) {
+        super("Categorical Quantity");
+        this.array = array || ["Banana", "Apple", "Orange"];
+        this.quantity = [3,5];
+        this.counterQtt = [];
+        for (let a in this.array){
+            this.counterQtt.push(0);
+        }
+    }
+
+    generate() {
+        let result =  this.generator ? parseInt(super.generate(0)) : -1;
+        if(isNaN(result) || result >= this.array.length || result < 0){
+            let pos = 0;
+            do{
+                pos = Math.floor(Math.random() * this.array.length);
+            }while(this.quantity[pos] && ((this.counterQtt[pos] >= this.quantity[pos])));
+
+            this.lastGenerated = this.array[pos];
+            this.counterQtt[pos] = this.counterQtt[pos] + 1;
+        } else{
+            do{
+                result = Math.floor(Math.random() * this.array.length);
+            }while(this.quantity[result] && (this.counterQtt[result] >= this.quantity[result]));
+
+            this.lastGenerated = this.array[result];
+            this.counterQtt[result] = this.counterQtt[result] + 1;
+        }
+
+        return this.lastGenerated;
+    }
 
     reset(){
-        this.time = moment(this.initTime, this.timeMask);
-        this.timeStep = moment(this.step, this.timeMask);
+        this.counterQtt = [];
+        for (let a in this.array){
+            this.counterQtt.push(0);
+        }
         super.reset();
     }
 
+    getGenParams() {
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "List",
+                variableName: "array",
+                name: "List of Categories",
+                type: "array"
+            },
+            {
+                shortName: "Quantity",
+                variableName: "quantity",
+                name: "Quantities for each category",
+                type: "numarray"
+            }
+        );
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.array = this.array;
+        return model;
+    }
+
     getReturnedType(){
-        return "Time";
+        return "Categorical";
+    }
+
+    copy(){
+        let newGen = new RandomCategorical(this.array);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
     }
 }
 
-class PoissonTimeGenerator extends Generator{
+class RandomWeightedCategorical extends Random {
+    constructor(array,weights) {
+        super("Weighted Categorical");
+        this.array = array || ["Banana", "Apple", "Orange"];
+        this.weights = weights || [0.3, 0.2, 0.5];
+    }
+
+    generate() {
+        let r = Math.random();
+        let p = this.weights[0];
+        let i = 0;
+        while(r > p && i < this.weights.length-1){
+            p+=this.weights[i];
+            i++;
+        }
+        this.lastGenerated = this.array[i];
+        return this.lastGenerated;
+    }
+
+    getGenParams() {
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "List",
+                variableName: "array",
+                name: "List of Categories",
+                type: "array"
+            },
+            {
+                shortName: "Probs",
+                variableName: "weights",
+                name: "List of Weights",
+                type: "numarray"
+            }
+        );
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.array = this.array;
+        model.weights = this.weights;
+        return model;
+    }
+
+    getReturnedType(){
+        return "Categorical";
+    }
+
+    copy(){
+        let newGen = new RandomWeightedCategorical(this.array, this.weights);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+}
+
+class PoissonTimeGenerator extends Random{
     constructor(initTime, timeMask, interval, intervalUnit,lambda){
         super("Poisson Time Generator");
         this.initTime = initTime || "00:00:00";
@@ -771,7 +763,67 @@ class PoissonTimeGenerator extends Generator{
     }
 }
 
-class RandomConstantNoiseGenerator extends Generator{
+
+
+class Accessory extends Generator{
+    constructor(name){
+        super(name);
+    }
+}
+
+class MissingValue extends Accessory{
+
+    constructor(value, probability){
+        super("Missing Value");
+        this.value = value || "Miss";
+        this.probability = probability || 0.1;
+    }
+
+    generate(){
+        if(Math.random() < this.probability) {
+            this.lastGenerated = this.value;
+            return this.value;
+        }else{
+            return super.generate(0);
+        }
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "Value",
+                variableName: "value",
+                name: "The Constant Value",
+                type: "auto"
+            },
+            {
+                shortName: "Prob",
+                variableName: "probability",
+                name: "Occurrence Probability\n Must be between 0 and 1",
+                type: "number"
+            }
+        );
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.value = this.value;
+        model.probability = this.probability;
+        return model;
+    }
+
+    copy(){
+        let newGen = new MissingValue(this.value, this.probability);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+}
+
+class RandomConstantNoiseGenerator extends Accessory{
     constructor(probability, value){
         super("Constant Noise Generator");
         this.probability = probability || 0.3;
@@ -821,7 +873,7 @@ class RandomConstantNoiseGenerator extends Generator{
     }
 }
 
-class RandomNoiseGenerator extends Generator{
+class RandomNoiseGenerator extends Accessory{
     constructor(probability, intensity, generator2){
         super("Noise Generator");
         this.generator2 = generator2 || new defaultGenerator();
@@ -894,7 +946,7 @@ class RandomNoiseGenerator extends Generator{
     }
 }
 
-class RangeFilter extends Generator {
+class RangeFilter extends Accessory {
     constructor(begin, end) {
         super("Range Filter");
         this.begin = begin;
@@ -946,7 +998,7 @@ class RangeFilter extends Generator {
     }
 }
 
-class LinearScale extends Generator {
+class LinearScale extends Accessory {
     constructor(minDomain,maxDomain, minRange, maxRange) {
         super("Linear Scale");
         this.minDomain = minDomain | 0;
@@ -1012,7 +1064,7 @@ class LinearScale extends Generator {
     }
 }
 
-class MinMax extends Generator {
+class MinMax extends Accessory {
     constructor(min, max) {
         super("MinMax");
         this.min = min || 0;
@@ -1059,7 +1111,7 @@ class MinMax extends Generator {
     }
 }
 
-class LowPassFilter extends Generator {
+class LowPassFilter extends Accessory {
     constructor(scale) {
         super("Low-Pass Filter");
         this.scale = scale || 2;
@@ -1105,7 +1157,7 @@ class LowPassFilter extends Generator {
     }
 }
 
-class NoRepeat extends Generator {
+class NoRepeat extends Accessory {
     constructor() {
         super("No Repeat");
         this.values = [];
@@ -1141,167 +1193,40 @@ class NoRepeat extends Generator {
 
 }
 
-class RealDataWrapper extends Generator {
-    constructor(data, dataType) {
-        super("Real Data Wrapper");
-        this.data = data || [];
-        this.dataType = dataType || "Auto";
-
-        this.length = data.length;
-        this.current = 0;
+class GetExtraValue extends Accessory{
+    constructor(extra_index, srcGen){
+        super("Get Extra Value");
+        this.extra_index = extra_index || 1;
+        this.srcGen = srcGen;
     }
 
-    generate() {
-        let i = this.current;
-        this.current++;
-        this.current %= this.length;
-        return this.dataType === "Auto" ? super.generate(this.data[i]) :
-            this.dataType === "Numeric" ? parseFloat(super.generate(this.data[i])) : ""+super.generate(this.data[i]);
-    }
-
-    getModel(){
-        let model = super.getModel();
-        model.data = this.data;
-        model.dataType = this.dataType;
-        return model;
-    }
-
-    copy(){
-        let newGen = new RealDataWrapper(this.data, this.dataType);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
+    generate(){
+        let lastValue = 0;
+        if(this.srcGen){
+            lastValue = this.srcGen["lastGenerated"
+            + (this.extra_index > 0 ? this.extra_index : "")];
         }
-        return newGen;
-    }
 
-    reset(){
-        this.current = 0;
-    }
-
-    getReturnedType(){
-        return this.dataType;
+        if(lastValue)
+            return super.generate(lastValue);
+        else
+            return super.generate(0);
     }
 
     getGenParams(){
         let params = super.getGenParams();
         params.push(
             {
-                shortName: "Type",
-                variableName: "dataType",
-                name: "Force a Data Type",
-                type: "options",
-                options: ["Auto", "Numeric", "Categorical"]
-            }
-        );
-        return params;
-    }
-
-}
-
-class RandomCategorical extends Generator {
-    constructor(array) {
-            super("Categorical");
-            this.array = array || ["Banana", "Apple", "Orange"];
-    }
-
-    generate() {
-        let result =  this.generator ? parseInt(super.generate(0)) : -1;
-        if(isNaN(result) || result >= this.array.length || result < 0){
-            this.lastGenerated = this.array[Math.floor(Math.random() * this.array.length)];
-            return this.lastGenerated;
-        } else{
-            this.lastGenerated = this.array[result];
-            return this.lastGenerated;
-        }
-    }
-
-    getGenParams() {
-        let params = super.getGenParams();
-        params.push(
-            {
-                shortName: "List",
-                variableName: "array",
-                name: "List of Categories",
-                type: "array"
-            }
-        );
-        return params;
-    }
-
-    getModel(){
-        let model = super.getModel();
-        model.array = this.array;
-        return model;
-    }
-
-    getReturnedType(){
-        return "Categorical";
-    }
-
-    copy(){
-        let newGen = new RandomCategorical(this.array);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
-        return newGen;
-    }
-}
-
-class RandomCategoricalQtt extends Generator {
-    constructor(array) {
-        super("Categorical Quantity");
-        this.array = array || ["Banana", "Apple", "Orange"];
-        this.quantity = [3,5];
-        this.counterQtt = [];
-        for (let a in this.array){
-            this.counterQtt.push(0);
-        }
-    }
-
-    generate() {
-        let result =  this.generator ? parseInt(super.generate(0)) : -1;
-        if(isNaN(result) || result >= this.array.length || result < 0){
-            let pos = 0;
-            do{
-                pos = Math.floor(Math.random() * this.array.length);
-            }while(this.quantity[pos] && ((this.counterQtt[pos] >= this.quantity[pos])));
-
-            this.lastGenerated = this.array[pos];
-            this.counterQtt[pos] = this.counterQtt[pos] + 1;
-        } else{
-            do{
-                result = Math.floor(Math.random() * this.array.length);
-            }while(this.quantity[result] && (this.counterQtt[result] >= this.quantity[result]));
-
-            this.lastGenerated = this.array[result];
-            this.counterQtt[result] = this.counterQtt[result] + 1;
-        }
-
-        return this.lastGenerated;
-    }
-
-    reset(){
-        this.counterQtt = [];
-        for (let a in this.array){
-            this.counterQtt.push(0);
-        }
-        super.reset();
-    }
-
-    getGenParams() {
-        let params = super.getGenParams();
-        params.push(
-            {
-                shortName: "List",
-                variableName: "array",
-                name: "List of Categories",
-                type: "array"
+                shortName: "SrcGen",
+                variableName: "srcGen",
+                name: "Source Generator",
+                type: "Generator"
             },
             {
-                shortName: "Quantity",
-                variableName: "quantity",
-                name: "Quantities for each category",
-                type: "numarray"
+                shortName: "i",
+                variableName: "extra_index",
+                name: "Index of Extra Value",
+                type: "number"
             }
         );
         return params;
@@ -1309,16 +1234,13 @@ class RandomCategoricalQtt extends Generator {
 
     getModel(){
         let model = super.getModel();
-        model.array = this.array;
+        model.extra_index = this.extra_index;
+        model.srcGen = this.srcGen ? this.srcGen.ID : "";
         return model;
     }
 
-    getReturnedType(){
-        return "Categorical";
-    }
-
     copy(){
-        let newGen = new RandomCategorical(this.array);
+        let newGen = new GetExtraValue(this.extra_index, this.srcGen);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -1326,65 +1248,15 @@ class RandomCategoricalQtt extends Generator {
     }
 }
 
-class RandomWeightedCategorical extends Generator {
-    constructor(array,weights) {
-        super("Weighted Categorical");
-        this.array = array || ["Banana", "Apple", "Orange"];
-        this.weights = weights || [0.3, 0.2, 0.5];
-    }
 
-    generate() {
-        let r = Math.random();
-        let p = this.weights[0];
-        let i = 0;
-        while(r > p && i < this.weights.length-1){
-            p+=this.weights[i];
-            i++;
-        }
-        this.lastGenerated = this.array[i];
-        return this.lastGenerated;
-    }
 
-    getGenParams() {
-        let params = super.getGenParams();
-        params.push(
-            {
-                shortName: "List",
-                variableName: "array",
-                name: "List of Categories",
-                type: "array"
-            },
-            {
-                shortName: "Probs",
-                variableName: "weights",
-                name: "List of Weights",
-                type: "numarray"
-            }
-        );
-        return params;
-    }
-
-    getModel(){
-        let model = super.getModel();
-        model.array = this.array;
-        model.weights = this.weights;
-        return model;
-    }
-
-    getReturnedType(){
-        return "Categorical";
-    }
-
-    copy(){
-        let newGen = new RandomWeightedCategorical(this.array, this.weights);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
-        return newGen;
+class Geometric extends Generator{
+    constructor(name){
+        super(name);
     }
 }
 
-class CubicBezierGenerator extends Generator{
+class CubicBezierGenerator extends Geometric{
     constructor(x0, y0, x1, y1, x2, y2, x3, y3, proportional){
         super("CubicBezier Generator");
         this.x0 = x0 || 0;
@@ -1568,8 +1440,7 @@ class CubicBezierGenerator extends Generator{
 
 }
 
-
-class LineGenerator extends Generator{
+class LineGenerator extends Geometric{
     constructor(x0, y0, x1, y1){
         super("LineGenerator Generator");
         this.x0 = typeof x0 === "number" ? x0 : 0;
@@ -1687,30 +1558,32 @@ class LineGenerator extends Generator{
     }
 }
 
-
-
-class Path2DStrokeGenerator extends Generator{
+class Path2DStrokeGenerator extends Geometric{
     constructor(path){
-        super("CubicBezier Generator");
-        this.path = path;
+        super("Path2D Stroke Generator");
+        this.path = path || "M10,60 C 20,80 40,80 50,60";
 
         this.updatePath();
     }
 
     generate(){
 
-        let t = Math.random();
-        let index =0;
-        for(let i=0; i<this.prob.length; i++){
-            if(t < this.prob[i]) {
-                index = i;
-                break;
+        if(this.elements.length > 0){
+            let t = Math.random();
+            let index =0;
+            for(let i=0; i<this.prob.length; i++){
+                if(t < this.prob[i]) {
+                    index = i;
+                    break;
+                }
             }
-        }
-        let x = this.elements[index].generate();
-        this.lastGenerated1 = this.elements[index].lastGenerated1;
 
-        return super.generate(x);
+            let x = this.elements[index].generate();
+            this.lastGenerated1 = this.elements[index].lastGenerated1;
+            return super.generate(x);
+        }
+        return super.generate(0);
+
     }
 
     getGenParams(){
@@ -1751,11 +1624,13 @@ class Path2DStrokeGenerator extends Generator{
         let lastPoint = [0,0];
 
         let commands = this.path.match(/[ACLMZaclmz][^ACLMZaclmz]*/g);
+        let params, quant;
+        console.log(commands);
         for(let c of commands){
             switch (c[0]){
                 case "M":
-                    let params = c.substring(1).trim().split(/[,\s]+/);
-                    let quant = params/2;
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/2;
                     for(let i=0;i<quant;i++){
                         lastPoint[0] = +params[i*2];
                         lastPoint[1] = +params[i*2+1];
@@ -1763,8 +1638,8 @@ class Path2DStrokeGenerator extends Generator{
                     break;
 
                 case "m":
-                    let params = c.substring(1).trim().split(/[,\s]+/);
-                    let quant = params/2;
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/2;
                     for(let i=0;i<quant;i++){
                         lastPoint[0] += +params[i*2];
                         lastPoint[1] += +params[i*2+1];
@@ -1772,8 +1647,8 @@ class Path2DStrokeGenerator extends Generator{
                     break;
 
                 case "L":
-                    let params = c.substring(1).trim().split(/[,\s]+/);
-                    let quant = params/2;
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/2;
                     for(let i=0;i<quant;i++){
                         let x = +params[i*2], y = +params[i*2+1];
                         this.elements.push(new LineGenerator(lastPoint[0], lastPoint[1], x, y));
@@ -1783,8 +1658,8 @@ class Path2DStrokeGenerator extends Generator{
                     break;
 
                 case "l":
-                    let params = c.substring(1).trim().split(/[,\s]+/);
-                    let quant = params/2;
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/2;
                     for(let i=0;i<quant;i++){
                         let x = (+params[i*2])+lastPoint[0], y = (+params[i*2+1])+lastPoint[1];
                         this.elements.push(new LineGenerator(lastPoint[0], lastPoint[1], x, y));
@@ -1794,8 +1669,9 @@ class Path2DStrokeGenerator extends Generator{
                     break;
 
                 case "C":
-                    let params = c.substring(1).trim().split(/[,\s]+/);
-                    let quant = params/6;
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/6;
+                    console.log(params, quant);
                     for(let i=0;i<quant;i++){
                         let x1 = +params[i*6], y1 = +params[i*6+1];
                         let x2 = +params[i*6+2], y2 = +params[i*6+3];
@@ -1807,8 +1683,8 @@ class Path2DStrokeGenerator extends Generator{
                     }
                     break;
                 case "c":
-                    let params = c.substring(1).trim().split(/[,\s]+/);
-                    let quant = params/6;
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/6;
                     for(let i=0;i<quant;i++){
                         let x1 = +params[i*6]; x1 = x1+lastPoint[0];
                         let y1 = +params[i*6+1]; y1 = y1+lastPoint[1];
@@ -1845,60 +1721,6 @@ class Path2DStrokeGenerator extends Generator{
 
 
 
-class GetExtraValue extends Generator{
-    constructor(extra_index, srcGen){
-        super("Get Extra Value");
-        this.extra_index = extra_index || 1;
-        this.srcGen = srcGen;
-    }
-
-    generate(){
-        let lastValue = 0;
-        if(this.srcGen){
-            lastValue = this.srcGen["lastGenerated"
-            + (this.extra_index > 0 ? this.extra_index : "")];
-        }
-
-        if(lastValue)
-            return super.generate(lastValue);
-        else
-            return super.generate(0);
-    }
-
-    getGenParams(){
-        let params = super.getGenParams();
-        params.push(
-            {
-                shortName: "SrcGen",
-                variableName: "srcGen",
-                name: "Source Generator",
-                type: "Generator"
-            },
-            {
-                shortName: "i",
-                variableName: "extra_index",
-                name: "Index of Extra Value",
-                type: "number"
-            }
-        );
-        return params;
-    }
-
-    getModel(){
-        let model = super.getModel();
-        model.extra_index = this.extra_index;
-        model.srcGen = this.srcGen;
-        return model;
-    }
-
-    copy(){
-        let newGen = new GetExtraValue(this.extra_index, this.srcGen);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
-        return newGen;
-    }
-}
 
 class Function extends Generator{
 
@@ -2501,6 +2323,9 @@ class TimeLapsFunction extends SwitchCaseFunction{
     }
 }
 
+
+
+
 class Sequence extends Generator{
     constructor(name, begin, step){
         super(name);
@@ -2538,6 +2363,49 @@ class Sequence extends Generator{
         model.begin = this.begin;
         model.step = this.step;
         return model;
+    }
+}
+
+class ConstantValue extends Sequence{
+
+    constructor(value){
+        super("Constant Value");
+        this.value = value || 1;
+    }
+
+    generate(){
+        return super.generate(this.value);
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "Value",
+                variableName: "value",
+                name: "The Constant Value",
+                type: "number",
+            }
+        );
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.value = this.value;
+        return model;
+    }
+
+    copy(){
+        let newGen = new ConstantValue(this.value);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+
+    getEstimatedRange(){
+        return [this.value];
     }
 }
 
@@ -2617,8 +2485,6 @@ class SinusoidalSequence extends Sequence{
     }
 }
 
-// //TODO: Precisa dessa variável? Se não, remover...
-// var auxiliary = 0;
 class CustomSequence extends Sequence{
 
     constructor(begin, step, sent){
@@ -2699,6 +2565,160 @@ class CustomSequence extends Sequence{
     }
 }
 
+class FixedTimeGenerator extends Sequence{
+    constructor(initTime, step, timeMask){
+        super("Fixed Time Generator");
+        this.initTime = initTime || "00:00:00";
+        this.strStep = step || "00:00:10";
+        this.timeMask = timeMask || "HH:mm:ss";
+        this.time = moment(this.initTime, this.timeMask);
+        this.timeStep = moment(this.strStep, this.timeMask);
+    }
+
+    set accessInitTime(initTime){
+        this.initTime = initTime;
+        this.time = moment(this.initTime, this.timeMask);
+    }
+    get accessInitTime(){
+        return this.initTime;
+    }
+    set accessStepTime(step){
+        this.strStep = step;
+        this.timeStep = moment(this.strStep, this.timeMask);
+    }
+    get accessStepTime(){
+        return this.strStep;
+    }
+    set accessMaskTime(timeMask){
+        this.timeMask = timeMask;
+        this.time = moment(this.initTime, this.timeMask);
+        this.timeStep = moment(this.strStep, this.timeMask);
+    }
+    get accessMaskTime(){
+        return this.timeMask;
+    }
+
+    generate(){
+        let v = this.time.format(this.timeMask);
+        this.time.add(this.timeStep.seconds(), "s");
+        this.time.add(this.timeStep.minutes(), "m");
+        this.time.add(this.timeStep.hours(), "h");
+        this.time.add(super.generate(0), "s");
+        this.lastGenerated = v;
+        return this.lastGenerated;
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "Init",
+                variableName: "accessInitTime",
+                name: "Initial Time",
+                type: "string"
+            },
+            {
+                shortName: "Step",
+                variableName: "accessStepTime",
+                name: "Time Step",
+                type: "string"
+            },
+            {
+                shortName: "Mask",
+                variableName: "accessMaskTime",
+                name: "Time Mask according to Moment.js",
+                type: "string"
+            }
+        );
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.initTime = this.initTime;
+        model.strStep = this.strStep;
+        model.timeMask = this.timeMask;
+        return model;
+    }
+
+    copy(){
+        let newGen = new FixedTimeGenerator(this.initTime, this.strStep, this.timeMask);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+
+    reset(){
+        this.time = moment(this.initTime, this.timeMask);
+        this.timeStep = moment(this.strStep, this.timeMask);
+        super.reset();
+    }
+
+    getReturnedType(){
+        return "Time";
+    }
+}
+
+
+
+
+class RealDataWrapper extends Generator {
+    constructor(data, dataType) {
+        super("Real Data Wrapper");
+        this.data = data || [];
+        this.dataType = dataType || "Auto";
+
+        this.length = data.length;
+        this.current = 0;
+    }
+
+    generate() {
+        let i = this.current;
+        this.current++;
+        this.current %= this.length;
+        return this.dataType === "Auto" ? super.generate(this.data[i]) :
+            this.dataType === "Numeric" ? parseFloat(super.generate(this.data[i])) : ""+super.generate(this.data[i]);
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.data = this.data;
+        model.dataType = this.dataType;
+        return model;
+    }
+
+    copy(){
+        let newGen = new RealDataWrapper(this.data, this.dataType);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+
+    reset(){
+        this.current = 0;
+    }
+
+    getReturnedType(){
+        return this.dataType;
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "Type",
+                variableName: "dataType",
+                name: "Force a Data Type",
+                type: "options",
+                options: ["Auto", "Numeric", "Categorical"]
+            }
+        );
+        return params;
+    }
+
+}
 
 
 
@@ -2969,7 +2989,7 @@ class DataGen {
             }
             model.generator[i].generator = fullGenNames;
         }
-        //console.log(JSON.stringify(model));
+
         return JSON.stringify(model);
     }
 
@@ -3140,39 +3160,40 @@ class DataGen {
 
 }
 
-MissingValue.genType = "Accessory";
-RandomNoiseGenerator.genType = "Accessory";
-RandomConstantNoiseGenerator.genType = "Accessory";
-RangeFilter.genType = "Accessory";
-LinearScale.genType = "Accessory";
-MinMax.genType = "Accessory";
-LowPassFilter.genType = "Accessory";
-NoRepeat.genType = "Accessory";
-GetExtraValue.genType = "Accessory";
-LinearFunction.genType = "Function";
-QuadraticFunction.genType = "Function";
-PolynomialFunction.genType = "Function";
-ExponentialFunction.genType = "Function";
-LogarithmFunction.genType = "Function";
-SinusoidalFunction.genType = "Function";
-CategoricalFunction.genType = "Function";
-PiecewiseFunction.genType = "Function";
-TimeLapsFunction.genType = "Function";
-PoissonTimeGenerator.genType = "Random";
-RandomUniformGenerator.genType = "Random";
-RandomGaussianGenerator.genType = "Random";
-RandomPoissonGenerator.genType = "Random";
-RandomBernoulliGenerator.genType = "Random";
-RandomCauchyGenerator.genType = "Random";
-RandomWeightedCategorical.genType = "Random";
-RandomCategorical.genType = "Random";
-RandomCategoricalQtt.genType = "Random";
-CubicBezierGenerator.genType = "Random";
-FixedTimeGenerator.genType = "Sequence";
-ConstantValue.genType = "Sequence";
-CounterGenerator.genType = "Sequence";
-SinusoidalSequence.genType = "Sequence";
-CustomSequence.genType = "Sequence";
+// MissingValue.genType = "Accessory";
+// RandomNoiseGenerator.genType = "Accessory";
+// RandomConstantNoiseGenerator.genType = "Accessory";
+// RangeFilter.genType = "Accessory";
+// LinearScale.genType = "Accessory";
+// MinMax.genType = "Accessory";
+// LowPassFilter.genType = "Accessory";
+// NoRepeat.genType = "Accessory";
+// GetExtraValue.genType = "Accessory";
+// LinearFunction.genType = "Function";
+// QuadraticFunction.genType = "Function";
+// PolynomialFunction.genType = "Function";
+// ExponentialFunction.genType = "Function";
+// LogarithmFunction.genType = "Function";
+// SinusoidalFunction.genType = "Function";
+// CategoricalFunction.genType = "Function";
+// PiecewiseFunction.genType = "Function";
+// TimeLapsFunction.genType = "Function";
+// PoissonTimeGenerator.genType = "Random";
+// RandomUniformGenerator.genType = "Random";
+// RandomGaussianGenerator.genType = "Random";
+// RandomPoissonGenerator.genType = "Random";
+// RandomBernoulliGenerator.genType = "Random";
+// RandomCauchyGenerator.genType = "Random";
+// RandomWeightedCategorical.genType = "Random";
+// RandomCategorical.genType = "Random";
+// RandomCategoricalQtt.genType = "Random";
+// FixedTimeGenerator.genType = "Sequence";
+// ConstantValue.genType = "Sequence";
+// CounterGenerator.genType = "Sequence";
+// SinusoidalSequence.genType = "Sequence";
+// CustomSequence.genType = "Sequence";
+// CubicBezierGenerator.genType = "Geometric";
+// Path2DStrokeGenerator.genType = "Geometric";
 
 DataGen.listOfGens = {
     'Constant Value': ConstantValue,
@@ -3207,6 +3228,7 @@ DataGen.listOfGens = {
     'Sinusoidal Sequence': SinusoidalSequence,
     'Custom Sequence': CustomSequence,
     'CubicBezier Generator': CubicBezierGenerator,
+    'Path2D Stroke Generator': Path2DStrokeGenerator,
     'Get Extra Value': GetExtraValue
 };
 
@@ -3243,6 +3265,7 @@ DataGen.listOfGensHelp = {
     'Sinusoidal Sequence': SinusoidalSequence,
     'Custom Sequence': CustomSequence,
     'CubicBezier Generator': CubicBezierGenerator,
+    'Path2D Stroke Generator': Path2DStrokeGenerator,
     'Get Extra Value': GetExtraValue
 };
 
@@ -3268,6 +3291,9 @@ DataGen.superTypes = {
     Function,
     SwitchCaseFunction,
     Sequence,
+    Random,
+    Accessory,
+    Geometric,
     Column
 };
 

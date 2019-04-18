@@ -732,6 +732,12 @@ $("html").ready(function(){
         }
     });
 
+    $("#btnDesenho").on("click", function(){
+        if(activeGenerator[currentDataGen] instanceof DataGen.superTypes["Geometric"]){
+            console.log("Tudo certo.")
+        }
+    });
+
     $("tr.columTr").keyup(function (event){
         console.log("Teste");
     });
@@ -2033,16 +2039,22 @@ function preview(data2){
 }
 
 function configureMenuOfGens(){
-    let types = ["Sequence", "Random", "Function", "Accessory"];
+    let types = ["Sequence", "Random", "Function", "Accessory", "Geometric"];
     let menuObj = {};
 
     for(let t of types){
         menuObj[t] = {name: t, items: {}};
     }
+    let gens = DataGen.listOfGens;
+    for(let prop in gens){
+        for(let t of types){
+            if(gens[prop].prototype instanceof DataGen.superTypes[t]){
+                menuObj[t].items[prop] = {};
+                menuObj[t].items[prop].name = prop;
+                break;
+            }
+        }
 
-    for(let prop in DataGen.listOfGens){
-        menuObj[DataGen.listOfGens[prop].genType].items[prop] = {};
-        menuObj[DataGen.listOfGens[prop].genType].items[prop].name = prop;
     }
     return menuObj;
 }

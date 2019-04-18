@@ -101,6 +101,7 @@ button.floatButton:active{
     border-bottom: 1px solid gray;
     right: 5px;
     left: 5px;
+    overflow-y: auto;
 }
 
 .propTable td {
