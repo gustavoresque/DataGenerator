@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        .components{
+            border-style: solid;
+            float:left;
+            display:inline;
+        }
+
+        .elements {
+            border-style: solid;
+            margin: 10px;
+            padding: 5px;
+        }
+
+        #canvas{
+            height: 600px;
+            width: 800px;
+            position: relative;
+        }
+        #bezier{
+            border-style: dashed;
+            width: 600px;
+            height: 400px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-right: -50%;
+            transform: translate(-50%, -50%) }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas" class="components">
+        <div id="bezier"></div>
+    </div>
+    <div id="panelControl" class="components">
+        <div class="elements" id="buttons">
+            <button id="bezierPencil" type="button">Bézier Pencil</button>
+        </div>
+        <div class="elements" id="properties">
+            <button type="button">Click Me!</button>
+        </div>
+    </div>
+
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+    </script>
+    <script src="../lib/jquery-3.2.1.min.js"></script>
+    <script>if (window.module) module = window.module;</script>
+    <script src="../lib/d3.v5.min.js"></script>
+    <script>
+
+
+        let control_points = [], previewPath = [], selectingPath = [];
+        let getPoints = false;
+        let aux = [];
+
+        let svg = d3.select("#bezier")
+            .append("svg")
+            .attr("width", 600)
+            .attr("height", 400)
+            .on('click', function(){
+            })
+            .call(d3.drag()
+                .on("start", function(d) {
+                    if (getPoints)
+                        //previewPath.push(d3.mouse(this));
+                        aux = d3.mouse(this);
+                })
+                .on("drag", function(d,i) {
+                    if (getPoints){
+                        update();
+                    }
+                })
+                .on("end", function(d,i) {
+                    if (getPoints){
+                        if (previewPath.length > 0){
+                            let x1 = aux[0];
+                            let x2 = d3.mouse(this)[0];
+                            let y1 = aux[1];
+                            let y2 = d3.mouse(this)[1];
+                            let x3 = 0, y3 = 0;
+
+                            let d = Math.sqrt(Math.pow((x2 - x1),2) + Math.pow((y2 - y1),2));
+
+                            let delta_x = x2 - x1;
+                            let delta_y = y2 - y1;
+                            let theta_radians = Math.atan2(delta_y, delta_x);
+
+                            x3 = x1 + (d * Math.cos(theta_radians - Math.PI));
+                            y3 = y1 + (d * Math.sin(theta_radians - Math.PI));
+                            previewPath.push([x3,y3]);
+                        }
+
+                        previewPath.push(aux);
+                        previewPath.push(d3.mouse(this));
+                        aux = [];
+                        update();
+                    }
+                }));
+
+        let str = "";
+        svg.append('path').attr("id", "definitive").attr("d",str)
+            .style("fill","none").style("stroke","black").style("stroke-width","2px");
+
+        let strPreview = "";
+        svg.append('path').attr("id", "preview").attr("d",strPreview)
+            .style("fill","none").style("stroke","green").style("stroke-width","2px");
+
+        let points_selection = svg.selectAll('circle.control').data(control_points);
+        points_selection.exit().remove();
+
+
+        update();
+        function update(){
+            let str = "";
+            if (control_points.length > 0)
+                str = "M "+control_points[0][0]+","+control_points[0][1]+" C";
+
+            for(let i=1; i<control_points.length; i++){
+                str += " "+control_points[i][0]+","+control_points[i][1];
+            }
+
+            let strPreview = "";
+            if (previewPath.length > 0)
+                strPreview = "M "+previewPath[0][0]+","+previewPath[0][1]+" C";
+
+            for(let i=1; i<previewPath.length; i++){
+                strPreview += " "+previewPath[i][0]+","+previewPath[i][1];
+            }
+
+            svg.select("path#definitive").attr("d",str);
+            svg.select("path#preview").attr("d",strPreview);
+
+            svg.selectAll("circle").remove();
+            svg.selectAll("circle.control")
+                .data(control_points)
+                .enter().append("svg:circle")
+                .attr("fill", "red")
+                .attr("r", 7)
+                .attr("cx", function (d) { return d[0]; })
+                .attr("cy", function (d) { return d[1]; })
+                .call(d3.drag()
+                    .on("start", function(d) {
+                    })
+                    .on("drag", function(d,i) {
+                        //d3.select(this).attr("cx", d3.event.x).attr("cy", d3.event.y);
+                        control_points[i][0] = d3.event.x;
+                        control_points[i][1] = d3.event.y;
+                        update();
+                    })
+                    .on("end", function(d,i) {
+                    }));
+
+            svg.selectAll("circle.preview")
+                .data(previewPath)
+                .enter().append("svg:circle")
+                .attr("fill", "green")
+                .attr("r", 7)
+                .attr("cx", function (d) { return d[0]; })
+                .attr("cy", function (d) { return d[1]; })
+                .call(d3.drag()
+                    .on("start", function(d) {
+                    })
+                    .on("drag", function(d,i) {
+
+                    })
+                    .on("end", function(d,i) {
+                    }));
+        }
+
+        $("#bezierPencil").on("click", function(){
+            getPoints = true;
+        });
+        $(document).keypress(function(event){
+            let keycode = (event.keyCode ? event.keyCode : event.which);
+            if(keycode == '13'){
+                getPoints = false;
+                control_points = previewPath;
+                previewPath = [];
+                control_points.pop();
+                update();
+            }
+
+        });
+    </script>
+</body>
+</html>

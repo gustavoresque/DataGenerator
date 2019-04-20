@@ -143,7 +143,11 @@ ipc.on('verify-autosave', function(event, saved, unsaved) {
             }
         }
     }
-    if(unsaved.length !== 0) {saveModal.open();} else {ipc.sendSync("autosave-verified");}
+    if(unsaved.length !== 0) {
+        saveModal.open();
+    } else {
+        ipc.sendSync("autosave-verified");
+    }
 });
 
 ipc.on('open-datagen', function(event, path){openModel(path);});
@@ -166,6 +170,7 @@ function openModel (path,backup) {
             datagen[currentDataGen].filePath = path;
         }
         showModels();
+        showGenerators();
     } catch (e) {
         throw e;
     }
@@ -201,13 +206,19 @@ function save(type,dtIndex) {
                         dialog.showSaveDialog(saveScreen,{title:"Save Model", filters:[{name: 'json', extensions: ['json']}]}, function(targetPath) {
                             if(targetPath){
                                 datagen[index].filePath = targetPath;
-                                if(confirm("Do you want to change the model's name to '"+ require('path').basename(targetPath,'.json')+"'?")) datagen[index].name = require('path').basename(targetPath,'.json');
+                                if(confirm("Do you want to change the model's name to '"+ require('path').basename(targetPath,'.json')+"'?")){
+                                    datagen[index].name = require('path').basename(targetPath,'.json');
+                                    showModels();
+                                    showGenerators();
+                                }
+
                                 createExportModel(targetPath,index).then(() => {
                                     datagen[index].datagenChange = false;
-                                    resolve();
+                                    confirmSave = true;
+                                    resolve("Saved Successfully");
                                 }).catch((e) => {
                                     console.log(e);
-                                    reject();
+                                    reject("Saved Failed");
                                 })
                             } else {
                                 reject("Did not want to save :(");
@@ -736,6 +747,10 @@ $("html").ready(function(){
         if(activeGenerator[currentDataGen] instanceof DataGen.superTypes["Geometric"]){
             console.log("Tudo certo.")
             //TODO: Aqui Yvan!
+            let configs = datagen[currentDataGen].configs;
+            configs.modelid = datagen[currentDataGen].ID;
+            configs.modelName = datagen[currentDataGen].name;
+            ipc.send('draw-window', configs);
         }
     });
 
@@ -1617,27 +1632,61 @@ function showModels(){
         tabButton.get(0).__node__ = datagen[i];
 
         tabButton.on("click", "span.icon-cancel-circled", function () {
-            console.log($(this).parent().get(0).__node__);
+            let closeTabFlag = true;
+            if(datagen[currentDataGen].datagenChange){
+                const options = {
+                    type: 'question',
+                    buttons: ['Cancel', 'Yes', 'No'],
+                    defaultId: 2,
+                    title: 'Save',
+                    message: 'Save file "'+ datagen[currentDataGen].name +'"?',
+                    checkboxChecked: false,
+                };
 
-            let index = datagen.indexOf($(this).parent().get(0).__node__);
-            if (index > -1) {
-                ipc.send("dtChanges-del",index);
-                if(platformASpath !== false) {
-                    let inPath = platformASpath + datagen[index].ID + ".json";
-                    if(fs.existsSync(inPath)) {
-                        fs.unlink(inPath);
+                dialog.showMessageBox(null, options, (response, checkboxChecked) => {
+                    console.log(response);
+                    console.log(checkboxChecked);
+                    if (response === 1){
+                        save("save",currentDataGen)
+                            .then(function () {
+                                closeTab();
+                            },function(){
+                                console.log('Some error has occured');
+                            }).
+                            catch(function (e) {
+                                console.log(e);
+                            });
+                        //closeTab();
+                    }else if (response === 2){
+                        closeTab();
                     }
-                }
-
-                datagen.splice(index, 1);
-                if (index === currentDataGen)
-                    currentDataGen = (index === 0) ? 0 : (index - 1);
-                else if (index < currentDataGen)
-                    currentDataGen--;
+                });
+            }else{
+                closeTab();
             }
 
-            showModels();
-            showGenerators();
+            function closeTab(){
+                //let index = datagen.indexOf($(this).parent().get(0).__node__);
+                let index = currentDataGen;
+                if (index > -1) {
+                    ipc.send("dtChanges-del",index);
+                    if(platformASpath !== false) {
+                        let inPath = platformASpath + datagen[index].ID + ".json";
+                        if(fs.existsSync(inPath)) {
+                            fs.unlink(inPath);
+                        }
+                    }
+
+                    datagen.splice(index, 1);
+                    if (index === currentDataGen)
+                        currentDataGen = (index === 0) ? 0 : (index - 1);
+                    else if (index < currentDataGen)
+                        currentDataGen--;
+                }
+
+                showModels();
+                showGenerators();
+            }
         });
 
         if (currentDataGen === i){
@@ -1693,14 +1742,18 @@ function createNewModel () {
 }
 
 function createExportModel (path,dtIndex) {
-    let index = dtIndex;
-    if(dtIndex === undefined) index = currentDataGen;
+    return new Promise(function(resolve, reject) {
+        let index = dtIndex;
+        if(dtIndex === undefined) index = currentDataGen;
 
-    try {
-        fs.writeFileSync(path, datagen[index].exportModel());
-    } catch(e) {
-        throw e;
-    }
+        try {
+            fs.writeFileSync(path, datagen[index].exportModel());
+            resolve();
+        } catch(e) {
+            console.log(e);
+            reject();
+        }
+    });
 }
 
 //Verifica a cada minuto se é preciso salvar automaticamente.

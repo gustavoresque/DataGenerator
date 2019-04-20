@@ -123,6 +123,32 @@ function createWindow () {
         });
     });
 
+    let drawWindow;
+    ipcMain.on('draw-window', (event, message) => {
+        drawWindow = new BrowserWindow({
+            parent: mainWindow,
+            width: 980,
+            height: 700,
+            show: false,
+            resizable: true,
+            closable: true,
+            minimizable: true,
+            maximizable: true
+        });
+
+        drawWindow.loadURL(url.format({
+            pathname: path.join(__dirname, 'pages/drawWindow.html'),
+            protocol: 'file:',
+            slashes: true
+        }));
+        drawWindow.on('closed', function () {
+            drawWindow = undefined;
+        });
+        drawWindow.once('ready-to-show', () => {
+            drawWindow.show();
+        });
+    });
+
     ipcMain.on('call-datagen', (event, message) => {
         mainWindow.webContents.send('call-datagen', message);
     });
@@ -353,7 +379,14 @@ function createWindow () {
             e.preventDefault();
             if(dtChanges.length !== 0) {
                 let saved = [], unsaved = [];
-                for(let i in dtChanges) {if(dtChanges[i]) {unsaved.push(Number(i));} else {saved.push(Number(i));}}
+                for(let i in dtChanges) {
+                    if(dtChanges[i]) {
+                        unsaved.push(Number(i));
+                    } else {
+                        saved.push(Number(i));
+                    }
+                }
+
                 mainWindow.webContents.send('verify-autosave',saved,unsaved);
             } else {
                 dtSaved = true;
