@@ -127,7 +127,7 @@ function createWindow () {
     ipcMain.on('draw-window', (event, message) => {
         drawWindow = new BrowserWindow({
             parent: mainWindow,
-            width: 980,
+            width: 1000,
             height: 700,
             show: false,
             resizable: true,

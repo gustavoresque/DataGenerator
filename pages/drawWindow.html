@@ -57,7 +57,7 @@
     <script src="../lib/d3.v5.min.js"></script>
     <script>
 
-
+        let curves = [];
         let control_points = [], previewPath = [], selectingPath = [];
         let getPoints = false;
         let aux = [];
@@ -71,44 +71,36 @@
             .call(d3.drag()
                 .on("start", function(d) {
                     if (getPoints)
-                        //previewPath.push(d3.mouse(this));
                         aux = d3.mouse(this);
                 })
                 .on("drag", function(d,i) {
                     if (getPoints){
+                        selectingPath = [];
+                        selectingPath.push(previewPath[previewPath.length-2]);
+                        selectingPath.push(previewPath[previewPath.length-1]);
+                        selectingPath.push(pontoOposto(aux[0], aux[1], d3.mouse(this)[0], d3.mouse(this)[1]));
+                        selectingPath.push(aux);
+                        selectingPath.push(d3.mouse(this));
                         update();
                     }
                 })
                 .on("end", function(d,i) {
                     if (getPoints){
                         if (previewPath.length > 0){
-                            let x1 = aux[0];
-                            let x2 = d3.mouse(this)[0];
-                            let y1 = aux[1];
-                            let y2 = d3.mouse(this)[1];
-                            let x3 = 0, y3 = 0;
-
-                            let d = Math.sqrt(Math.pow((x2 - x1),2) + Math.pow((y2 - y1),2));
-
-                            let delta_x = x2 - x1;
-                            let delta_y = y2 - y1;
-                            let theta_radians = Math.atan2(delta_y, delta_x);
-
-                            x3 = x1 + (d * Math.cos(theta_radians - Math.PI));
-                            y3 = y1 + (d * Math.sin(theta_radians - Math.PI));
-                            previewPath.push([x3,y3]);
+                            previewPath.push(pontoOposto(aux[0], aux[1], d3.mouse(this)[0], d3.mouse(this)[1]));
                         }
 
                         previewPath.push(aux);
                         previewPath.push(d3.mouse(this));
                         aux = [];
+                        selectingPath = [];
                         update();
                     }
                 }));
 
-        let str = "";
-        svg.append('path').attr("id", "definitive").attr("d",str)
-            .style("fill","none").style("stroke","black").style("stroke-width","2px");
+        let strSelecting = "";
+        svg.append('path').attr("id", "selecting").attr("d",strSelecting)
+            .style("fill","none").style("stroke","red").style("opacity","0.3").style("stroke-width","2px");
 
         let strPreview = "";
         svg.append('path').attr("id", "preview").attr("d",strPreview)
@@ -120,12 +112,68 @@
 
         update();
         function update(){
-            let str = "";
-            if (control_points.length > 0)
-                str = "M "+control_points[0][0]+","+control_points[0][1]+" C";
+            svg.selectAll("circle").remove();
+            svg.selectAll("path.definitive").remove();
 
-            for(let i=1; i<control_points.length; i++){
-                str += " "+control_points[i][0]+","+control_points[i][1];
+            control_points.forEach(function(e){
+                let str = "";
+                if (e.length > 0)
+                    str = "M "+e[0][0]+","+e[0][1]+" C";
+
+                for(let i=1; i<e.length; i++){
+                    str += " "+e[i][0]+","+e[i][1];
+                }
+
+                svg.append('path').attr("class", "definitive").attr("d",str)
+                    .style("fill","none").style("stroke","black").style("stroke-width","2px");
+
+                svg.selectAll("circle.control")
+                    .data(e)
+                    .enter().append("svg:circle")
+                    .attr("fill", "blue")
+                    .attr("r", 3)
+                    .attr("cx", function (d) { return d[0]; })
+                    .attr("cy", function (d) { return d[1]; })
+                    .call(d3.drag()
+                        .on("start", function(d,i) {
+                            console.log(i);
+                        })
+                        .on("drag", function(d,i) {
+                            svg.selectAll("#lineGuide").remove();
+                            e[i][0] = d3.event.x;
+                            e[i][1] = d3.event.y;
+
+                            let j = 0;
+                            let line = "";
+                            if(i % 3 === 1){
+                                j = i-1;
+                            }else if(i % 3 === 2){
+                                j = i+1;
+                            }else{
+                                j = i;
+                            }
+
+                            console.log(i, j);
+
+                            line = "M "+e[j][0]+","+e[j][1]+" L"+e[j+1][0]+","+e[j+1][1];
+                            line += "M "+e[j-1][0]+","+e[j-1][1]+" L"+e[j][0]+","+e[j][1];
+
+                            svg.append('path').attr("id", "lineGuide").attr("d",line)
+                                .style("stroke","red").style("stroke-width","1px");
+
+                            update();
+                        })
+                        .on("end", function(d,i) {
+                            svg.selectAll("#lineGuide").remove();
+                        }));
+            });
+
+            let strSelecting = "";
+            if (selectingPath.length > 0)
+                strSelecting = "M "+selectingPath[0][0]+","+selectingPath[0][1]+" C";
+
+            for(let i=1; i<selectingPath.length; i++){
+                strSelecting += " "+selectingPath[i][0]+","+selectingPath[i][1];
             }
 
             let strPreview = "";
@@ -136,44 +184,39 @@
                 strPreview += " "+previewPath[i][0]+","+previewPath[i][1];
             }
 
-            svg.select("path#definitive").attr("d",str);
+            svg.select("path#selecting").attr("d",strSelecting);
             svg.select("path#preview").attr("d",strPreview);
 
-            svg.selectAll("circle").remove();
-            svg.selectAll("circle.control")
-                .data(control_points)
+            svg.selectAll("circle.selecting")
+                .data(selectingPath)
                 .enter().append("svg:circle")
                 .attr("fill", "red")
-                .attr("r", 7)
+                .attr("r", 3)
                 .attr("cx", function (d) { return d[0]; })
-                .attr("cy", function (d) { return d[1]; })
-                .call(d3.drag()
-                    .on("start", function(d) {
-                    })
-                    .on("drag", function(d,i) {
-                        //d3.select(this).attr("cx", d3.event.x).attr("cy", d3.event.y);
-                        control_points[i][0] = d3.event.x;
-                        control_points[i][1] = d3.event.y;
-                        update();
-                    })
-                    .on("end", function(d,i) {
-                    }));
+                .attr("cy", function (d) { return d[1]; });
 
             svg.selectAll("circle.preview")
                 .data(previewPath)
                 .enter().append("svg:circle")
                 .attr("fill", "green")
-                .attr("r", 7)
+                .attr("r", 3)
                 .attr("cx", function (d) { return d[0]; })
-                .attr("cy", function (d) { return d[1]; })
-                .call(d3.drag()
-                    .on("start", function(d) {
-                    })
-                    .on("drag", function(d,i) {
+                .attr("cy", function (d) { return d[1]; });
+        }
 
-                    })
-                    .on("end", function(d,i) {
-                    }));
+        function pontoOposto(x1,y1,x2,y2){
+            let x3 = 0, y3 = 0;
+
+            let d = Math.sqrt(Math.pow((x2 - x1),2) + Math.pow((y2 - y1),2));
+
+            let delta_x = x2 - x1;
+            let delta_y = y2 - y1;
+            let theta_radians = Math.atan2(delta_y, delta_x);
+
+            x3 = x1 + (d * Math.cos(theta_radians - Math.PI));
+            y3 = y1 + (d * Math.sin(theta_radians - Math.PI));
+
+            return [x3,y3];
         }
 
         $("#bezierPencil").on("click", function(){
@@ -183,9 +226,21 @@
             let keycode = (event.keyCode ? event.keyCode : event.which);
             if(keycode == '13'){
                 getPoints = false;
-                control_points = previewPath;
+                previewPath.pop();
+                control_points.push(previewPath);
+                console.log(control_points);
                 previewPath = [];
-                control_points.pop();
+                selectingPath = [];
+                update();
+            }
+
+        });
+        $(document).keypress(function(event){
+            let keycode = (event.keyCode ? event.keyCode : event.which);
+            if(keycode == '27'){
+                getPoints = false;
+                previewPath = [];
+                selectingPath = [];
                 update();
             }
 
