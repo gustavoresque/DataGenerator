@@ -837,8 +837,10 @@ $("html").ready(function(){
         else if($input.attr("data-type") === "boolean")
             this.__node__[$input.attr("data-variable")] = $input.get(0).checked;
 
-        else if($input.attr("data-type") === "Generator")
+        else if($input.attr("data-type") === "Generator") {
+            console.log("Aqui!!!!!!!!!!", $input.val());
             this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].findGenByID($input.val());
+        }
 
         else if($input.attr("data-type").indexOf("Column") >= 0) {
             this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].columns[parseInt($input.val())].generator;

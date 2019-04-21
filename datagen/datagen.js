@@ -1195,6 +1195,7 @@ class NoRepeat extends Accessory {
 
 class GetExtraValue extends Accessory{
     constructor(extra_index, srcGen){
+        console.log("criou um novo extra value: ", extra_index, srcGen);
         super("Get Extra Value");
         this.extra_index = extra_index || 1;
         this.srcGen = srcGen;
@@ -1218,7 +1219,7 @@ class GetExtraValue extends Accessory{
         params.push(
             {
                 shortName: "SrcGen",
-                variableName: "srcGen",
+                variableName: "accessSrcGen",
                 name: "Source Generator",
                 type: "Generator"
             },
@@ -1230,6 +1231,15 @@ class GetExtraValue extends Accessory{
             }
         );
         return params;
+    }
+
+    get accessSrcGen(){
+
+        return this.srcGen;
+    }
+    set accessSrcGen(ID){
+        console.log("inseriu o valor: ", ID);
+        this.srcGen = ID;
     }
 
     getModel(){
@@ -1808,7 +1818,8 @@ class Path2DFillGenerator extends Geometric{
             let height_prob =0;
             for(let i=0; i<this.prob.length; i++){
                 if(t < this.prob[i]) {
-                    height_prob = i/this.prob.length;
+                    let prob1 = (t-this.prob[i-1])/(this.prob[i]-this.prob[i-1]);
+                    height_prob = prob1 * (i/this.prob.length - (i-1)/this.prob.length) + (i-1)/this.prob.length;
                     break;
                 }
             }
@@ -1832,17 +1843,15 @@ class Path2DFillGenerator extends Geometric{
             for(let j=0;j<x_inter.length-1;j+=2){
                 x_length+=x_inter[j+1]-x_inter[j];
             }
-            let x_pos = Math.random()*x_length;
+            let x_pos = Math.random()*x_length + x_inter[0];
             for(let j=1;j<x_inter.length-1;j+=2){
-                if(xpos>x_inter[j]){
-
+                if(x_pos>x_inter[j]){
+                    x_pos+=x_inter[j];
                 }
             }
 
-
-            let x = this.elements[index].generate();
-            this.lastGenerated1 = this.elements[index].lastGenerated1;
-            return super.generate(height_prob);
+            this.lastGenerated1 = y_scan;
+            return super.generate(x_pos);
         }
         return super.generate(0);
 
@@ -1924,7 +1933,7 @@ class Path2DFillGenerator extends Geometric{
 
                         let lastp = this.polygons[this.polygons.length-1];
                         if(lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
-                            polygons.push([[lastPoint[0], lastPoint[1]]]);
+                            this.polygons.push([[lastPoint[0], lastPoint[1]]]);
                             checkBB(lastPoint[0], lastPoint[1]);
                         }
                         lastp = this.polygons[this.polygons.length-1];
@@ -1944,7 +1953,7 @@ class Path2DFillGenerator extends Geometric{
 
                         let lastp = this.polygons[this.polygons.length-1];
                         if(lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
-                            polygons.push([[lastPoint[0], lastPoint[1]]]);
+                            this.polygons.push([[lastPoint[0], lastPoint[1]]]);
                             checkBB(lastPoint[0], lastPoint[1]);
                         }
                         lastp = this.polygons[this.polygons.length-1];
@@ -1970,7 +1979,7 @@ class Path2DFillGenerator extends Geometric{
                         polyline.shift();
                         let lastp = this.polygons[this.polygons.length-1];
                         if(lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
-                            polygons.push([[lastPoint[0], lastPoint[1]]]);
+                            this.polygons.push([[lastPoint[0], lastPoint[1]]]);
                             checkBB(lastPoint[0], lastPoint[1]);
                         }
                         lastp = this.polygons[this.polygons.length-1];
@@ -2001,7 +2010,7 @@ class Path2DFillGenerator extends Geometric{
                         polyline.shift();
                         let lastp = this.polygons[this.polygons.length-1];
                         if(lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1])
-                            polygons.push([[lastPoint[0],lastPoint[1]]]);
+                            this.polygons.push([[lastPoint[0],lastPoint[1]]]);
                         lastp = this.polygons[this.polygons.length-1];
                         Array.prototype.push.apply(lastp, polyline);
                         for(let p of polyline)
@@ -3200,6 +3209,7 @@ class DataGen {
         }
         return names;
     }
+
     getDisplayedColumnsNames() {
         let names = [];
         for(let col of this.columns){
@@ -3484,13 +3494,28 @@ class DataGen {
     }
 
     findGenByID(ID){
-        for(let i=0; i<this.columns.length; i++){
-            let gens = this.columns[i].generator.getFullGenerator();
+        let dfs = (gen) =>{
+            let full_gen = gen.getFullGenerator();
 
-            for(let j=0; j<gens.length; j++){
-                if(gens[j].ID === ID)
-                    return gens[j];
+            for(let j=0; j<full_gen.length; j++){
+                console.log(full_gen[j].ID, ID);
+                if(full_gen[j].ID === ID)
+                    return full_gen[j];
+
+                if(full_gen[j] instanceof SwitchCaseFunction){
+                    for(let attr in full_gen[j].listOfGenerators){
+                        if(full_gen[j].listOfGenerators.hasOwnProperty(attr)){
+                            let found = dfs(full_gen[j].listOfGenerators[attr]);
+                            if(found) return found;
+                        }
+                    }
+                }
             }
+
+        };
+        for(let i=0; i<this.columns.length; i++){
+            let found = dfs(this.columns[i].generator);
+            if(found) return found;
         }
     }
 
