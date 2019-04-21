@@ -1234,11 +1234,9 @@ class GetExtraValue extends Accessory{
     }
 
     get accessSrcGen(){
-
         return this.srcGen;
     }
     set accessSrcGen(ID){
-        console.log("inseriu o valor: ", ID);
         this.srcGen = ID;
     }
 
@@ -1535,7 +1533,11 @@ class LineGenerator extends Geometric{
         if(!this.vertical){
             this.m = (this.y1-this.y0)/(this.x1-this.x0);
             this.b = this.y0-this.m*this.x0;
-            this.arclength = Math.sqrt(Math.pow(this.x1-this.x2,2) + Math.pow(this.y1-this.y2,2));
+            this.arclength = Math.sqrt(Math.pow(this.x0-this.x1,2) + Math.pow(this.y0-this.y1,2));
+        }else{
+            this.m = Number.POSITIVE_INFINITY;
+            this.b = Number.POSITIVE_INFINITY;
+            this.arclength = Math.abs(this.y1-this.y0);
         }
     }
 
@@ -1637,7 +1639,7 @@ class LineGenerator extends Geometric{
     updateLineParams(){
         this.m = (this.y1-this.y0)/(this.x1-this.x0);
         this.b = this.y0-this.m*this.x0;
-        this.arclength = Math.sqrt(Math.pow(this.x1-this.x2,2) + Math.pow(this.y1-this.y2,2));
+        this.arclength = Math.sqrt(Math.pow(this.x0-this.x1,2) + Math.pow(this.y0-this.y1,2));
     }
 }
 
@@ -1708,6 +1710,9 @@ class Path2DStrokeGenerator extends Geometric{
 
         let commands = this.path.match(/[ACLMZaclmz][^ACLMZaclmz]*/g);
         let params, quant;
+
+        let initX="none", initY="none";
+
         console.log(commands);
         for(let c of commands){
             switch (c[0]){
@@ -1724,6 +1729,7 @@ class Path2DStrokeGenerator extends Geometric{
                     params = c.substring(1).trim().split(/[,\s]+/);
                     quant = params.length/2;
                     for(let i=0;i<quant;i++){
+                        console.log(lastPoint[0], +params[i*2]);
                         lastPoint[0] += +params[i*2];
                         lastPoint[1] += +params[i*2+1];
                     }
@@ -1733,6 +1739,11 @@ class Path2DStrokeGenerator extends Geometric{
                     params = c.substring(1).trim().split(/[,\s]+/);
                     quant = params.length/2;
                     for(let i=0;i<quant;i++){
+
+                        if(initX === "none"){
+                            initX = lastPoint[0];initY=lastPoint[1];
+                        }
+
                         let x = +params[i*2], y = +params[i*2+1];
                         this.elements.push(new LineGenerator(lastPoint[0], lastPoint[1], x, y));
                         lastPoint[0] = x;
@@ -1744,6 +1755,11 @@ class Path2DStrokeGenerator extends Geometric{
                     params = c.substring(1).trim().split(/[,\s]+/);
                     quant = params.length/2;
                     for(let i=0;i<quant;i++){
+
+                        if(initX === "none"){
+                            initX = lastPoint[0];initY=lastPoint[1];
+                        }
+
                         let x = (+params[i*2])+lastPoint[0], y = (+params[i*2+1])+lastPoint[1];
                         this.elements.push(new LineGenerator(lastPoint[0], lastPoint[1], x, y));
                         lastPoint[0] = x;
@@ -1756,6 +1772,11 @@ class Path2DStrokeGenerator extends Geometric{
                     quant = params.length/6;
                     console.log(params, quant);
                     for(let i=0;i<quant;i++){
+
+                        if(initX === "none"){
+                            initX = lastPoint[0];initY=lastPoint[1];
+                        }
+
                         let x1 = +params[i*6], y1 = +params[i*6+1];
                         let x2 = +params[i*6+2], y2 = +params[i*6+3];
                         let x3 = +params[i*6+4], y3 = +params[i*6+5];
@@ -1769,6 +1790,11 @@ class Path2DStrokeGenerator extends Geometric{
                     params = c.substring(1).trim().split(/[,\s]+/);
                     quant = params.length/6;
                     for(let i=0;i<quant;i++){
+
+                        if(initX === "none"){
+                            initX = lastPoint[0];initY=lastPoint[1];
+                        }
+
                         let x1 = +params[i*6]; x1 = x1+lastPoint[0];
                         let y1 = +params[i*6+1]; y1 = y1+lastPoint[1];
 
@@ -1784,11 +1810,23 @@ class Path2DStrokeGenerator extends Geometric{
                     }
                     break;
 
+                case "z":
+                    console.log("entrou!!!", lastPoint[0], lastPoint[1], initX, initY);
+                    this.elements.push(new LineGenerator(lastPoint[0], lastPoint[1], initX, initY));
+                    lastPoint[0] = initX;
+                    lastPoint[1] = initY;
+                    break;
+                case "Z":
+                    this.elements.push(new LineGenerator(lastPoint[0], lastPoint[1], initX, initY));
+                    lastPoint[0] = initX;
+                    lastPoint[1] = initY;
+                    break;
             }
         }
 
         let sum = 0;
         this.prob = [];
+        console.log(this.elements);
         for(let e of this.elements){
             this.prob.push(e.arclength);
             sum+=e.arclength;
@@ -1801,7 +1839,6 @@ class Path2DStrokeGenerator extends Geometric{
             this.prob[i] = this.prob[i]+this.prob[i-1];
     }
 }
-
 
 class Path2DFillGenerator extends Geometric{
     constructor(path){
@@ -1846,7 +1883,7 @@ class Path2DFillGenerator extends Geometric{
             let x_pos = Math.random()*x_length + x_inter[0];
             for(let j=1;j<x_inter.length-1;j+=2){
                 if(x_pos>x_inter[j]){
-                    x_pos+=x_inter[j];
+                    x_pos+=x_inter[j+1]-x_inter[j];
                 }
             }
 
@@ -1905,6 +1942,8 @@ class Path2DFillGenerator extends Geometric{
             this.boundingBox[3]=this.boundingBox[3]<y?y:this.boundingBox[3];
         };
 
+        let lastp, polyline;
+        console.log(commands);
         for(let c of commands){
             switch (c[0]){
                 case "M":
@@ -1920,6 +1959,7 @@ class Path2DFillGenerator extends Geometric{
                     params = c.substring(1).trim().split(/[,\s]+/);
                     quant = params.length/2;
                     for(let i=0;i<quant;i++){
+                        console.log("m", lastPoint[0], +params[i*2]);
                         lastPoint[0] += +params[i*2];
                         lastPoint[1] += +params[i*2+1];
                     }
@@ -1931,10 +1971,15 @@ class Path2DFillGenerator extends Geometric{
                     for(let i=0;i<quant;i++){
                         let x = +params[i*2], y = +params[i*2+1];
 
-                        let lastp = this.polygons[this.polygons.length-1];
-                        if(lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
-                            this.polygons.push([[lastPoint[0], lastPoint[1]]]);
-                            checkBB(lastPoint[0], lastPoint[1]);
+
+                        lastp = this.polygons[this.polygons.length-1];
+                        lastp = lastp[lastp.length-1];
+                        if(lastp){
+                            console.log(lastPoint[0], lastp[0]);
+                            if(lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
+                                this.polygons.push([[lastPoint[0], lastPoint[1]]]);
+                                checkBB(lastPoint[0], lastPoint[1]);
+                            }
                         }
                         lastp = this.polygons[this.polygons.length-1];
                         lastp.push([x,y]);
@@ -1951,10 +1996,15 @@ class Path2DFillGenerator extends Geometric{
                     for(let i=0;i<quant;i++){
                         let x = (+params[i*2])+lastPoint[0], y = (+params[i*2+1])+lastPoint[1];
 
-                        let lastp = this.polygons[this.polygons.length-1];
-                        if(lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
-                            this.polygons.push([[lastPoint[0], lastPoint[1]]]);
-                            checkBB(lastPoint[0], lastPoint[1]);
+
+                        lastp = this.polygons[this.polygons.length-1];
+                        lastp = lastp[lastp.length-1];
+                        if(lastp) {
+                            if (lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
+                                console.log("novo poly:" , [lastPoint[0], lastPoint[1]]);
+                                this.polygons.push([[lastPoint[0], lastPoint[1]]]);
+                                checkBB(lastPoint[0], lastPoint[1]);
+                            }
                         }
                         lastp = this.polygons[this.polygons.length-1];
                         lastp.push([x,y]);
@@ -1975,14 +2025,19 @@ class Path2DFillGenerator extends Geometric{
                         let x3 = +params[i*6+4], y3 = +params[i*6+5];
 
                         let cbg = new CubicBezierGenerator(lastPoint[0], lastPoint[1],x1,y1,x2,y2,x3,y3, true);
-                        let polyline = cbg.getPolyline();
-                        polyline.shift();
-                        let lastp = this.polygons[this.polygons.length-1];
-                        if(lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
-                            this.polygons.push([[lastPoint[0], lastPoint[1]]]);
-                            checkBB(lastPoint[0], lastPoint[1]);
+                        polyline = cbg.getPolyline();
+                        lastp = this.polygons[this.polygons.length-1];
+                        lastp = lastp[lastp.length-1];
+                        if(lastp){
+                            //Verifica se tem que criar um novo polígono.
+                            if(lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
+                                this.polygons.push([[lastPoint[0], lastPoint[1]]]);
+                                checkBB(lastPoint[0], lastPoint[1]);
+                            }
                         }
                         lastp = this.polygons[this.polygons.length-1];
+                        if(lastp.length !== 0)
+                            polyline.shift();
                         Array.prototype.push.apply(lastp, polyline);
                         for(let p of polyline)
                             checkBB(p[0],p[1]);
@@ -2006,12 +2061,18 @@ class Path2DFillGenerator extends Geometric{
 
 
                         let cbg = new CubicBezierGenerator(lastPoint[0], lastPoint[1],x1,y1,x2,y2,x3,y3, true);
-                        let polyline = cbg.getPolyline();
-                        polyline.shift();
-                        let lastp = this.polygons[this.polygons.length-1];
-                        if(lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1])
-                            this.polygons.push([[lastPoint[0],lastPoint[1]]]);
+                        polyline = cbg.getPolyline();
                         lastp = this.polygons[this.polygons.length-1];
+                        lastp = lastp[lastp.length-1];
+                        if(lastp) {
+                            if (lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
+                                this.polygons.push([[lastPoint[0], lastPoint[1]]]);
+                                checkBB(lastPoint[0], lastPoint[1]);
+                            }
+                        }
+                        lastp = this.polygons[this.polygons.length-1];
+                        if(lastp.length !== 0)
+                            polyline.shift();
                         Array.prototype.push.apply(lastp, polyline);
                         for(let p of polyline)
                             checkBB(p[0],p[1]);
@@ -2022,7 +2083,27 @@ class Path2DFillGenerator extends Geometric{
                     }
                     break;
 
+                case "Z":
+                    lastp = this.polygons[this.polygons.length-1];
+                    console.log(lastp[0]);
+                    lastPoint[0] = lastp[0][0];
+                    lastPoint[1] = lastp[0][1];
+                    break;
+                case "z":
+                    lastp = this.polygons[this.polygons.length-1];
+                    console.log(lastp[0]);
+                    lastPoint[0] = lastp[0][0];
+                    lastPoint[1] = lastp[0][1];
+                    break;
             }
+        }
+
+        //Fecha os polígonos não fechados.
+        for(let poly of this.polygons){
+            if(poly[0][0] !== poly[poly.length-1][0] || poly[0][1] !== poly[poly.length-1][1]){
+                poly.push([poly[0][0], poly[0][1]]);
+            }
+            console.log(poly);
         }
 
         let ystep = (this.boundingBox[3] - this.boundingBox[1])/100;
@@ -2059,8 +2140,6 @@ class Path2DFillGenerator extends Geometric{
 
         for(let i=1;i<this.prob.length;i++)
             this.prob[i] = this.prob[i]+this.prob[i-1];
-
-        console.log(this.prob);
 
     }
 }
@@ -3623,6 +3702,105 @@ DataGen.superTypes = {
     Accessory,
     Geometric,
     Column
+};
+
+DataGen.Utils = {
+    decodeSvgPathD: (str)=>{
+        let commands = str.match(/[ACLMZaclmz][^ACLMZaclmz]*/g);
+        let params, quant;
+        let lastPoint = [0,0];
+        let output = [];
+        let init = [0,0];
+
+        for(let c of commands){
+            switch (c[0]){
+                case "M":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    if(params.length > 2){
+                        init[0] = lastPoint[0] = +params.shift();
+                        init[1] = lastPoint[1] = +params.shift();
+                        output.push({command:"M", params: [lastPoint[0], lastPoint[1]]});
+                    }
+                    quant = params.length/2;
+                    for(let i=0;i<quant;i++){
+                        lastPoint[0] = +params[i*2];
+                        lastPoint[1] = +params[i*2+1];
+                        output.push({command:"L", params: [lastPoint[0],lastPoint[1]]});
+                    }
+                    break;
+
+                case "m":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    if(params.length > 2){
+                        init[0] = lastPoint[0] += +params.shift();
+                        init[1] = lastPoint[1] += +params.shift();
+                        output.push({command:"M", params: [lastPoint[0], lastPoint[1]]});
+                    }
+                    quant = params.length/2;
+                    for(let i=0;i<quant;i++){
+                        lastPoint[0] += +params[i*2];
+                        lastPoint[1] += +params[i*2+1];
+                        output.push({command:"L", params: [lastPoint[0],lastPoint[1]]});
+                    }
+                    break;
+
+                case "L":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/2;
+                    for(let i=0;i<quant;i++){
+                        lastPoint[0] = +params[i*2];
+                        lastPoint[1] = +params[i*2+1];
+                        output.push({command:"L", params: [lastPoint[0],lastPoint[1]]});
+                    }
+                    break;
+
+                case "l":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/2;
+                    for(let i=0;i<quant;i++){
+                        lastPoint[0] += +params[i*2];
+                        lastPoint[1] += +params[i*2+1];
+                        output.push({command:"L", params: [lastPoint[0],lastPoint[1]]});
+                    }
+                    break;
+
+                case "C":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/6;
+                    console.log(params, quant);
+                    for(let i=0;i<quant;i++){
+                        let x1 = +params[i*6], y1 = +params[i*6+1];
+                        let x2 = +params[i*6+2], y2 = +params[i*6+3];
+                        let x3 = +params[i*6+4], y3 = +params[i*6+5];
+                        output.push({command:"C", params: [x1,y1,x2,y2,x3,y3]});
+                        lastPoint[0]=x3;
+                        lastPoint[1]=y3;
+                    }
+                    break;
+                case "c":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/6;
+                    for(let i=0;i<quant;i++){
+                        let x1 = lastPoint[0] + (+params[i*6]), y1 = lastPoint[1] + (+params[i*6+1]);
+                        let x2 = x1 + (+params[i*6+2]), y2 = y1 + (+params[i*6+3]);
+                        let x3 = x2 + (+params[i*6+4]), y3 = y2 + (+params[i*6+5]);
+                        output.push({command:"C", params: [x1,y1,x2,y2,x3,y3]});
+                        lastPoint[0]=x3;
+                        lastPoint[1]=y3;
+                    }
+                    break;
+
+                case "z":
+                case "Z":
+                    output.push({command:"Z", params: [init[0], init[1]]});
+                    lastPoint[0] = init[0];
+                    lastPoint[1] = init[1];
+                    break;
+            }
+        }
+
+        return output;
+    }
 };
 
 //var datagen = new DataGen();

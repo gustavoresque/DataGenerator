@@ -1409,7 +1409,6 @@ function dragAndDropGens(){
         $("#iconDown").css({display: "none"});
     }).on("dragstart", function(event){
         event.stopPropagation();
-        console.log(event.target.__node__);
         dragged = event.target.__node__;
     });
 }
