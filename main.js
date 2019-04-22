@@ -375,25 +375,6 @@ function createWindow () {
             e.preventDefault();
             mainWindow.webContents.send('quit-child-process');
         }
-        if(!dtSaved) {
-            e.preventDefault();
-            if(dtChanges.length !== 0) {
-                let saved = [], unsaved = [];
-                for(let i in dtChanges) {
-                    if(dtChanges[i]) {
-                        unsaved.push(Number(i));
-                    } else {
-                        saved.push(Number(i));
-                    }
-                }
-
-                mainWindow.webContents.send('verify-autosave',saved,unsaved);
-            } else {
-                dtSaved = true;
-                app.quit();
-            }
-
-        }
     });
     // Emitted when the window is closed.
   mainWindow.on('closed', function () {
@@ -404,7 +385,7 @@ function createWindow () {
 
       mainWindow = null;
 
-    // app.quit();
+    app.quit();
   });
 
 }

@@ -1057,9 +1057,8 @@ function verifyUnsaveModels() {
                     openModel(platformASpath+file,true);
                     ipc.sendSync("dtChanges-add", true);
                 });
-                alertModal("You have unsave models! Please, check them.");
             } catch (e) {
-                alertModal("We had problem to recover your backup files. Please, contact LabVIS support!");
+                alertModal("We had problem to recover your backup files. Please, report the problem to our repository.");
             }
         }
     }
@@ -1766,7 +1765,7 @@ setInterval(() => {
         if (!fs.existsSync(platformASpath))
             fs.mkdirSync(platformASpath);
         for(let dt in datagen) {
-            if(datagen[dt].datagenChange && datagen[dt].filePath !== undefined) {
+            if(datagen[dt].datagenChange) {
                 createExportModel(platformASpath + datagen[dt].ID + ".json",dt);
             }
         }
