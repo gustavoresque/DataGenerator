@@ -1195,6 +1195,7 @@ class NoRepeat extends Accessory {
 
 class GetExtraValue extends Accessory{
     constructor(extra_index, srcGen){
+        console.log("criou um novo extra value: ", extra_index, srcGen);
         super("Get Extra Value");
         this.extra_index = extra_index || 1;
         this.srcGen = srcGen;
@@ -1218,7 +1219,7 @@ class GetExtraValue extends Accessory{
         params.push(
             {
                 shortName: "SrcGen",
-                variableName: "srcGen",
+                variableName: "accessSrcGen",
                 name: "Source Generator",
                 type: "Generator"
             },
@@ -1230,6 +1231,13 @@ class GetExtraValue extends Accessory{
             }
         );
         return params;
+    }
+
+    get accessSrcGen(){
+        return this.srcGen;
+    }
+    set accessSrcGen(ID){
+        this.srcGen = ID;
     }
 
     getModel(){
@@ -1288,10 +1296,10 @@ class CubicBezierGenerator extends Geometric{
             }
             t = 0.01*Math.random() +  index*0.01;
         }
-        let x = Math.pow(1-t,3)*this.x0 + 3*Math.pow(1-t,2)*t*this.x1 + 3*(1-t)*Math.pow(t,2)*this.x2 + Math.pow(t,3)*this.x3;
-        this.lastGenerated1 = Math.pow(1-t,3)*this.y0 + 3*Math.pow(1-t,2)*t*this.y1 + 3*(1-t)*Math.pow(t,2)*this.y2 + Math.pow(t,3)*this.y3;
+        let p =this.bezierPoint(t);
+        this.lastGenerated1 = p[1];
 
-        return super.generate(x);
+        return super.generate(p[0]);
     }
 
     getGenParams(){
@@ -1438,6 +1446,79 @@ class CubicBezierGenerator extends Geometric{
             this.prob[i] = this.prob[i]+this.prob[i-1];
     }
 
+    bezierPoint(t){
+        let pts = [];
+        let n = 3;
+        pts.push([this.x0, this.y0]);
+        pts.push([this.x1, this.y1]);
+        pts.push([this.x2, this.y2]);
+        pts.push([this.x3, this.y3]);
+
+        for (let r=1; r <= n; r++) {
+            for (let i=0; i <= n-r; i++) {
+                pts[i][0] = (1-t)*pts[i][0] + t*pts[i+1][0];
+                pts[i][1] = (1-t)*pts[i][1] + t*pts[i+1][1];
+            }
+        }
+        return pts[0];
+    }
+
+    getPolyline(){
+        let threshold = 1/20;
+        let steps = [0,1];
+        let i = 0;
+        let breakn = 500, loop=0;
+        while(i<steps.length-1){
+            if(steps[i+1] - steps[i] < threshold){
+                i++;
+                continue;
+            }
+
+            let test1 = CubicBezierGenerator.collinear_test([
+                this.bezierPoint(steps[i]),
+                this.bezierPoint((steps[i+1]-steps[i])*0.5+steps[i]),
+                this.bezierPoint(steps[i+1])]);
+            let test2 = CubicBezierGenerator.collinear_test([
+                this.bezierPoint(steps[i]),
+                this.bezierPoint((steps[i+1]-steps[i])*0.25+steps[i]),
+                this.bezierPoint(steps[i+1])]);
+            let test3 = CubicBezierGenerator.collinear_test([
+                this.bezierPoint(steps[i]),
+                this.bezierPoint((steps[i+1]-steps[i])*0.75+steps[i]),
+                this.bezierPoint(steps[i+1])]);
+
+
+
+            if(test1 < 0.05 && test2 < 0.05 && test3 < 0.05){
+                i++;
+            }else{
+                steps.splice(i+1, 0, (steps[i+1]-steps[i])*0.5+steps[i]);
+            }
+            loop++;
+            if(loop>breakn)
+                break;
+        }
+
+        let points_found = [];
+        for(let i=0;i<steps.length;i++){
+            let p = this.bezierPoint(steps[i]);
+            points_found.push(p);
+        }
+        return points_found;
+    }
+
+    static collinear_test(points) {
+        if(Math.abs(points[2][0]-points[0][0]) < Math.abs(points[2][1]-points[0][1])){
+            let m1 = (points[2][0]-points[0][0])/(points[2][1]-points[0][1]);
+            let m2 = (points[1][0]-points[0][0])/(points[1][1]-points[0][1]);
+            let m3 = (points[2][0]-points[1][0])/(points[2][1]-points[1][1]);
+            return Math.abs(m1-m2) + Math.abs(m1-m3);
+        }
+        let m1 = (points[2][1]-points[0][1])/(points[2][0]-points[0][0]);
+        let m2 = (points[1][1]-points[0][1])/(points[1][0]-points[0][0]);
+        let m3 = (points[2][1]-points[1][1])/(points[2][0]-points[1][0]);
+        return Math.abs(m1-m2) + Math.abs(m1-m3);
+    }
 }
 
 class LineGenerator extends Geometric{
@@ -1452,7 +1533,11 @@ class LineGenerator extends Geometric{
         if(!this.vertical){
             this.m = (this.y1-this.y0)/(this.x1-this.x0);
             this.b = this.y0-this.m*this.x0;
-            this.arclength = Math.sqrt(Math.pow(this.x1-this.x2,2) + Math.pow(this.y1-this.y2,2));
+            this.arclength = Math.sqrt(Math.pow(this.x0-this.x1,2) + Math.pow(this.y0-this.y1,2));
+        }else{
+            this.m = Number.POSITIVE_INFINITY;
+            this.b = Number.POSITIVE_INFINITY;
+            this.arclength = Math.abs(this.y1-this.y0);
         }
     }
 
@@ -1554,7 +1639,7 @@ class LineGenerator extends Geometric{
     updateLineParams(){
         this.m = (this.y1-this.y0)/(this.x1-this.x0);
         this.b = this.y0-this.m*this.x0;
-        this.arclength = Math.sqrt(Math.pow(this.x1-this.x2,2) + Math.pow(this.y1-this.y2,2));
+        this.arclength = Math.sqrt(Math.pow(this.x0-this.x1,2) + Math.pow(this.y0-this.y1,2));
     }
 }
 
@@ -1625,6 +1710,9 @@ class Path2DStrokeGenerator extends Geometric{
 
         let commands = this.path.match(/[ACLMZaclmz][^ACLMZaclmz]*/g);
         let params, quant;
+
+        let initX="none", initY="none";
+
         console.log(commands);
         for(let c of commands){
             switch (c[0]){
@@ -1641,6 +1729,7 @@ class Path2DStrokeGenerator extends Geometric{
                     params = c.substring(1).trim().split(/[,\s]+/);
                     quant = params.length/2;
                     for(let i=0;i<quant;i++){
+                        console.log(lastPoint[0], +params[i*2]);
                         lastPoint[0] += +params[i*2];
                         lastPoint[1] += +params[i*2+1];
                     }
@@ -1650,6 +1739,11 @@ class Path2DStrokeGenerator extends Geometric{
                     params = c.substring(1).trim().split(/[,\s]+/);
                     quant = params.length/2;
                     for(let i=0;i<quant;i++){
+
+                        if(initX === "none"){
+                            initX = lastPoint[0];initY=lastPoint[1];
+                        }
+
                         let x = +params[i*2], y = +params[i*2+1];
                         this.elements.push(new LineGenerator(lastPoint[0], lastPoint[1], x, y));
                         lastPoint[0] = x;
@@ -1661,6 +1755,11 @@ class Path2DStrokeGenerator extends Geometric{
                     params = c.substring(1).trim().split(/[,\s]+/);
                     quant = params.length/2;
                     for(let i=0;i<quant;i++){
+
+                        if(initX === "none"){
+                            initX = lastPoint[0];initY=lastPoint[1];
+                        }
+
                         let x = (+params[i*2])+lastPoint[0], y = (+params[i*2+1])+lastPoint[1];
                         this.elements.push(new LineGenerator(lastPoint[0], lastPoint[1], x, y));
                         lastPoint[0] = x;
@@ -1673,11 +1772,276 @@ class Path2DStrokeGenerator extends Geometric{
                     quant = params.length/6;
                     console.log(params, quant);
                     for(let i=0;i<quant;i++){
+
+                        if(initX === "none"){
+                            initX = lastPoint[0];initY=lastPoint[1];
+                        }
+
                         let x1 = +params[i*6], y1 = +params[i*6+1];
                         let x2 = +params[i*6+2], y2 = +params[i*6+3];
                         let x3 = +params[i*6+4], y3 = +params[i*6+5];
                         this.elements.push(new CubicBezierGenerator(lastPoint[0], lastPoint[1],
                             x1,y1,x2,y2,x3,y3, true));
+                        lastPoint[0]=x3;
+                        lastPoint[1]=y3;
+                    }
+                    break;
+                case "c":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/6;
+                    for(let i=0;i<quant;i++){
+
+                        if(initX === "none"){
+                            initX = lastPoint[0];initY=lastPoint[1];
+                        }
+
+                        let x1 = +params[i*6]; x1 = x1+lastPoint[0];
+                        let y1 = +params[i*6+1]; y1 = y1+lastPoint[1];
+
+                        let x2 = +params[i*6+2]; x2 = x2+x1;
+                        let y2 = +params[i*6+3]; y2 = y2+y1;
+
+                        let x3 = +params[i*6+4]; x3 = x3+x2;
+                        let y3 = +params[i*6+5]; y3 = y3+y2;
+                        this.elements.push(new CubicBezierGenerator(lastPoint[0], lastPoint[1],
+                            x1,y1,x2,y2,x3,y3, true));
+                        lastPoint[0]=x3;
+                        lastPoint[1]=y3;
+                    }
+                    break;
+
+                case "z":
+                    console.log("entrou!!!", lastPoint[0], lastPoint[1], initX, initY);
+                    this.elements.push(new LineGenerator(lastPoint[0], lastPoint[1], initX, initY));
+                    lastPoint[0] = initX;
+                    lastPoint[1] = initY;
+                    break;
+                case "Z":
+                    this.elements.push(new LineGenerator(lastPoint[0], lastPoint[1], initX, initY));
+                    lastPoint[0] = initX;
+                    lastPoint[1] = initY;
+                    break;
+            }
+        }
+
+        let sum = 0;
+        this.prob = [];
+        console.log(this.elements);
+        for(let e of this.elements){
+            this.prob.push(e.arclength);
+            sum+=e.arclength;
+        }
+
+        for(let i=0;i<this.prob.length;i++)
+            this.prob[i] = this.prob[i]/sum;
+
+        for(let i=1;i<this.prob.length;i++)
+            this.prob[i] = this.prob[i]+this.prob[i-1];
+    }
+}
+
+class Path2DFillGenerator extends Geometric{
+    constructor(path){
+        super("Path2D Fill Generator");
+        this.path = path || "M10,60 C 20,80 40,80 50,60";
+
+        this.updatePath();
+    }
+
+    generate(){
+
+        if(this.prob.length > 0){
+            let t = Math.random();
+            let height_prob =0;
+            for(let i=0; i<this.prob.length; i++){
+                if(t < this.prob[i]) {
+                    let prob1 = (t-this.prob[i-1])/(this.prob[i]-this.prob[i-1]);
+                    height_prob = prob1 * (i/this.prob.length - (i-1)/this.prob.length) + (i-1)/this.prob.length;
+                    break;
+                }
+            }
+
+            let y_scan = (this.boundingBox[3]-this.boundingBox[1])*height_prob+this.boundingBox[1];
+            let x_inter = [];
+            for(let poly of this.polygons){
+                for(let j=0;j<poly.length-1;j++){
+                    let ymin = poly[j][1]>poly[j+1][1]?poly[j+1][1]:poly[j][1];
+                    let ymax = poly[j][1]<=poly[j+1][1]?poly[j+1][1]:poly[j][1];
+                    if((y_scan>ymax || y_scan<=ymin || ymin === ymax))
+                        continue;
+                    let x_ymin = poly[j][1]>poly[j+1][1]?poly[j+1][0]:poly[j][0];
+                    let m = (poly[j+1][1]-poly[j][1])/(poly[j+1][0]-poly[j][0]);
+
+                    x_inter.push((1/m)*(y_scan-ymin) + x_ymin);
+                }
+            }
+            let x_length=0;
+            x_inter.sort((a,b) => a-b);
+            for(let j=0;j<x_inter.length-1;j+=2){
+                x_length+=x_inter[j+1]-x_inter[j];
+            }
+            let x_pos = Math.random()*x_length + x_inter[0];
+            for(let j=1;j<x_inter.length-1;j+=2){
+                if(x_pos>x_inter[j]){
+                    x_pos+=x_inter[j+1]-x_inter[j];
+                }
+            }
+
+            this.lastGenerated1 = y_scan;
+            return super.generate(x_pos);
+        }
+        return super.generate(0);
+
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push({
+            shortName: "path",
+            variableName: "accessPath",
+            name: "Path encoded as 'd' property of a path in SVG.",
+            type: "string"
+        });
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.path = this.path;
+        return model;
+    }
+
+    copy(){
+        let newGen = new Path2DStrokeGenerator(this.path);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+
+    get accessPath(){
+        return this.path;
+    }
+    set accessPath(path){
+        this.path = path;
+        this.updatePath();
+    }
+
+    updatePath(){
+        this.elements = [];
+        let lastPoint = [0,0];
+
+        let commands = this.path.match(/[ACLMZaclmz][^ACLMZaclmz]*/g);
+        let params, quant;
+        this.polygons = [[]];
+        this.boundingBox = [Number.MAX_VALUE,Number.MAX_VALUE,-Number.MAX_VALUE,-Number.MAX_VALUE];
+        let checkBB = (x,y)=>{
+            this.boundingBox[0]=this.boundingBox[0]>x?x:this.boundingBox[0];
+            this.boundingBox[1]=this.boundingBox[1]>y?y:this.boundingBox[1];
+            this.boundingBox[2]=this.boundingBox[2]<x?x:this.boundingBox[2];
+            this.boundingBox[3]=this.boundingBox[3]<y?y:this.boundingBox[3];
+        };
+
+        let lastp, polyline;
+        console.log(commands);
+        for(let c of commands){
+            switch (c[0]){
+                case "M":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/2;
+                    for(let i=0;i<quant;i++){
+                        lastPoint[0] = +params[i*2];
+                        lastPoint[1] = +params[i*2+1];
+                    }
+                    break;
+
+                case "m":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/2;
+                    for(let i=0;i<quant;i++){
+                        console.log("m", lastPoint[0], +params[i*2]);
+                        lastPoint[0] += +params[i*2];
+                        lastPoint[1] += +params[i*2+1];
+                    }
+                    break;
+
+                case "L":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/2;
+                    for(let i=0;i<quant;i++){
+                        let x = +params[i*2], y = +params[i*2+1];
+
+
+                        lastp = this.polygons[this.polygons.length-1];
+                        lastp = lastp[lastp.length-1];
+                        if(lastp){
+                            console.log(lastPoint[0], lastp[0]);
+                            if(lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
+                                this.polygons.push([[lastPoint[0], lastPoint[1]]]);
+                                checkBB(lastPoint[0], lastPoint[1]);
+                            }
+                        }
+                        lastp = this.polygons[this.polygons.length-1];
+                        lastp.push([x,y]);
+                        checkBB(x,y);
+
+                        lastPoint[0] = x;
+                        lastPoint[1] = y;
+                    }
+                    break;
+
+                case "l":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/2;
+                    for(let i=0;i<quant;i++){
+                        let x = (+params[i*2])+lastPoint[0], y = (+params[i*2+1])+lastPoint[1];
+
+
+                        lastp = this.polygons[this.polygons.length-1];
+                        lastp = lastp[lastp.length-1];
+                        if(lastp) {
+                            if (lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
+                                console.log("novo poly:" , [lastPoint[0], lastPoint[1]]);
+                                this.polygons.push([[lastPoint[0], lastPoint[1]]]);
+                                checkBB(lastPoint[0], lastPoint[1]);
+                            }
+                        }
+                        lastp = this.polygons[this.polygons.length-1];
+                        lastp.push([x,y]);
+                        checkBB(x,y);
+
+                        lastPoint[0] = x;
+                        lastPoint[1] = y;
+                    }
+                    break;
+
+                case "C":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/6;
+
+                    for(let i=0;i<quant;i++){
+                        let x1 = +params[i*6], y1 = +params[i*6+1];
+                        let x2 = +params[i*6+2], y2 = +params[i*6+3];
+                        let x3 = +params[i*6+4], y3 = +params[i*6+5];
+
+                        let cbg = new CubicBezierGenerator(lastPoint[0], lastPoint[1],x1,y1,x2,y2,x3,y3, true);
+                        polyline = cbg.getPolyline();
+                        lastp = this.polygons[this.polygons.length-1];
+                        lastp = lastp[lastp.length-1];
+                        if(lastp){
+                            //Verifica se tem que criar um novo polígono.
+                            if(lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
+                                this.polygons.push([[lastPoint[0], lastPoint[1]]]);
+                                checkBB(lastPoint[0], lastPoint[1]);
+                            }
+                        }
+                        lastp = this.polygons[this.polygons.length-1];
+                        if(lastp.length !== 0)
+                            polyline.shift();
+                        Array.prototype.push.apply(lastp, polyline);
+                        for(let p of polyline)
+                            checkBB(p[0],p[1]);
+
                         lastPoint[0]=x3;
                         lastPoint[1]=y3;
                     }
@@ -1694,31 +2058,91 @@ class Path2DStrokeGenerator extends Geometric{
 
                         let x3 = +params[i*6+4]; x3 = x3+x2;
                         let y3 = +params[i*6+5]; y3 = y3+y2;
-                        this.elements.push(new CubicBezierGenerator(lastPoint[0], lastPoint[1],
-                            x1,y1,x2,y2,x3,y3, true));
+
+
+                        let cbg = new CubicBezierGenerator(lastPoint[0], lastPoint[1],x1,y1,x2,y2,x3,y3, true);
+                        polyline = cbg.getPolyline();
+                        lastp = this.polygons[this.polygons.length-1];
+                        lastp = lastp[lastp.length-1];
+                        if(lastp) {
+                            if (lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
+                                this.polygons.push([[lastPoint[0], lastPoint[1]]]);
+                                checkBB(lastPoint[0], lastPoint[1]);
+                            }
+                        }
+                        lastp = this.polygons[this.polygons.length-1];
+                        if(lastp.length !== 0)
+                            polyline.shift();
+                        Array.prototype.push.apply(lastp, polyline);
+                        for(let p of polyline)
+                            checkBB(p[0],p[1]);
+
+
                         lastPoint[0]=x3;
                         lastPoint[1]=y3;
                     }
                     break;
 
+                case "Z":
+                    lastp = this.polygons[this.polygons.length-1];
+                    console.log(lastp[0]);
+                    lastPoint[0] = lastp[0][0];
+                    lastPoint[1] = lastp[0][1];
+                    break;
+                case "z":
+                    lastp = this.polygons[this.polygons.length-1];
+                    console.log(lastp[0]);
+                    lastPoint[0] = lastp[0][0];
+                    lastPoint[1] = lastp[0][1];
+                    break;
             }
         }
 
-        let sum = 0;
-        this.prob = [];
-        for(let e of this.elements){
-            this.prob.push(e.arclength);
-            sum+=e.arclength;
+        //Fecha os polígonos não fechados.
+        for(let poly of this.polygons){
+            if(poly[0][0] !== poly[poly.length-1][0] || poly[0][1] !== poly[poly.length-1][1]){
+                poly.push([poly[0][0], poly[0][1]]);
+            }
+            console.log(poly);
         }
 
-        for(let i=0;i<this.prob.length;i++)
-            this.prob[i] = this.prob[i]/sum;
+        let ystep = (this.boundingBox[3] - this.boundingBox[1])/100;
+        let stepLength = [];
+        for(let i=0;i<=100;i++){
+            stepLength.push(0);
+            let y_scan = ystep*i+this.boundingBox[1];
+            let x_inter = [];
+            for(let poly of this.polygons){
+                for(let j=0;j<poly.length-1;j++){
+                    let ymin = poly[j][1]>poly[j+1][1]?poly[j+1][1]:poly[j][1];
+                    let ymax = poly[j][1]<=poly[j+1][1]?poly[j+1][1]:poly[j][1];
+                    if((y_scan>ymax || y_scan<=ymin || ymin === ymax))
+                        continue;
+                    let x_ymin = poly[j][1]>poly[j+1][1]?poly[j+1][0]:poly[j][0];
+                    let m = (poly[j+1][1]-poly[j][1])/(poly[j+1][0]-poly[j][0]);
+
+                    x_inter.push((1/m)*(y_scan-ymin) + x_ymin);
+                }
+            }
+            x_inter.sort((a,b) => a-b);
+            for(let j=0;j<x_inter.length-1;j+=2){
+                stepLength[i]+=x_inter[j+1]-x_inter[j];
+            }
+        }
+
+        let totalLengths = 0;
+        for(let l of stepLength){
+            totalLengths+=l;
+        }
+        this.prob = [];
+        for(let l of stepLength)
+            this.prob.push(l/totalLengths);
 
         for(let i=1;i<this.prob.length;i++)
             this.prob[i] = this.prob[i]+this.prob[i-1];
+
     }
 }
-
 
 
 
@@ -2864,6 +3288,7 @@ class DataGen {
         }
         return names;
     }
+
     getDisplayedColumnsNames() {
         let names = [];
         for(let col of this.columns){
@@ -3148,52 +3573,33 @@ class DataGen {
     }
 
     findGenByID(ID){
-        for(let i=0; i<this.columns.length; i++){
-            let gens = this.columns[i].generator.getFullGenerator();
+        let dfs = (gen) =>{
+            let full_gen = gen.getFullGenerator();
 
-            for(let j=0; j<gens.length; j++){
-                if(gens[j].ID === ID)
-                    return gens[j];
+            for(let j=0; j<full_gen.length; j++){
+                console.log(full_gen[j].ID, ID);
+                if(full_gen[j].ID === ID)
+                    return full_gen[j];
+
+                if(full_gen[j] instanceof SwitchCaseFunction){
+                    for(let attr in full_gen[j].listOfGenerators){
+                        if(full_gen[j].listOfGenerators.hasOwnProperty(attr)){
+                            let found = dfs(full_gen[j].listOfGenerators[attr]);
+                            if(found) return found;
+                        }
+                    }
+                }
             }
+
+        };
+        for(let i=0; i<this.columns.length; i++){
+            let found = dfs(this.columns[i].generator);
+            if(found) return found;
         }
     }
 
 }
 
-// MissingValue.genType = "Accessory";
-// RandomNoiseGenerator.genType = "Accessory";
-// RandomConstantNoiseGenerator.genType = "Accessory";
-// RangeFilter.genType = "Accessory";
-// LinearScale.genType = "Accessory";
-// MinMax.genType = "Accessory";
-// LowPassFilter.genType = "Accessory";
-// NoRepeat.genType = "Accessory";
-// GetExtraValue.genType = "Accessory";
-// LinearFunction.genType = "Function";
-// QuadraticFunction.genType = "Function";
-// PolynomialFunction.genType = "Function";
-// ExponentialFunction.genType = "Function";
-// LogarithmFunction.genType = "Function";
-// SinusoidalFunction.genType = "Function";
-// CategoricalFunction.genType = "Function";
-// PiecewiseFunction.genType = "Function";
-// TimeLapsFunction.genType = "Function";
-// PoissonTimeGenerator.genType = "Random";
-// RandomUniformGenerator.genType = "Random";
-// RandomGaussianGenerator.genType = "Random";
-// RandomPoissonGenerator.genType = "Random";
-// RandomBernoulliGenerator.genType = "Random";
-// RandomCauchyGenerator.genType = "Random";
-// RandomWeightedCategorical.genType = "Random";
-// RandomCategorical.genType = "Random";
-// RandomCategoricalQtt.genType = "Random";
-// FixedTimeGenerator.genType = "Sequence";
-// ConstantValue.genType = "Sequence";
-// CounterGenerator.genType = "Sequence";
-// SinusoidalSequence.genType = "Sequence";
-// CustomSequence.genType = "Sequence";
-// CubicBezierGenerator.genType = "Geometric";
-// Path2DStrokeGenerator.genType = "Geometric";
 
 DataGen.listOfGens = {
     'Constant Value': ConstantValue,
@@ -3229,6 +3635,7 @@ DataGen.listOfGens = {
     'Custom Sequence': CustomSequence,
     'CubicBezier Generator': CubicBezierGenerator,
     'Path2D Stroke Generator': Path2DStrokeGenerator,
+    'Path2D Fill Generator': Path2DFillGenerator,
     'Get Extra Value': GetExtraValue
 };
 
@@ -3295,6 +3702,105 @@ DataGen.superTypes = {
     Accessory,
     Geometric,
     Column
+};
+
+DataGen.Utils = {
+    decodeSvgPathD: (str)=>{
+        let commands = str.match(/[ACLMZaclmz][^ACLMZaclmz]*/g);
+        let params, quant;
+        let lastPoint = [0,0];
+        let output = [];
+        let init = [0,0];
+
+        for(let c of commands){
+            switch (c[0]){
+                case "M":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    if(params.length > 2){
+                        init[0] = lastPoint[0] = +params.shift();
+                        init[1] = lastPoint[1] = +params.shift();
+                        output.push({command:"M", params: [lastPoint[0], lastPoint[1]]});
+                    }
+                    quant = params.length/2;
+                    for(let i=0;i<quant;i++){
+                        lastPoint[0] = +params[i*2];
+                        lastPoint[1] = +params[i*2+1];
+                        output.push({command:"L", params: [lastPoint[0],lastPoint[1]]});
+                    }
+                    break;
+
+                case "m":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    if(params.length > 2){
+                        init[0] = lastPoint[0] += +params.shift();
+                        init[1] = lastPoint[1] += +params.shift();
+                        output.push({command:"M", params: [lastPoint[0], lastPoint[1]]});
+                    }
+                    quant = params.length/2;
+                    for(let i=0;i<quant;i++){
+                        lastPoint[0] += +params[i*2];
+                        lastPoint[1] += +params[i*2+1];
+                        output.push({command:"L", params: [lastPoint[0],lastPoint[1]]});
+                    }
+                    break;
+
+                case "L":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/2;
+                    for(let i=0;i<quant;i++){
+                        lastPoint[0] = +params[i*2];
+                        lastPoint[1] = +params[i*2+1];
+                        output.push({command:"L", params: [lastPoint[0],lastPoint[1]]});
+                    }
+                    break;
+
+                case "l":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/2;
+                    for(let i=0;i<quant;i++){
+                        lastPoint[0] += +params[i*2];
+                        lastPoint[1] += +params[i*2+1];
+                        output.push({command:"L", params: [lastPoint[0],lastPoint[1]]});
+                    }
+                    break;
+
+                case "C":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/6;
+                    console.log(params, quant);
+                    for(let i=0;i<quant;i++){
+                        let x1 = +params[i*6], y1 = +params[i*6+1];
+                        let x2 = +params[i*6+2], y2 = +params[i*6+3];
+                        let x3 = +params[i*6+4], y3 = +params[i*6+5];
+                        output.push({command:"C", params: [x1,y1,x2,y2,x3,y3]});
+                        lastPoint[0]=x3;
+                        lastPoint[1]=y3;
+                    }
+                    break;
+                case "c":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    quant = params.length/6;
+                    for(let i=0;i<quant;i++){
+                        let x1 = lastPoint[0] + (+params[i*6]), y1 = lastPoint[1] + (+params[i*6+1]);
+                        let x2 = x1 + (+params[i*6+2]), y2 = y1 + (+params[i*6+3]);
+                        let x3 = x2 + (+params[i*6+4]), y3 = y2 + (+params[i*6+5]);
+                        output.push({command:"C", params: [x1,y1,x2,y2,x3,y3]});
+                        lastPoint[0]=x3;
+                        lastPoint[1]=y3;
+                    }
+                    break;
+
+                case "z":
+                case "Z":
+                    output.push({command:"Z", params: [init[0], init[1]]});
+                    lastPoint[0] = init[0];
+                    lastPoint[1] = init[1];
+                    break;
+            }
+        }
+
+        return output;
+    }
 };
 
 //var datagen = new DataGen();

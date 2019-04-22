@@ -843,8 +843,10 @@ $("html").ready(function(){
         else if($input.attr("data-type") === "boolean")
             this.__node__[$input.attr("data-variable")] = $input.get(0).checked;
 
-        else if($input.attr("data-type") === "Generator")
+        else if($input.attr("data-type") === "Generator") {
+            console.log("Aqui!!!!!!!!!!", $input.val());
             this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].findGenByID($input.val());
+        }
 
         else if($input.attr("data-type").indexOf("Column") >= 0) {
             this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].columns[parseInt($input.val())].generator;
@@ -1061,9 +1063,8 @@ function verifyUnsaveModels() {
                     openModel(platformASpath+file,true);
                     ipc.sendSync("dtChanges-add", true);
                 });
-                alertModal("You have unsave models! Please, check them.");
             } catch (e) {
-                alertModal("We had problem to recover your backup files. Please, contact LabVIS support!");
+                alertModal("We had problem to recover your backup files. Please, report the problem to our repository.");
             }
         }
     }
@@ -1413,7 +1414,6 @@ function dragAndDropGens(){
         $("#iconDown").css({display: "none"});
     }).on("dragstart", function(event){
         event.stopPropagation();
-        console.log(event.target.__node__);
         dragged = event.target.__node__;
     });
 }
@@ -1771,7 +1771,7 @@ setInterval(() => {
         if (!fs.existsSync(platformASpath))
             fs.mkdirSync(platformASpath);
         for(let dt in datagen) {
-            if(datagen[dt].datagenChange && datagen[dt].filePath !== undefined) {
+            if(datagen[dt].datagenChange) {
                 createExportModel(platformASpath + datagen[dt].ID + ".json",dt);
             }
         }
