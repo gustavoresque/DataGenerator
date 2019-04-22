@@ -41,11 +41,11 @@
         <div id="bezier"></div>
     </div>
     <div id="panelControl" class="components">
+        <div class="elements" id="properties">
+            <button type="button">Select</button>
+        </div>
         <div class="elements" id="buttons">
             <button id="bezierPencil" type="button">Bézier Pencil</button>
-        </div>
-        <div class="elements" id="properties">
-            <button type="button">Click Me!</button>
         </div>
     </div>
 
@@ -59,12 +59,14 @@
     <script>if (window.module) module = window.module;</script>
     <script src="../lib/d3.v5.min.js"></script>
     <script>
+        let DataGen = require("../datagen/datagen.js");
         let ipc = require('electron').ipcRenderer;
         let control_points = [], previewPath = [], selectingPath = [];
         let getPoints = false;
         let aux = [];
         let distance = 0;
         let theta_radians = 0;
+        let selectedPath = 0;
 
         let svg = d3.select("#bezier")
             .append("svg")
@@ -118,10 +120,11 @@
         function update(){
             svg.selectAll("circle").remove();
             svg.selectAll("path.definitive").remove();
+            svg.selectAll(".lineGuide").remove();
 
-            control_points.forEach(function(e){
+            control_points.forEach(function(e,i){
                 let str = "";
-                if (e.length > 0){
+                if (e.length > 0){//Primeiro ponto
                     str = "M "+e[0][0]+","+e[0][1]+" C";
                     let line;
                     let middle = e[0], anchor1 = e[1];
@@ -131,7 +134,7 @@
                         .style("stroke","red").style("stroke-width","1px");
                 }
 
-                for(let i=1; i<e.length; i++){
+                for(let i=1; i<e.length; i++){//Pontos do meio
                     str += " "+e[i][0]+","+e[i][1];
 
                     if (i%3 === 0 && i<e.length-1){
@@ -144,7 +147,7 @@
                             .style("stroke","red").style("stroke-width","1px");
                     }
 
-                    if (i === e.length-1){
+                    if (i === e.length-1){//Ponto do final
                         let line;
                         let middle = e[e.length-1], anchor1 = e[e.length-2];
                         line = "M "+middle[0]+","+middle[1]+" L"+anchor1[0]+","+anchor1[1];
@@ -154,8 +157,19 @@
                     }
                 }
 
-                svg.append('path').attr("class", "definitive").attr("d",str)
-                    .style("fill","none").style("stroke","black").style("stroke-width","2px");
+                svg.append('path').attr("class", "definitive").attr("id", i).attr("d",str)
+                    .style("fill","none").style("stroke","black").style("stroke-width","3px")
+                    .call(d3.drag()
+                        .on("start", function(d){
+                            console.log(this.id);
+                            selectedPath = this.id;
+                        })
+                        .on("drag", function(d){
+
+                        })
+                        .on("end", function(d){
+
+                        }));
 
                 svg.selectAll("circle.control")
                     .data(e)
@@ -235,6 +249,10 @@
                 .attr("cy", function (d) { return d[1]; });
         }
 
+        function drawElementsSelectedPath(index){
+
+        }
+
         function pontoOposto(x1,y1,x2,y2){
             let x3 = 0, y3 = 0;
 
@@ -254,7 +272,7 @@
             getPoints = true;
             document.body.classList.add('busy-cursor');
         });
-        $(document).keypress(function(event){
+        $(document).keydown(function(event){
             let keycode = (event.keyCode ? event.keyCode : event.which);
             if(keycode == '13'){
                 getPoints = false;
@@ -265,16 +283,17 @@
                 document.body.classList.remove('busy-cursor');
                 update();
                 ipc.send('get-path2', getPath());
-            }
-
-        });
-        $(document).keypress(function(event){
-            let keycode = (event.keyCode ? event.keyCode : event.which);
-            if(keycode == '113'){
+            }else if(keycode == '113'){
                 getPoints = false;
                 previewPath = [];
                 selectingPath = [];
                 document.body.classList.remove('busy-cursor');
+                update();
+            }else if (keycode == '46'){
+                if (selectedPath >= 0){
+                    control_points.splice(selectedPath, 1);
+                    selectedPath = -1;
+                }
                 update();
             }
 
@@ -289,7 +308,20 @@
         }
 
         ipc.on('open-window', function(event, message){
-            console.log(message.path);
+            let svgObj = DataGen.Utils.decodeSvgPathD(message.path);
+
+            let output = [];
+            svgObj.forEach((e,i) => {
+                for (let j = 0; j < e.params.length; j += 2){
+                    if (e.command === "L"){
+                        control_points.push(output);
+                        output = [];
+                    }
+                    output.push([e.params[j], e.params[j+1]]);
+                }
+            });
+            control_points.push(output);
+            update();
         });
     </script>
 </body>
