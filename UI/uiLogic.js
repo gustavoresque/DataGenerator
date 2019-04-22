@@ -97,6 +97,14 @@ ipc.on('alert', function(event,message) {
     alert(message);
 })
 
+ipc.on('get-path', function(event, path){
+    console.log(path);
+    //TODO: Pegar o path por aqui
+    if(activeGenerator[currentDataGen] instanceof DataGen.superTypes["Geometric"]){
+        activeGenerator[currentDataGen].path = path;
+    }
+});
+
 ipc.on('verify-autosave', function(event, saved, unsaved) {
    let buttons = [];
 
@@ -747,9 +755,7 @@ $("html").ready(function(){
         if(activeGenerator[currentDataGen] instanceof DataGen.superTypes["Geometric"]){
             console.log("Tudo certo.")
             //TODO: Aqui Yvan!
-            let configs = datagen[currentDataGen].configs;
-            configs.modelid = datagen[currentDataGen].ID;
-            configs.modelName = datagen[currentDataGen].name;
+            let configs = activeGenerator[currentDataGen].getModel();
             ipc.send('draw-window', configs);
         }
     });

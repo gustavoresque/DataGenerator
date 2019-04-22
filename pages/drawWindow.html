@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <title>Title</title>
     <style>
+        body.busy-cursor {
+            cursor: url('../cursor-pen.png'), auto;
+        }
         .components{
             border-style: solid;
             float:left;
@@ -56,11 +59,12 @@
     <script>if (window.module) module = window.module;</script>
     <script src="../lib/d3.v5.min.js"></script>
     <script>
-
-        let curves = [];
+        let ipc = require('electron').ipcRenderer;
         let control_points = [], previewPath = [], selectingPath = [];
         let getPoints = false;
         let aux = [];
+        let distance = 0;
+        let theta_radians = 0;
 
         let svg = d3.select("#bezier")
             .append("svg")
@@ -117,11 +121,37 @@
 
             control_points.forEach(function(e){
                 let str = "";
-                if (e.length > 0)
+                if (e.length > 0){
                     str = "M "+e[0][0]+","+e[0][1]+" C";
+                    let line;
+                    let middle = e[0], anchor1 = e[1];
+                    line = "M "+middle[0]+","+middle[1]+" L"+anchor1[0]+","+anchor1[1];
+
+                    svg.append('path').attr("class", "lineGuide").attr("d",line)
+                        .style("stroke","red").style("stroke-width","1px");
+                }
 
                 for(let i=1; i<e.length; i++){
                     str += " "+e[i][0]+","+e[i][1];
+
+                    if (i%3 === 0 && i<e.length-1){
+                        let line;
+                        let middle = e[i], anchor1 = e[i+1], anchor2 = e[i-1];
+                        line = "M "+middle[0]+","+middle[1]+" L"+anchor1[0]+","+anchor1[1];
+                        line += "M "+anchor2[0]+","+anchor2[1]+" L"+middle[0]+","+middle[1];
+
+                        svg.append('path').attr("class", "lineGuide").attr("d",line)
+                            .style("stroke","red").style("stroke-width","1px");
+                    }
+
+                    if (i === e.length-1){
+                        let line;
+                        let middle = e[e.length-1], anchor1 = e[e.length-2];
+                        line = "M "+middle[0]+","+middle[1]+" L"+anchor1[0]+","+anchor1[1];
+
+                        svg.append('path').attr("class", "lineGuide").attr("d",line)
+                            .style("stroke","red").style("stroke-width","1px");
+                    }
                 }
 
                 svg.append('path').attr("class", "definitive").attr("d",str)
@@ -136,35 +166,36 @@
                     .attr("cy", function (d) { return d[1]; })
                     .call(d3.drag()
                         .on("start", function(d,i) {
-                            console.log(i);
+                            distance = Math.sqrt(Math.pow((e[i-1][0] - e[i][0]),2) + Math.pow((e[i-1][1] - e[i][1]),2));
+
+                            let delta_x = e[i-1][0] - e[i][0];
+                            let delta_y = e[i-1][1] - e[i][1];
+                            theta_radians = Math.atan2(delta_y, delta_x);
                         })
                         .on("drag", function(d,i) {
-                            svg.selectAll("#lineGuide").remove();
+                            svg.selectAll(".lineGuide").remove();
                             e[i][0] = d3.event.x;
                             e[i][1] = d3.event.y;
 
                             let j = 0;
-                            let line = "";
                             if(i % 3 === 1){
                                 j = i-1;
+                                e[j-1] = pontoOposto(e[j][0], e[j][1], e[i][0], e[i][1]);
                             }else if(i % 3 === 2){
                                 j = i+1;
+                                if(j+1 < e.length) e[j+1] = pontoOposto(e[j][0], e[j][1], e[i][0], e[i][1]);
                             }else{
-                                j = i;
+                                let x3 = e[i][0] + (distance * Math.cos(theta_radians));
+                                let y3 = e[i][1] + (distance * Math.sin(theta_radians));
+                                e[i-1] = [x3,y3];
+
+                                if(i+1 < e.length) e[i+1] = pontoOposto(e[i][0], e[i][1], e[i-1][0], e[i-1][1]);
                             }
-
-                            console.log(i, j);
-
-                            line = "M "+e[j][0]+","+e[j][1]+" L"+e[j+1][0]+","+e[j+1][1];
-                            line += "M "+e[j-1][0]+","+e[j-1][1]+" L"+e[j][0]+","+e[j][1];
-
-                            svg.append('path').attr("id", "lineGuide").attr("d",line)
-                                .style("stroke","red").style("stroke-width","1px");
 
                             update();
                         })
                         .on("end", function(d,i) {
-                            svg.selectAll("#lineGuide").remove();
+                            ipc.send('get-path2', getPath());
                         }));
             });
 
@@ -221,6 +252,7 @@
 
         $("#bezierPencil").on("click", function(){
             getPoints = true;
+            document.body.classList.add('busy-cursor');
         });
         $(document).keypress(function(event){
             let keycode = (event.keyCode ? event.keyCode : event.which);
@@ -228,22 +260,36 @@
                 getPoints = false;
                 previewPath.pop();
                 control_points.push(previewPath);
-                console.log(control_points);
                 previewPath = [];
                 selectingPath = [];
+                document.body.classList.remove('busy-cursor');
                 update();
+                ipc.send('get-path2', getPath());
             }
 
         });
         $(document).keypress(function(event){
             let keycode = (event.keyCode ? event.keyCode : event.which);
-            if(keycode == '27'){
+            if(keycode == '113'){
                 getPoints = false;
                 previewPath = [];
                 selectingPath = [];
+                document.body.classList.remove('busy-cursor');
                 update();
             }
 
+        });
+
+        function getPath(){
+            let p = "";
+            d3.selectAll("path.definitive").each(function(d,i) {
+                p += d3.select(this).attr("d") + " ";
+            });
+            return p;
+        }
+
+        ipc.on('open-window', function(event, message){
+            console.log(message.path);
         });
     </script>
 </body>

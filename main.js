@@ -50,7 +50,11 @@ ipcMain.on("autosave-verified", (event) => {
     dtSaved = true;
     app.quit();
     event.returnValue = 1;
-})
+});
+
+ipcMain.on("get-path2", function (event, arg) {
+    mainWindow.webContents.send('get-path', arg);
+});
 
 let dtChanges = [false];
 
@@ -146,6 +150,7 @@ function createWindow () {
         });
         drawWindow.once('ready-to-show', () => {
             drawWindow.show();
+            drawWindow.webContents.send('open-window', message);
         });
     });
 
