@@ -149,6 +149,7 @@ function createWindow () {
             drawWindow = undefined;
         });
         drawWindow.once('ready-to-show', () => {
+            drawWindow.maximize();
             drawWindow.show();
             drawWindow.webContents.send('open-window', message);
         });

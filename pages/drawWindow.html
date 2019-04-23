@@ -7,10 +7,21 @@
         body.busy-cursor {
             cursor: url('../cursor-pen.png'), auto;
         }
+        body {
+            background-color: gray;
+        }
+
+        .content{
+            display:flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+        }
+
         .components{
             border-style: solid;
-            float:left;
-            display:inline;
+            margin: 10px;
         }
 
         .elements {
@@ -20,35 +31,40 @@
         }
 
         #canvas{
-            height: 600px;
-            width: 800px;
-            position: relative;
-        }
-        #bezier{
-            border-style: dashed;
-            width: 600px;
-            height: 400px;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            margin-right: -50%;
-            transform: translate(-50%, -50%) }
+            background-color: white;
+            box-shadow: 5px 5px 5px black;
         }
     </style>
 </head>
 <body>
-    <div id="canvas" class="components">
-        <div id="bezier"></div>
-    </div>
-    <div id="panelControl" class="components">
-        <div class="elements" id="properties">
-            <button type="button">Select</button>
+    <div class="content">
+        <div id="toolBox" class="components">
+            <div class="elements" id="properties">
+                <button type="button">Select</button>
+            </div>
+            <div class="elements" id="buttons">
+                <button id="bezierPencil" type="button">Bézier Pencil</button>
+            </div>
         </div>
-        <div class="elements" id="buttons">
-            <button id="bezierPencil" type="button">Bézier Pencil</button>
+        <id id="canvas"></id>
+        <div id="panelControl" class="components">
+            <div class="elements">
+                <input id="xmin" type="number">
+            </div>
+            <div class="elements">
+                <input id="xmax" type="number">
+            </div>
+            <div class="elements">
+                <input id="ymin" type="number">
+            </div>
+            <div class="elements">
+                <input id="ymax" type="number">
+            </div>
+            <div class="elements">
+                <button type="button">New button</button>
+            </div>
         </div>
     </div>
-
     <script>
         if (typeof module === 'object') {
             window.module = module;
@@ -68,12 +84,23 @@
         let theta_radians = 0;
         let selectedPath = 0;
 
-        let svg = d3.select("#bezier")
+        $("input#xmin").val(0);
+        $("input#xmax").val(10);
+        $("input#ymin").val(0);
+        $("input#ymax").val(10);
+
+        let xScale = d3.scaleLinear()
+            .domain([$("input#xmin").val(), $("input#xmax").val()])
+            .range([0, 800]);
+
+        let yScale = d3.scaleLinear()
+            .domain([$("input#ymin").val(), $("input#ymax").val()])
+            .range([600, 0]);
+
+        let svg2 = d3.select("#canvas")
             .append("svg")
-            .attr("width", 600)
-            .attr("height", 400)
-            .on('click', function(){
-            })
+            .attr("width", 850)
+            .attr("height", 650)
             .call(d3.drag()
                 .on("start", function(d) {
                     if (getPoints)
@@ -103,6 +130,20 @@
                         update();
                     }
                 }));
+
+        let svg = svg2
+            .append("g")
+            .attr("transform", "translate(30,25)");
+
+        svg.append("g")
+            .attr("class", "xaxis")
+            .attr("transform", "translate(0," + 600 + ")")
+            .call(d3.axisBottom(xScale));
+
+        svg.append("g")
+            .attr("class", "yaxis")
+            .attr("transform", "translate(" + 0 + ",0)")
+            .call(d3.axisLeft(yScale));
 
         let strSelecting = "";
         svg.append('path').attr("id", "selecting").attr("d",strSelecting)
@@ -249,10 +290,6 @@
                 .attr("cy", function (d) { return d[1]; });
         }
 
-        function drawElementsSelectedPath(index){
-
-        }
-
         function pontoOposto(x1,y1,x2,y2){
             let x3 = 0, y3 = 0;
 
@@ -274,7 +311,7 @@
         });
         $(document).keydown(function(event){
             let keycode = (event.keyCode ? event.keyCode : event.which);
-            if(keycode == '13'){
+            if(keycode == '13'){//ENTER
                 getPoints = false;
                 previewPath.pop();
                 control_points.push(previewPath);
@@ -283,20 +320,27 @@
                 document.body.classList.remove('busy-cursor');
                 update();
                 ipc.send('get-path2', getPath());
-            }else if(keycode == '113'){
+            }else if(keycode == '27'){//ESC
                 getPoints = false;
                 previewPath = [];
                 selectingPath = [];
                 document.body.classList.remove('busy-cursor');
                 update();
-            }else if (keycode == '46'){
+            }else if (keycode == '46'){//DEL
                 if (selectedPath >= 0){
                     control_points.splice(selectedPath, 1);
                     selectedPath = -1;
+                    update();
                 }
-                update();
             }
 
+        });
+
+        $("input").change(function(){
+            xScale.domain([$("input#xmin").val(),$("input#xmax").val()]);
+            yScale.domain([$("input#ymin").val(),$("input#ymax").val()]);
+            svg.select(".xaxis").call(d3.axisBottom(xScale));
+            svg.select(".yaxis").call(d3.axisLeft(yScale));
         });
 
         function getPath(){
