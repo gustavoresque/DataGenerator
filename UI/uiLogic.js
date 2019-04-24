@@ -102,6 +102,7 @@ ipc.on('get-path', function(event, path){
     //TODO: Pegar o path por aqui
     if(activeGenerator[currentDataGen] instanceof DataGen.superTypes["Geometric"]){
         activeGenerator[currentDataGen].path = path;
+        activeGenerator[currentDataGen].accessPath = path;
     }
 });
 

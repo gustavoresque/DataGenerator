@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <link rel="stylesheet" href="../photon-0.1.2-dist/css/photon.min.css">
     <style>
         body.busy-cursor {
             cursor: url('../cursor-pen.png'), auto;
         }
         body {
-            background-color: gray;
+            background-color: #f5f5f4;
         }
 
         .content{
             display:flex;
-            flex-direction: row;
+            flex-direction: column;
             flex-wrap: wrap;
-            justify-content: space-between;
+            justify-content: space-around;
             align-items: center;
         }
 
@@ -30,40 +31,82 @@
             padding: 5px;
         }
 
+        #toolBox{
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            align-items: center;
+            width: 40%;
+            height: 50px;
+        }
+
+        button{
+            height: 30px;
+            width: 30px;
+        }
+
+        .img-icon{
+            padding: 0.2em 0.3em;
+        }
+        .img-icon > img{
+            vertical-align: middle;
+        }
+
         #canvas{
             background-color: white;
             box-shadow: 5px 5px 5px black;
+            border-style: solid;
+            border-width: thin;
+            margin: 20px;
         }
     </style>
 </head>
 <body>
     <div class="content">
-        <div id="toolBox" class="components">
-            <div class="elements" id="properties">
-                <button type="button">Select</button>
-            </div>
-            <div class="elements" id="buttons">
-                <button id="bezierPencil" type="button">Bézier Pencil</button>
+        <div id="toolBox" style="">
+            <button id="bezierPencil" type="button" title="Draw a Bezier curve" class="btn btn-default img-icon">
+                <img width="20" src="../UI/img/bezier.png">
+            </button>
+            <button type="button" title="Draw lines" class="btn btn-default img-icon">
+                <img width="20"  src="../UI/img/line.svg">
+            </button>
+            <button type="button" title="Draw circle" class="btn btn-default img-icon">
+                <img width="20"  src="../UI/img/circle.svg">
+            </button>
+            <button type="button" title="Draw square" class="btn btn-default img-icon">
+                <img width="20"  src="../UI/img/square.svg">
+            </button>
+            <button type="button" title="Freehand drawing" class="btn btn-default img-icon">
+                <img width="20"  src="../UI/img/pencil.svg">
+            </button>
+            <button type="button" title="Erase existing paths" class="btn btn-default img-icon">
+                <img width="20"  src="../UI/img/eraser.svg">
+            </button>
+            <button type="button" title="Create spirals" class="btn btn-default img-icon">
+                <img width="20"  src="../UI/img/spiral.svg">
+            </button>
+        </div>
+        <div style="display:flex; flex-direction: column;">
+            <div style="display:flex; flex-direction: row;">
+                <div style="display:flex; flex-direction: column;justify-content: space-between;height:650px;padding-bottom:3%;padding-top:3%;">
+                    <div>y max: <input id="ymax" type="number" style="width: 40px;"></div>
+                    <div>y min: <input id="ymin" type="number" style="width: 40px;"></div>
+                </div>
+                <div style="display:flex; flex-direction: column;">
+                    <id id="canvas"></id>
+                    <div style="display:flex; flex-direction: row;justify-content: space-between;align-items: center;">
+                        <div>x min: <input id="xmin" type="number" style="width: 40px;"></div>
+                        <div>x max:<input id="xmax" type="number" style="width: 40px;"></div>
+                    </div>
+                </div>
             </div>
         </div>
-        <id id="canvas"></id>
-        <div id="panelControl" class="components">
-            <div class="elements">
-                <input id="xmin" type="number">
-            </div>
-            <div class="elements">
-                <input id="xmax" type="number">
-            </div>
-            <div class="elements">
-                <input id="ymin" type="number">
-            </div>
-            <div class="elements">
-                <input id="ymax" type="number">
-            </div>
+        <!--<div id="panelControl" class="components">
             <div class="elements">
                 <button type="button">New button</button>
             </div>
-        </div>
+        </div>-->
     </div>
     <script>
         if (typeof module === 'object') {
@@ -77,7 +120,9 @@
     <script>
         let DataGen = require("../datagen/datagen.js");
         let ipc = require('electron').ipcRenderer;
-        let control_points = [], previewPath = [], selectingPath = [];
+        let control_points = [];
+        let previewPath = [];
+        let selectingPath = [];
         let getPoints = false;
         let aux = [];
         let distance = 0;
@@ -85,17 +130,17 @@
         let selectedPath = 0;
 
         $("input#xmin").val(0);
-        $("input#xmax").val(10);
+        $("input#xmax").val(1);
         $("input#ymin").val(0);
-        $("input#ymax").val(10);
+        $("input#ymax").val(1);
 
         let xScale = d3.scaleLinear()
             .domain([$("input#xmin").val(), $("input#xmax").val()])
-            .range([0, 800]);
+            .range([30, 800]);
 
         let yScale = d3.scaleLinear()
             .domain([$("input#ymin").val(), $("input#ymax").val()])
-            .range([600, 0]);
+            .range([600, 25]);
 
         let svg2 = d3.select("#canvas")
             .append("svg")
@@ -105,6 +150,12 @@
                 .on("start", function(d) {
                     if (getPoints)
                         aux = d3.mouse(this);
+
+                    let newData= {
+                        x: xScale.invert(d3.mouse(this)[0]),
+                        y: yScale.invert(d3.mouse(this)[1])
+                    };
+                    console.log(newData);
                 })
                 .on("drag", function(d,i) {
                     if (getPoints){
@@ -132,8 +183,7 @@
                 }));
 
         let svg = svg2
-            .append("g")
-            .attr("transform", "translate(30,25)");
+            .append("g");
 
         svg.append("g")
             .attr("class", "xaxis")
@@ -142,7 +192,7 @@
 
         svg.append("g")
             .attr("class", "yaxis")
-            .attr("transform", "translate(" + 0 + ",0)")
+            .attr("transform", "translate(" + 30 + ",0)")
             .call(d3.axisLeft(yScale));
 
         let strSelecting = "";
@@ -344,27 +394,81 @@
         });
 
         function getPath(){
-            let p = "";
-            d3.selectAll("path.definitive").each(function(d,i) {
-                p += d3.select(this).attr("d") + " ";
+            // let p = "";
+            // d3.selectAll("path.definitive").each(function(d,i) {
+            //     p += d3.select(this).attr("d") + " ";
+            // });
+
+            let cp_scaled = [];
+            control_points.forEach((e,i)=>{
+                let t = [];
+                for (let j = 0; j < e.length; j++){
+                    let newData = [xScale.invert(e[j][0]), yScale.invert(e[j][1])];
+
+                    console.log(newData);
+                    t.push([newData[0],newData[1]]);
+                }
+                cp_scaled.push(t);
             });
-            return p;
+
+            let str = "";
+            cp_scaled.forEach((e,i)=>{
+                if (e.length > 0){
+                    str += "M "+e[0][0]+","+e[0][1]+" C";
+                }
+
+                for(let i=1; i<e.length; i++){
+                    str += " "+e[i][0]+","+e[i][1];
+                }
+            });
+
+            return str;
         }
 
         ipc.on('open-window', function(event, message){
             let svgObj = DataGen.Utils.decodeSvgPathD(message.path);
-
+            let greaterX = null, greaterY = null;
+            let lowerX = null, lowerY = null;
             let output = [];
+
             svgObj.forEach((e,i) => {
                 for (let j = 0; j < e.params.length; j += 2){
+                    if (e.params[j] > greaterX || greaterX === null){
+                        greaterX = e.params[j];
+                    }else if (e.params[j] < lowerX || lowerX === null){
+                        lowerX = e.params[j];
+                    }
+
+                    if (e.params[j+1] > greaterY || greaterY === null){
+                        greaterY = e.params[j+1];
+                    }else if (e.params[j+1] < lowerY || lowerY === null){
+                        lowerY = e.params[j+1];
+                    }
+                }
+            });
+
+            $("input#xmin").val(Math.round(lowerX+1));
+            $("input#xmax").val(Math.round(greaterX+1));
+            $("input#ymin").val(Math.round(lowerY+1));
+            $("input#ymax").val(Math.round(greaterY+1));
+
+            xScale.domain([lowerX,greaterX]);
+            yScale.domain([lowerY,greaterY]);
+            svg.select(".xaxis").call(d3.axisBottom(xScale));
+            svg.select(".yaxis").call(d3.axisLeft(yScale));
+
+            svgObj.forEach((e,i) => {
+                for (let j = 0; j < e.params.length; j += 2){
+                    let x = xScale(e.params[j]), y = yScale(e.params[j+1]);
                     if (e.command === "L"){
                         control_points.push(output);
                         output = [];
                     }
-                    output.push([e.params[j], e.params[j+1]]);
+                    output.push([x, y]);
                 }
             });
             control_points.push(output);
+
             update();
         });
     </script>
