@@ -358,6 +358,42 @@ function createWindow () {
         ]
     };
 
+    const menuTemplateAbout = {
+        label: 'Help',
+        submenu: [
+            {
+                label: 'About',
+                click(){ funcOpenAboutWindow(); }
+            }
+        ]
+    };
+
+    let aboutWindow;
+    let funcOpenAboutWindow = () => {
+        aboutWindow = new BrowserWindow({
+            parent: mainWindow,
+            width: 675,
+            height: 500,
+            show: false,
+            resizable: true,
+            closable: true,
+            minimizable: false,
+            maximizable: false
+        });
+        aboutWindow.setMenu(null);
+        aboutWindow.loadURL(url.format({
+            pathname: path.join(__dirname, 'pages/aboutWindow.html'),
+            protocol: 'file:',
+            slashes: true
+        }));
+        aboutWindow.on('closed', function () {
+            aboutWindow = undefined;
+        });
+        aboutWindow.once('ready-to-show', () => {
+            aboutWindow.show();
+        });
+    };
+
     //Work on Mac.
     if(process.platform === 'darwin'){
         mainWindow.on("focus", ()=>{
@@ -371,6 +407,7 @@ function createWindow () {
     menu.append(new MenuItem(menuTemplateEdit));
     menu.append(new MenuItem(menuTemplateVisualize));
     menu.append(new MenuItem(menuTemplateDebug));
+    menu.append(new MenuItem(menuTemplateAbout));
     mainWindow.setMenu(menu);
 
   // Open the DevTools.
