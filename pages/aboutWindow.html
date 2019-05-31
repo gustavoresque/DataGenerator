@@ -3,11 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <title>About</title>
+    <style>
+        #homesite:hover {
+            cursor: pointer;
+        }
+
+        #homesite{
+            color: blue;
+        }
+    </style>
 </head>
 <body>
     <h1>Blocks</h1>
     <h2>Synthetic Data Generator</h2>
-    <a href="http://labvis.ufpa.br" target="_blank">Visit Blocks' Homepage</a>
+    <u id="homesite">Visit Blocks' Homepage</u>
 
     <script>
         if (typeof module === 'object') {
@@ -19,6 +28,11 @@
     <script>if (window.module) module = window.module;</script>
 
     <script>
+        const { shell } = require('electron')
+
+        $('#homesite').click(function(){
+            shell.openExternal('http://labvis.ufpa.br')
+        });
 
     </script>
 </body>

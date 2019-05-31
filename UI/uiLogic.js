@@ -103,6 +103,7 @@ ipc.on('get-path', function(event, path){
     if(activeGenerator[currentDataGen] instanceof DataGen.superTypes["Geometric"]){
         activeGenerator[currentDataGen].path = path;
         activeGenerator[currentDataGen].accessPath = path;
+        showGenerators();
     }
 });
 

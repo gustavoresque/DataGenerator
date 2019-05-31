@@ -14,8 +14,8 @@
 
         .content{
             display:flex;
-            flex-direction: column;
-            flex-wrap: wrap;
+            flex-direction: row;
+            /*flex-wrap: wrap;*/
             justify-content: space-around;
             align-items: center;
         }
@@ -33,12 +33,10 @@
 
         #toolBox{
             display: flex;
-            flex-direction: row;
+            flex-direction: column;
             flex-wrap: wrap;
             justify-content: space-around;
             align-items: center;
-            width: 40%;
-            height: 50px;
         }
 
         button{
@@ -64,7 +62,7 @@
 </head>
 <body>
     <div class="content">
-        <div id="toolBox" style="">
+        <div id="toolBox">
             <button id="bezierPencil" type="button" title="Draw a Bezier curve" class="btn btn-default img-icon">
                 <img width="20" src="../UI/img/bezier.png">
             </button>
@@ -102,11 +100,11 @@
                 </div>
             </div>
         </div>
-        <!--<div id="panelControl" class="components">
+        <div id="panelControl" class="components">
             <div class="elements">
                 <button type="button">New button</button>
             </div>
-        </div>-->
+        </div>
     </div>
     <script>
         if (typeof module === 'object') {
@@ -118,6 +116,7 @@
     <script>if (window.module) module = window.module;</script>
     <script src="../lib/d3.v5.min.js"></script>
     <script>
+        let Drawing = require("./drawWindow.js");
         let DataGen = require("../datagen/datagen.js");
         let ipc = require('electron').ipcRenderer;
         let control_points = [];
@@ -128,6 +127,7 @@
         let distance = 0;
         let theta_radians = 0;
         let selectedPath = 0;
+        let drawings = [];
 
         $("input#xmin").val(0);
         $("input#xmax").val(1);
@@ -147,17 +147,11 @@
             .attr("width", 850)
             .attr("height", 650)
             .call(d3.drag()
-                .on("start", function(d) {
+                .on("start", function(){
                     if (getPoints)
                         aux = d3.mouse(this);
-
-                    let newData= {
-                        x: xScale.invert(d3.mouse(this)[0]),
-                        y: yScale.invert(d3.mouse(this)[1])
-                    };
-                    console.log(newData);
                 })
-                .on("drag", function(d,i) {
+                .on("drag", function(){
                     if (getPoints){
                         selectingPath = [];
                         selectingPath.push(previewPath[previewPath.length-2]);
@@ -168,7 +162,7 @@
                         update();
                     }
                 })
-                .on("end", function(d,i) {
+                .on("end", function(){
                     if (getPoints){
                         if (previewPath.length > 0){
                             previewPath.push(pontoOposto(aux[0], aux[1], d3.mouse(this)[0], d3.mouse(this)[1]));
@@ -213,6 +207,10 @@
             svg.selectAll("path.definitive").remove();
             svg.selectAll(".lineGuide").remove();
 
+            drawings.forEach(function(e,i){
+                svg.append(e.getPath());
+            });
+
             control_points.forEach(function(e,i){
                 let str = "";
                 if (e.length > 0){//Primeiro ponto
@@ -238,7 +236,7 @@
                             .style("stroke","red").style("stroke-width","1px");
                     }
 
-                    if (i === e.length-1){//Ponto do final
+                    if (i === e.length-1){//Último ponto
                         let line;
                         let middle = e[e.length-1], anchor1 = e[e.length-2];
                         line = "M "+middle[0]+","+middle[1]+" L"+anchor1[0]+","+anchor1[1];
@@ -248,11 +246,10 @@
                     }
                 }
 
-                svg.append('path').attr("class", "definitive").attr("id", i).attr("d",str)
+                /*svg.append('path').attr("class", "definitive").attr("id", i).attr("d",str)
                     .style("fill","none").style("stroke","black").style("stroke-width","3px")
                     .call(d3.drag()
                         .on("start", function(d){
-                            console.log(this.id);
                             selectedPath = this.id;
                         })
                         .on("drag", function(d){
@@ -260,7 +257,7 @@
                         })
                         .on("end", function(d){
 
-                        }));
+                        }));*/
 
                 svg.selectAll("circle.control")
                     .data(e)
@@ -357,7 +354,7 @@
 
         $("#bezierPencil").on("click", function(){
             getPoints = true;
-            document.body.classList.add('busy-cursor');
+            //document.body.classList.add('busy-cursor');
         });
         $(document).keydown(function(event){
             let keycode = (event.keyCode ? event.keyCode : event.which);
@@ -365,9 +362,10 @@
                 getPoints = false;
                 previewPath.pop();
                 control_points.push(previewPath);
+                drawings.push(new Bezier(previewPath));
                 previewPath = [];
                 selectingPath = [];
-                document.body.classList.remove('busy-cursor');
+                //document.body.classList.remove('busy-cursor');
                 update();
                 ipc.send('get-path2', getPath());
             }else if(keycode == '27'){//ESC
@@ -394,19 +392,11 @@
         });
 
         function getPath(){
-            // let p = "";
-            // d3.selectAll("path.definitive").each(function(d,i) {
-            //     p += d3.select(this).attr("d") + " ";
-            // });
-
             let cp_scaled = [];
             control_points.forEach((e,i)=>{
                 let t = [];
                 for (let j = 0; j < e.length; j++){
-                    let newData = [xScale.invert(e[j][0]), yScale.invert(e[j][1])];
-
-                    console.log(newData);
-                    t.push([newData[0],newData[1]]);
+                    t.push([xScale.invert(e[j][0]),yScale.invert(e[j][1])]);
                 }
                 cp_scaled.push(t);
             });
