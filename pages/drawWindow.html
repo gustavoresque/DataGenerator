@@ -116,7 +116,7 @@
     <script>if (window.module) module = window.module;</script>
     <script src="../lib/d3.v5.min.js"></script>
     <script>
-        let Drawing = require("./drawWindow.js");
+        let Bezier = require("./drawWindow.js");
         let DataGen = require("../datagen/datagen.js");
         let ipc = require('electron').ipcRenderer;
         let control_points = [];
@@ -148,8 +148,9 @@
             .attr("height", 650)
             .call(d3.drag()
                 .on("start", function(){
-                    if (getPoints)
+                    if (getPoints){
                         aux = d3.mouse(this);
+                    }
                 })
                 .on("drag", function(){
                     if (getPoints){
@@ -208,10 +209,10 @@
             svg.selectAll(".lineGuide").remove();
 
             drawings.forEach(function(e,i){
-                svg.append(e.getPath());
+                svg.append(function(){return e.getPath();});
             });
 
-            control_points.forEach(function(e,i){
+            /*control_points.forEach(function(e,i){
                 let str = "";
                 if (e.length > 0){//Primeiro ponto
                     str = "M "+e[0][0]+","+e[0][1]+" C";
@@ -257,7 +258,7 @@
                         })
                         .on("end", function(d){
 
-                        }));*/
+                        }));
 
                 svg.selectAll("circle.control")
                     .data(e)
@@ -299,7 +300,7 @@
                         .on("end", function(d,i) {
                             ipc.send('get-path2', getPath());
                         }));
-            });
+            });*/
 
             let strSelecting = "";
             if (selectingPath.length > 0)
@@ -451,13 +452,15 @@
                 for (let j = 0; j < e.params.length; j += 2){
                     let x = xScale(e.params[j]), y = yScale(e.params[j+1]);
                     if (e.command === "L"){
-                        control_points.push(output);
+                        //control_points.push(output);
+                        drawings.push(new Bezier(output));
                         output = [];
                     }
                     output.push([x, y]);
                 }
             });
-            control_points.push(output);
+            //control_points.push(output);
+            drawings.push(new Bezier(output));
 
             update();
         });
