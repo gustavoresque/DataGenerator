@@ -363,7 +363,11 @@
                 getPoints = false;
                 previewPath.pop();
                 control_points.push(previewPath);
-                drawings.push(new Bezier(previewPath));
+                let b = new Bezier(previewPath);
+                b.setOnStateChange(function(){
+                    update();
+                })
+                drawings.push(b);
                 previewPath = [];
                 selectingPath = [];
                 //document.body.classList.remove('busy-cursor');

@@ -29,6 +29,10 @@ class Circle extends Drawings{
 }
 
 class Bezier extends Drawings{
+    constructor(_points, _id){
+        super(_points, _id);
+    }
+
     getPath(){
         let g = d3.select('g').insert('g');
         let str = '';
@@ -69,14 +73,17 @@ class Bezier extends Drawings{
         g.append('path').attr("class", "definitive").attr("id", 0).attr("d",str)
             .style("fill","none").style("stroke","black").style("stroke-width","3px");
 
+        let distance = 0;
+        let theta_radians = 0;
+
         g.selectAll("circle.control")
             .data(this.points)
             .enter().append("svg:circle")
             .attr("fill", "blue")
             .attr("r", 3)
             .attr("cx", function (d) { return d.x; })
-            .attr("cy", function (d) { return d.y; });
-            /*.call(d3.drag()
+            .attr("cy", function (d) { return d.y; })
+            .call(d3.drag()
                 .on("start", function(d,i) {
                     distance = Math.sqrt(Math.pow((this.points[i-1].x - this.points[i].x),2) + Math.pow((this.points[i-1].y - this.points[i].y),2));
 
@@ -104,13 +111,18 @@ class Bezier extends Drawings{
                         if(i+1 < this.points.length) this.points[i+1] = this.pontoOposto(this.points[i].x, this.points[i].y, this.points[i-1].x, this.points[i-1].y);
                     }
 
-                    update();
+                    this.funcao();
                 })
                 .on("end", function(d,i) {
-                    ipc.send('get-path2', getPath());
-                }));*/
+                    //ipc.send('get-path2', getPath());
+                }));
 
         return g.node();
+    }
+
+    setOnStateChange(funcao){
+        this.funcao = funcao;
+
     }
 
     pontoOposto (x1,y1,x2,y2){
