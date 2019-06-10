@@ -1,5 +1,5 @@
 class Point{
-    constructor(_x, _y){
+    constructor(_x, _y,){
         this.x = _x;
         this.y = _y;
     }
@@ -33,8 +33,9 @@ class Bezier extends Drawings{
         super(_points, _id);
     }
 
-    getPath(){
+    drawPath(){
         let g = d3.select('g').insert('g');
+        $(g).get(0).__node__ = this;
         let str = '';
 
         if (this.points.length > 0){//Primeiro ponto
@@ -85,44 +86,53 @@ class Bezier extends Drawings{
             .attr("cy", function (d) { return d.y; })
             .call(d3.drag()
                 .on("start", function(d,i) {
-                    distance = Math.sqrt(Math.pow((this.points[i-1].x - this.points[i].x),2) + Math.pow((this.points[i-1].y - this.points[i].y),2));
+                    let delta_x = 0;
+                    let delta_y = 0;
+                    if ($(g).get(0).__node__.points[i-1]){
+                        distance = Math.sqrt(Math.pow(($(g).get(0).__node__.points[i-1].x - $(g).get(0).__node__.points[i].x),2) + Math.pow(($(g).get(0).__node__.points[i-1].y - $(g).get(0).__node__.points[i].y),2));
 
-                    let delta_x = this.points[i-1].x - this.points[i].x;
-                    let delta_y = this.points[i-1].y - this.points[i].y;
+                        delta_x = $(g).get(0).__node__.points[i-1].x - $(g).get(0).__node__.points[i].x;
+                        delta_y = $(g).get(0).__node__.points[i-1].y - $(g).get(0).__node__.points[i].y;
+                    }
+                    else{
+                        distance = Math.sqrt(Math.pow(($(g).get(0).__node__.points[i].x - $(g).get(0).__node__.points[i+1].x),2) + Math.pow(($(g).get(0).__node__.points[i].y - $(g).get(0).__node__.points[i+1].y),2));
+
+                        delta_x = $(g).get(0).__node__.points[i].x - $(g).get(0).__node__.points[i+1].x;
+                        delta_y = $(g).get(0).__node__.points[i].y - $(g).get(0).__node__.points[i+1].y;
+                    }
                     theta_radians = Math.atan2(delta_y, delta_x);
                 })
                 .on("drag", function(d,i) {
                     g.selectAll(".lineGuide").remove();
-                    this.points[i].x = d3.event.x;
-                    this.points[i].y = d3.event.y;
+                    $(g).get(0).__node__.points[i].x = d3.event.x;
+                    $(g).get(0).__node__.points[i].y = d3.event.y;
 
                     let j = 0;
                     if(i % 3 === 1){
                         j = i-1;
-                        this.points[j-1] = this.pontoOposto(this.points[j].x, this.points[j].y, this.points[i].x, this.points[i].y);
+                        $(g).get(0).__node__.points[j-1] = $(g).get(0).__node__.pontoOposto($(g).get(0).__node__.points[j].x, $(g).get(0).__node__.points[j].y, $(g).get(0).__node__.points[i].x, $(g).get(0).__node__.points[i].y);
                     }else if(i % 3 === 2){
                         j = i+1;
-                        if(j+1 < this.points.length) this.points[j+1] = this.pontoOposto(this.points[j].x, this.points[j].y, this.points[i].x, this.points[i].y);
+                        if(j+1 < $(g).get(0).__node__.points.length) $(g).get(0).__node__.points[j+1] = $(g).get(0).__node__.pontoOposto($(g).get(0).__node__.points[j].x, $(g).get(0).__node__.points[j].y, $(g).get(0).__node__.points[i].x, $(g).get(0).__node__.points[i].y);
                     }else{
-                        let x3 = this.points[i].x + (distance * Math.cos(theta_radians));
-                        let y3 = this.points[i].y + (distance * Math.sin(theta_radians));
-                        this.points[i-1] = [x3,y3];
+                        let x3 = $(g).get(0).__node__.points[i].x + (distance * Math.cos(theta_radians));
+                        let y3 = $(g).get(0).__node__.points[i].y + (distance * Math.sin(theta_radians));
+                        $(g).get(0).__node__.points[i-1] = new Point(x3,y3);
 
-                        if(i+1 < this.points.length) this.points[i+1] = this.pontoOposto(this.points[i].x, this.points[i].y, this.points[i-1].x, this.points[i-1].y);
+                        if(i+1 < $(g).get(0).__node__.points.length) $(g).get(0).__node__.points[i+1] = $(g).get(0).__node__.pontoOposto($(g).get(0).__node__.points[i].x, $(g).get(0).__node__.points[i].y, $(g).get(0).__node__.points[i-1].x, $(g).get(0).__node__.points[i-1].y);
                     }
-
-                    this.funcao();
+                    $(g).get(0).__node__.funcao();
                 })
                 .on("end", function(d,i) {
-                    //ipc.send('get-path2', getPath());
+                    ipc.send('get-path2', $(g).get(0).__node__.getPath());
                 }));
 
+        g.attr('class', 'drawing');
         return g.node();
     }
 
     setOnStateChange(funcao){
         this.funcao = funcao;
-
     }
 
     pontoOposto (x1,y1,x2,y2){
@@ -137,7 +147,29 @@ class Bezier extends Drawings{
         x3 = x1 + (d * Math.cos(theta_radians - Math.PI));
         y3 = y1 + (d * Math.sin(theta_radians - Math.PI));
 
-        return [x3,y3];
+        return new Point(x3,y3);
+    }
+
+    getPath(){
+        let cp_scaled = [];
+        let t = [];
+        for (let j = 0; j < this.points.length; j++){
+            t.push([xScale.invert(this.points[j].x),yScale.invert(this.points[j].y)]);
+        }
+        cp_scaled.push(t);
+
+        let str = "";
+        cp_scaled.forEach((e,i)=>{
+            if (e.length > 0){
+                str += "M "+e[0][0]+","+e[0][1]+" C";
+            }
+
+            for(let i=1; i<e.length; i++){
+                str += " "+e[i][0]+","+e[i][1];
+            }
+        });
+
+        return str;
     }
 }
 

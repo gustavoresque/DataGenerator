@@ -207,9 +207,10 @@
             svg.selectAll("circle").remove();
             svg.selectAll("path.definitive").remove();
             svg.selectAll(".lineGuide").remove();
+            svg.selectAll("g.drawing").remove();
 
             drawings.forEach(function(e,i){
-                svg.append(function(){return e.getPath();});
+                svg.append(function(){return e.drawPath();});
             });
 
             /*control_points.forEach(function(e,i){
@@ -363,10 +364,10 @@
                 getPoints = false;
                 previewPath.pop();
                 control_points.push(previewPath);
-                let b = new Bezier(previewPath);
+                let b = new Bezier(previewPath,drawings.length);
                 b.setOnStateChange(function(){
                     update();
-                })
+                });
                 drawings.push(b);
                 previewPath = [];
                 selectingPath = [];
@@ -454,20 +455,35 @@
 
             svgObj.forEach((e,i) => {
                 for (let j = 0; j < e.params.length; j += 2){
-                    let x = xScale(e.params[j]), y = yScale(e.params[j+1]);
                     if (e.command === "L"){
                         //control_points.push(output);
-                        drawings.push(new Bezier(output));
+                        let aux = new Bezier(output,drawings.length);
+                        aux.setOnStateChange(function(){
+                            update();
+                        });
+                        drawings.push(aux);
                         output = [];
                     }
+                    let x = xScale(e.params[j]), y = yScale(e.params[j+1]);
                     output.push([x, y]);
                 }
             });
             //control_points.push(output);
-            drawings.push(new Bezier(output));
+
+            let b = new Bezier(output,drawings.length);
+            b.setOnStateChange(function(){
+                update();
+            });
+            drawings.push(b);
+
+            console.log(drawings);
 
             update();
         });
+
+        function helloWorld(){
+            console.log('Hello World');
+        }
     </script>
 </body>
 </html>
