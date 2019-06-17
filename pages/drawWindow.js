@@ -36,6 +36,7 @@ class Bezier extends Drawings{
     drawPath(){
         let g = d3.select('g').insert('g');
         $(g).get(0).__node__ = this;
+        let thisDrawingProperties = $(g).get(0).__node__;
         let str = '';
 
         if (this.points.length > 0){//Primeiro ponto
@@ -88,43 +89,43 @@ class Bezier extends Drawings{
                 .on("start", function(d,i) {
                     let delta_x = 0;
                     let delta_y = 0;
-                    if ($(g).get(0).__node__.points[i-1]){
-                        distance = Math.sqrt(Math.pow(($(g).get(0).__node__.points[i-1].x - $(g).get(0).__node__.points[i].x),2) + Math.pow(($(g).get(0).__node__.points[i-1].y - $(g).get(0).__node__.points[i].y),2));
+                    if (thisDrawingProperties.points[i-1]){
+                        distance = Math.sqrt(Math.pow((thisDrawingProperties.points[i-1].x - thisDrawingProperties.points[i].x),2) + Math.pow((thisDrawingProperties.points[i-1].y - thisDrawingProperties.points[i].y),2));
 
-                        delta_x = $(g).get(0).__node__.points[i-1].x - $(g).get(0).__node__.points[i].x;
-                        delta_y = $(g).get(0).__node__.points[i-1].y - $(g).get(0).__node__.points[i].y;
+                        delta_x = thisDrawingProperties.points[i-1].x - thisDrawingProperties.points[i].x;
+                        delta_y = thisDrawingProperties.points[i-1].y - thisDrawingProperties.points[i].y;
                     }
                     else{
-                        distance = Math.sqrt(Math.pow(($(g).get(0).__node__.points[i].x - $(g).get(0).__node__.points[i+1].x),2) + Math.pow(($(g).get(0).__node__.points[i].y - $(g).get(0).__node__.points[i+1].y),2));
+                        distance = Math.sqrt(Math.pow((thisDrawingProperties.points[i].x - thisDrawingProperties.points[i+1].x),2) + Math.pow((thisDrawingProperties.points[i].y - thisDrawingProperties.points[i+1].y),2));
 
-                        delta_x = $(g).get(0).__node__.points[i].x - $(g).get(0).__node__.points[i+1].x;
-                        delta_y = $(g).get(0).__node__.points[i].y - $(g).get(0).__node__.points[i+1].y;
+                        delta_x = thisDrawingProperties.points[i].x - thisDrawingProperties.points[i+1].x;
+                        delta_y = thisDrawingProperties.points[i].y - thisDrawingProperties.points[i+1].y;
                     }
                     theta_radians = Math.atan2(delta_y, delta_x);
                 })
                 .on("drag", function(d,i) {
                     g.selectAll(".lineGuide").remove();
-                    $(g).get(0).__node__.points[i].x = d3.event.x;
-                    $(g).get(0).__node__.points[i].y = d3.event.y;
+                    thisDrawingProperties.points[i].x = d3.event.x;
+                    thisDrawingProperties.points[i].y = d3.event.y;
 
                     let j = 0;
                     if(i % 3 === 1){
                         j = i-1;
-                        $(g).get(0).__node__.points[j-1] = $(g).get(0).__node__.pontoOposto($(g).get(0).__node__.points[j].x, $(g).get(0).__node__.points[j].y, $(g).get(0).__node__.points[i].x, $(g).get(0).__node__.points[i].y);
+                        thisDrawingProperties.points[j-1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[j].x, thisDrawingProperties.points[j].y, thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y);
                     }else if(i % 3 === 2){
                         j = i+1;
-                        if(j+1 < $(g).get(0).__node__.points.length) $(g).get(0).__node__.points[j+1] = $(g).get(0).__node__.pontoOposto($(g).get(0).__node__.points[j].x, $(g).get(0).__node__.points[j].y, $(g).get(0).__node__.points[i].x, $(g).get(0).__node__.points[i].y);
+                        if(j+1 < thisDrawingProperties.points.length) thisDrawingProperties.points[j+1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[j].x, thisDrawingProperties.points[j].y, thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y);
                     }else{
-                        let x3 = $(g).get(0).__node__.points[i].x + (distance * Math.cos(theta_radians));
-                        let y3 = $(g).get(0).__node__.points[i].y + (distance * Math.sin(theta_radians));
-                        $(g).get(0).__node__.points[i-1] = new Point(x3,y3);
+                        let x3 = thisDrawingProperties.points[i].x + (distance * Math.cos(theta_radians));
+                        let y3 = thisDrawingProperties.points[i].y + (distance * Math.sin(theta_radians));
+                        thisDrawingProperties.points[i-1] = new Point(x3,y3);
 
-                        if(i+1 < $(g).get(0).__node__.points.length) $(g).get(0).__node__.points[i+1] = $(g).get(0).__node__.pontoOposto($(g).get(0).__node__.points[i].x, $(g).get(0).__node__.points[i].y, $(g).get(0).__node__.points[i-1].x, $(g).get(0).__node__.points[i-1].y);
+                        if(i+1 < thisDrawingProperties.points.length) thisDrawingProperties.points[i+1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y, thisDrawingProperties.points[i-1].x, thisDrawingProperties.points[i-1].y);
                     }
-                    $(g).get(0).__node__.funcao();
+                    thisDrawingProperties.funcao();
                 })
                 .on("end", function(d,i) {
-                    ipc.send('get-path2', $(g).get(0).__node__.getPath());
+                    ipc.send('get-path2', thisDrawingProperties.getPath());
                 }));
 
         g.attr('class', 'drawing');
