@@ -3088,21 +3088,89 @@ class FixedTimeGenerator extends Sequence{
 
 
 class RealDataWrapper extends Generator {
-    constructor(data, dataType) {
+    constructor(data, dataType, genType) {
         super("Real Data Wrapper");
         this.data = data || [];
         this.dataType = dataType || "Auto";
+        this.genType = genType || "Standart"
+        this.q1 = 25
+        this.q2 = 25
+        this.q3 = 25
+        this.n = 10
 
         this.length = data.length;
         this.current = 0;
+
+        if(!isNaN(this.data[1]) && isFinite(this.data[1])) {
+            this.average = this.data.reduce((x,y) => x+y)/this.length
+            this.stddev = Math.pow(this.data.reduce((x,y) => {
+                return x + Math.pow(y - this.average,2)
+            },0)/this.length-1,0.5)
+        } else {
+            let counter = {}
+            this.data.forEach(data => {
+                counter[data] = counter[data] ? counter[data] + 1 : 1
+            })
+            //Actually "Average" is a type of missing value found at Michell's dissertation. This a custom implementation. See AverageRandom for more details.
+            this.average = Object.keys(counter).map(key => [key, counter[key]]).sort((a,b) => b[1] - a[1])
+        }
     }
 
     generate() {
-        let i = this.current;
+        const i = this.current;
         this.current++;
         this.current %= this.length;
-        return this.dataType === "Auto" ? super.generate(this.data[i]) :
-            this.dataType === "Numeric" ? parseFloat(super.generate(this.data[i])) : ""+super.generate(this.data[i]);
+
+        //TODO: Verificar se a soma dos quartis é igual a 100
+
+        switch(this.genType) {
+            case "Standart":
+                return this.dataType === "Auto" ? super.generate(this.data[i]) :
+                    this.dataType === "Numeric" ? parseFloat(super.generate(this.data[i])) : ""+super.generate(this.data[i]);
+                break;
+            case "Reverse":
+                const _i = (this.length-1)-i;
+                return this.dataType === "Auto" ? super.generate(this.data[_i]) :
+                    this.dataType === "Numeric" ? parseFloat(super.generate(this.data[_i])) : ""+super.generate(this.data[_i]);
+                break;
+            case "Random":
+                const rand_i = Math.round(Math.random()*(this.length-1))
+                return this.dataType === "Auto" ? super.generate(this.data[rand_i]) :
+                    this.dataType === "Numeric" ? parseFloat(super.generate(this.data[rand_i])) : ""+super.generate(this.data[rand_i]);
+                break;
+            case "QuartileRandom":
+                const rand = Math.random()*100
+                const { q1, q2, q3 } = this;
+                let min = 0;
+                let max = 0;
+                if(rand < q1) {
+                    min = 0; max = 0.25
+                } else if(rand < q1 + q2) {
+                    min = 0.25; max = 0.50
+                } else if( rand < q1 + q2 + q3) {
+                    min = 0.50; max = 0.75
+                } else {
+                    min = 0.75; max = 1
+                }
+
+                const quartile_i = Math.round((Math.random() * (max-min) + min) * (this.length-1))
+
+                return this.dataType === "Auto" ? super.generate(this.data[quartile_i]) :
+                    this.dataType === "Numeric" ? parseFloat(super.generate(this.data[quartile_i])) : ""+super.generate(this.data[quartile_i]);
+                break;
+            case "AverageRandom":
+                //If Standart Deviation is not undefined, it's because average is a number.
+                if(this.stddev) {
+                    const { average, stddev } = this
+                    const average_i = Math.round(Math.random() * ((average + stddev) - (average - stddev)) + (average - stddev))
+                    return parseFloat(super.generate(this.data[average_i]))
+                } else {
+                    const mode = this.average.slice(0,this.n)
+                    const mode_i = Math.round((mode.length-1)*Math.random())
+                    return ""+super.generate(this.data[mode_i])
+                }
+                break;
+        }
     }
 
     getModel(){
@@ -3137,6 +3205,13 @@ class RealDataWrapper extends Generator {
                 name: "Force a Data Type",
                 type: "options",
                 options: ["Auto", "Numeric", "Categorical"]
+            },
+            {
+                shortName: "GenType",
+                variableName: "generateType",
+                name: "Set a function to generate missing values",
+                type: "options",
+                options: ["Standart", "Reverse", "Random", "QuartileRandom", "AvarageRandom"]
             }
         );
         return params;
