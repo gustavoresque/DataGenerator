@@ -1886,8 +1886,9 @@ function createModelFromDataSet(path){
                 }else{
                     lines = strdata.split("\n");
                 }
+                const delimiter = lines[0].indexOf(',') === -1 ? ';' : ','
                 for(let i=0;i<lines.length;i++){
-                    lines[i] = lines[i].split(path.endsWith(".csv") ? "," : "\t");
+                    lines[i] = lines[i].split(path.endsWith(".csv") ? delimiter : "\t");
                 }
                 //TODO: pedir para o usuário converter os valores
 
