@@ -3177,11 +3177,12 @@ class RealDataWrapper extends Generator {
         let model = super.getModel();
         model.data = this.data;
         model.dataType = this.dataType;
+        model.genType = this.genType;
         return model;
     }
 
     copy(){
-        let newGen = new RealDataWrapper(this.data, this.dataType);
+        let newGen = new RealDataWrapper(this.data, this.dataType, this.genType);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -3196,6 +3197,10 @@ class RealDataWrapper extends Generator {
         return this.dataType;
     }
 
+    getReturnedGenerateType() {
+        return this.genType;
+    }
+
     getGenParams(){
         let params = super.getGenParams();
         params.push(
@@ -3208,10 +3213,34 @@ class RealDataWrapper extends Generator {
             },
             {
                 shortName: "GenType",
-                variableName: "generateType",
-                name: "Set a function to generate missing values",
+                variableName: "genType",
+                name: "Generate Missing Values",
                 type: "options",
-                options: ["Standart", "Reverse", "Random", "QuartileRandom", "AvarageRandom"]
+                options: ["Standart", "Reverse", "Random", "QuartileRandom", "AverageRandom"]
+            },
+            {
+                shortName: "Quartile 1",
+                variableName: "q1",
+                name: "Set Quartile 1 value",
+                type: "number"
+            },
+            {
+                shortName: "Quartile 2",
+                variableName: "q2",
+                name: "Set Quartile 2 value",
+                type: "number"
+            },
+            {
+                shortName: "Quartile 3",
+                variableName: "q3",
+                name: "Set Quartile 3 value",
+                type: "number"
+            },
+            {
+                shortName: "N",
+                variableName: "n",
+                name: "[Categ.] Set N mode values",
+                type: "string"
             }
         );
         return params;

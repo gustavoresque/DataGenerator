@@ -458,6 +458,7 @@ function propsConfigs(generator,coluna, new_place){
         }
     }
     tippy('.tooltip-label');
+    extraOptionRealDataset();
 }
 
 $("html").ready(function(){
@@ -1434,7 +1435,7 @@ function hasChanged(type) { //permite o Auto Save.
 }
 
 /*Desenha na tela principal as colunas e seus respectivos geradores baseados nos dados armazendos no array datagen*/
-function showGenerators(){
+function showGenerators() {
     let active_gen_chip = {};
     function displayGens($tdGen, generator){
         let generators = [];
@@ -1866,7 +1867,7 @@ function exportResultsJSON(data){
     });
 }
 
-function createModelFromDataSet(path){
+function createModelFromDataSet(path) {
 
     console.log(path);
 
@@ -1937,9 +1938,33 @@ function createModelFromDataSet(path){
 
             showModels();
             showGenerators();
-
         }
-    });
+    })
+}
+
+$("body").on("change", "#input_genType", () => {
+    propsConfigs(activeGenerator[currentDataGen], activeGenerator[currentDataGen].getRootGenerator().parent)
+})
+
+function extraOptionRealDataset() {
+    const gType = $("#input_genType").val()
+    const q1 = $("#input_q1").parent().parent()
+    const q2 = $("#input_q2").parent().parent()
+    const q3 = $("#input_q3").parent().parent()
+    const qs = [q1,q2,q3]
+    const n = $("#input_n").parent().parent()
+    const all = [q1,q2,q3,n]
+    switch(gType) {
+        case "QuartileRandom":
+            n.remove()
+            break
+        case "AverageRandom":
+            qs.forEach(el => el.remove())
+            break
+        default:
+            all.forEach(el => el.remove())
+            break
+    }
 }
 
 //Redraw the options on preview's comboBox.
