@@ -3217,32 +3217,36 @@ class RealDataWrapper extends Generator {
                 name: "Generate Missing Values",
                 type: "options",
                 options: ["Standart", "Reverse", "Random", "QuartileRandom", "AverageRandom"]
-            },
-            {
-                shortName: "Quartile 1",
-                variableName: "q1",
-                name: "Set Quartile 1 value",
-                type: "number"
-            },
-            {
-                shortName: "Quartile 2",
-                variableName: "q2",
-                name: "Set Quartile 2 value",
-                type: "number"
-            },
-            {
-                shortName: "Quartile 3",
-                variableName: "q3",
-                name: "Set Quartile 3 value",
-                type: "number"
-            },
-            {
+            }
+        );
+        if(this.genType === "QuartileRandom") {
+            params.push({
+                    shortName: "Quartile 1",
+                    variableName: "q1",
+                    name: "Set Quartile 1 value",
+                    type: "number"
+                },
+                {
+                    shortName: "Quartile 2",
+                    variableName: "q2",
+                    name: "Set Quartile 2 value",
+                    type: "number"
+                },
+                {
+                    shortName: "Quartile 3",
+                    variableName: "q3",
+                    name: "Set Quartile 3 value",
+                    type: "number"
+                })
+        }
+        if(this.genType === "AverageRandom") {
+            params.push({
                 shortName: "N",
                 variableName: "n",
                 name: "[Categ.] Set N mode values",
                 type: "string"
-            }
-        );
+            })
+        }
         return params;
     }
 
