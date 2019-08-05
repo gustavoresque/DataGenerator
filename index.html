@@ -10,8 +10,6 @@
     <link rel="stylesheet" href="UI/chips.css">
     <link rel="stylesheet" href="lib/contextMenu/jquery.contextMenu.min.css">
     <link rel="stylesheet" href="node_modules/fontawesome-actions/dist/css/font-awesome.min.css">
-    <link rel="stylesheet" href="./node_modules/tingle.js/dist/tingle.css">
-
     <!--<script src="photon-0.1.2-dist/template-app/js/menu.js" charset="utf-8"></script>-->
     <script src="UI/tippy.all.min.js"></script>
     <script src="lib/underscore-min.js"></script>
@@ -171,7 +169,6 @@
 
 <!--<script src="datagen/datagen.js"></script>-->
 <script src="UI/uiLogic.js"></script>
-<script src="./node_modules/tingle.js/dist/tingle.js"></script>
 <script>
     // You can also require other files to run in this process
     require('./renderer.js');
@@ -181,16 +178,11 @@
 <img id="iconDown" src="resources/down.png" style="display: none;position: fixed">
 
 <!--<div id="windowModalPadrao" class="modal fixed-window">-->
-<div id="windowModalPadrao" onclick="$(this).hide()" class="modal fixed-window">
-    <div class="fixed-window-content">
-        <div id="windowModalPadrao-title" class="toolbar toolbar-header">
-            Configure Magic Painter
-        </div>
+<div id="windowModalPadrao" class="modal fixed-window">
+    <div id="windowModalPadrao-box" class="fixed-window-content">
+        <div id="windowModalPadrao-title" class="toolbar toolbar-header"></div>
         <div id="windowModalPadrao-content" class="content"></div>
-        <div id="windowModalPadrao-footer" class="toolbar toolbar-footer">
-            <button class="btn btn-negative">Cancel</button>
-            <button class="btn btn-primary">Let go!</button>
-        </div>
+        <div id="windowModalPadrao-footer" class="toolbar toolbar-footer"></div>
     </div>
 </div>
 

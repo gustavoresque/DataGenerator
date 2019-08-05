@@ -42,57 +42,6 @@ ipc.on('delete-dimension', function(){
     deleteCollumn();
 });
 
-
-function newModal(header="Are you Sure?",content="",buttons=[{'label' : 'Cancel', 'returning': 0},{'label': 'Ok', 'returning': 1}]) {
-    let modal = '#windowModalPadrao';
-    $(modal).show();
-    $(`${modal}-title`).html(header);
-    $(`${modal}-content`).html(content);
-    let btns = ``;
-    let i = 0;
-    return new Promise((resolve) => {
-        for (let b of buttons) {
-            btns += `<button id="btn-modal-${i}" class="btn btn-primary">${b.label}</button>`;
-        }
-        $(`${modal}-footer`).html(btns);
-        for(let j = 0; j < i; j++) {
-            $(`#btn-modal-${j}`).off('click').on('click',() => {
-                $(modal).hide();
-                resolve(b.returning);
-            })
-        }
-    })
-}
-
-function boxModal(body,buttons, onOpen, onClose) { //Don't forget the '.open()' !!!!
-
-    //body : String. Receive html
-    //buttons: Array. receive a list of object. Each object represent a Button.
-    //button: Object. { name: String, color: String (default, danger, primary), float: String (left, right), func: Function }
-
-    return new tingle.modal({
-        footer: Array(buttons).length !== 0 ? true : false,
-        onOpen: function() {
-            this.setContent(String(body));
-
-            if(Array(buttons).length !== 0 && buttons !== undefined) {
-                buttons.forEach(button => {
-                    this.addFooterBtn( button.name ? button.name : "", `tingle-btn tingle-btn--${button.color ? button.color : "default"} tingle-btn--${button.float ? button.float : "left"}`, button.func ? button.func : function () {return undefined;} )
-                });
-            }
-            if(onOpen) onOpen();
-        },
-        onClose: function () {
-            if(onClose) onClose();
-            // this.destroy();
-        }
-    });
-}
-
-function alertModal(message,time) {if(time === undefined) {time = 5000} const modal = boxModal(`<p style="text-align: center; font-size: large; font-family: 'Adobe Garamond Pro'">${message}</p>`); modal.open(); if(time > 0) {const interval = setInterval(() => {modal.close(); clearInterval(interval);},time)}}
-
-function confirmModal(message,buttons) {const modal = boxModal(`<p style="text-align: center; font-size: large; font-family: 'Adobe Garamond Pro'">${message}</p>`,buttons); modal.open(); return modal;}
-
 ipc.on('alert', function(event,message) {
     alert(message);
 })
@@ -104,59 +53,6 @@ ipc.on('get-path', function(event, path){
         activeGenerator[currentDataGen].path = path;
         activeGenerator[currentDataGen].accessPath = path;
         showGenerators();
-    }
-});
-
-ipc.on('verify-autosave', function(event, saved, unsaved) {
-   let buttons = [];
-
-   if(platformASpath !== false) {
-       buttons.push({
-           name: "Save Later",
-           color: "primary",
-           float: "left",
-           func: function () {
-               if (!fs.existsSync(platformASpath))
-                   fs.mkdirSync(platformASpath);
-               unsaved.forEach(i => {
-                   try {
-                       createExportModel(platformASpath + datagen[i].ID + ".json",i);
-                   } catch(e) {
-                       alertModal("The process failed!"); saveModal.close(); ipc.sendSync("autosave-verified");
-                   }
-               });
-               saveModal.close(); ipc.sendSync("autosave-verified");
-           }
-       });
-   }
-   buttons.push({
-       name: "Discard All Unsave Changes",
-       color: "danger",
-       float: "right",
-       func: function () {
-           for (let i in unsaved) {
-               let curTargetPath = `${platformASpath}${datagen[unsaved[i]].ID}.json`;
-               if(fs.existsSync(curTargetPath)) {fs.unlinkSync(curTargetPath)};
-           }
-           ipc.sendSync("autosave-verified"); saveModal.close();
-       }
-   });
-
-    let saveModal = boxModal(`<h1 style="text-align: center;">Are you Sure?<h1/>`,buttons);
-
-    if(platformASpath !== false && saved.length !== 0) {
-        for (let i in saved) {
-            let curTargetPath = `${platformASpath}${datagen[saved[i]].ID}.json`;
-            if(fs.existsSync(curTargetPath)) {fs.unlink(curTargetPath)};
-            if(Number(i) === datagen.length-1) {
-                ipc.sendSync("autosave-verified");
-            }
-        }
-    }
-    if(unsaved.length !== 0) {
-        saveModal.open();
-    } else {
-        ipc.sendSync("autosave-verified");
     }
 });
 
@@ -622,37 +518,6 @@ $("html").ready(function(){
         }
     });
 
-    /*$("#tableCollumn").on("dblclick", "td.columnName", function(){
-        let title = $(this).text();
-        $(this).empty();
-        $(this).append($("<input/>").attr("type", "text").attr("value", title).blur(function(){
-            let cor = $(this).val();
-            for (let i = 0; i < datagen[currentDataGen].columns.length; i++){
-                if (cor === datagen[currentDataGen].columns[i].name){
-                    $(this).parent().parent().get(0).__node__.name = title;
-                    $(this).parent().text(title);
-                    alertModal("Dimension name already exists");
-                    return;
-                }
-            }
-            $('#comboBoxPreview option:contains('+title+')').text(cor).val(cor); //Change the option name according with dimension name.
-            $(this).parent().parent().get(0).__node__.name = cor;
-            $(this).parent().text(cor);
-            hasChanged(true);
-        }));
-    });
-
-    $("#tableCollumn").on("dblclick", "td.columnType", function(){
-        let typeData = $(this).text();
-        $(this).empty();
-        $(this).append($("<input/>").attr("type", "text").attr("value", typeData).blur(function(){
-            let cor = $(this).val();
-            $(this).parent().parent().get(0).__node__.type = cor;
-            $(this).parent().text(cor);
-        }));
-        hasChanged(true);
-    });*/
-
     $("#leftSideBar").on("blur", "#collumnName", function(){
         let newName = $(this).val();
         let colID = $("#collumnID").text();
@@ -661,7 +526,7 @@ $("html").ready(function(){
         for (let i = 0; i < datagen[currentDataGen].columns.length; i++){
             if (newName === datagen[currentDataGen].columns[i].name){
                 if (colID !== datagen[currentDataGen].columns[i].ID){
-                    alertModal("Dimension name already exists");
+                    setModalPadrao("Error!", "Dimension name already exists");
                 }
                 flag = false;
             }else{
@@ -744,7 +609,22 @@ $("html").ready(function(){
         if(activeGenerator[currentDataGen] && especialPasteState<3){
             generatorEspecialPaste = activeGenerator[currentDataGen];
             especialPasteState=3;
-            $("#windowModalPadrao").show();
+            const buttons =
+                [
+                    {
+                        id:"btn_mp_cancel",
+                        color: "negative",
+                        name: "Cancel",
+                        func: () => {console.log('clicou Cancel')}
+                    },
+                    {
+                        id:"btn_mp_ok",
+                        color: "primary",
+                        name: "Let go!",
+                        func: () => {console.log('clicou Let go!')}
+                    }
+                ]
+            setModalPadrao('Configure Magic Painter', '', buttons);
             $(this).addClass("superactive");
             $("#btnPincelGerador").removeClass("active superactive");
         }else if(especialPasteState>0){
@@ -1038,13 +918,31 @@ $("html").ready(function(){
 
     dragAndDropGens();
     verifyUnsaveModels();
+    
+    $("#windowModalPadrao").click( () => {
+        $("#windowModalPadrao").hide();
+    })
 
-    // let a = newModal();
-    // a.then( function (res){
-    //     console.log(`Jairo`);
-    // })
+    $("#windowModalPadrao-box").click( (event) => { event.stopPropagation();})
 
 });
+
+function setModalPadrao(title, content, buttons=[]) {
+    const modalTitle = document.getElementById("windowModalPadrao-title");
+    const modalContent = document.getElementById("windowModalPadrao-content");
+    const modalFooter = document.getElementById("windowModalPadrao-footer");
+    let setFooter = "";
+    for (const button of buttons) {
+        setFooter += `<button id="${button.id}" class="btn btn-${button.color}">${button.name}</button>`;
+        $(`#windowModalPadrao-footer`).on('click', `#${button.id}`, button.func);
+    }
+    modalTitle.innerText = title;
+    modalContent.innerHTML = `<p>${content}</p>`;
+    modalFooter.innerHTML = setFooter;
+
+    $("#windowModalPadrao").show();
+
+}
 
 function deleteCollumn(){
     if (lastCollumnSelected){
@@ -1066,7 +964,7 @@ function verifyUnsaveModels() {
                     ipc.sendSync("dtChanges-add", true);
                 });
             } catch (e) {
-                alertModal("We had problem to recover your backup files. Please, report the problem to our repository.");
+                setModalPadrao('Error!', 'We had problem to recover your backup files. Please, report the problem to our repository.');
             }
         }
     }
@@ -1092,7 +990,7 @@ function generateDatas(){
                 //generateStream(targetPath);
                 const path = require("path");
                 if(path.dirname(targetPath) == "/") {
-                    alertModal("Invalid Directory!");
+                    setModalPadrao('Error!', 'Invalid Directory!');
                     $("#percentageGD").text("Aborted!");
                     return ;
                 }
@@ -1105,7 +1003,7 @@ function generateDatas(){
                         if(datagen[currentDataGen].configs.iterator.numberIt == i+1) {
                             $("#percentageGD").text("Finished!");
                             $("#percentageCancelIcon").css("display","none");
-                            alertModal('All Files Saved!');
+                            setModalPadrao('Success!', 'All Files Saved!');
                             datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] = prevValue;
                             child = [];
                         } else {
@@ -1123,14 +1021,10 @@ function generateDatas(){
                             case 'error':
                                 $("#percentageGD").text("Finished!");
                                 $("#percentageCancelIcon").css("display","none");
-                                alertModal("Something bad happened!");
+                                setModalPadrao('Error!', 'Something bad happened!');
                                 child = [];
                                 break;
-                            // case 'size':
-                            //     $("#percentageGD").text("Failed!");
-                            //     $("#percentageCancelIcon").css("display","none");
-                            //     alertModal("No free space available!\nFree space: "+sizeFormatter(freeSpace)+"\nNeeded space: "+sizeFormatter(neededSpace))
-                            //     break;
+
                         }
                     })
                 }
@@ -1146,7 +1040,7 @@ function generateDatas(){
                             $("#percentageGD").text("Finished!");
                             datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] = prevValue;
                             child = [];
-                            alertModal('All Files Saved!');
+                            setModalPadrao('Success!', 'All Files Saved!');
                         } else {
                             datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] += datagen[currentDataGen].configs.iterator.stepIt;
                             promiseRecursiveGWS((i+1),prevValue)
@@ -1159,7 +1053,7 @@ function generateDatas(){
                                 child = [];
                                 break;
                             case 'error':
-                                alertModal("Something bad happened!")
+                                setModalPadrao('Error!', 'Something bad happened!');
                                 $("#percentageGD").text("Finished!");
                                 child = [];
                                 break;
@@ -1188,7 +1082,7 @@ function generateDatas(){
                         }).then( () => {
                             $("#percentageGD").text("Finished!");
                             $("#percentageCancelIcon").css("display","none");
-                            alertModal('Data Saved!');
+                            setModalPadrao('Success!', 'Data Saved!');
                         }).catch((err) => {
                             switch (err) {
                                 case 'abort':
@@ -1198,7 +1092,7 @@ function generateDatas(){
                                 case 'error':
                                     $("#percentageGD").text("Failed!");
                                     $("#percentageCancelIcon").css("display","none");
-                                    alertModal("Something bad happened!")
+                                    setModalPadrao('Error!', 'Something bad happened!');
                                     break;
                             }
                         })
@@ -1208,7 +1102,7 @@ function generateDatas(){
                             generateWritingSimple(targetPath,resolve,reject);
                         }).then( () => {
                             $("#percentageGD").text("Finished!");
-                            alertModal('Data Saved!');
+                            setModalPadrao('Success!', 'Data Saved!');
                         }).catch((err) => {
 
                             switch (err) {
@@ -1216,7 +1110,7 @@ function generateDatas(){
                                     $("#percentageGD").text("Aborted!");
                                     break;
                                 case 'error':
-                                    alertModal("Something bad happened!")
+                                    setModalPadrao('Error!', 'Something bad happened!');
                                     $("#percentageGD").text("Failed!");
                                     break;
                             }
@@ -1230,9 +1124,9 @@ function generateDatas(){
 
     }catch (e) {
         console.log(e);
-        alertModal('Some problem happened!!! Verify generators properties.\n' +
-            'Tips:\n' +
-            '     * Be sure that Input Property of Function Generators isn\'t null ');
+        setModalPadrao('Error!', 'Some problem happened!!! Verify generators properties.\n' +
+        'Tips:\n' +
+        '     * Be sure that Input Property of Function Generators isn\'t null ');
 
         modal.style.display = "none";
     }
@@ -1240,27 +1134,27 @@ function generateDatas(){
 let keepDSFile = false;
 
 $("#percentageCancelIcon").click(function(e){
-    const confirm = confirmModal("You going to abort the writing. What do you want to do about the file(s)?",[
+    setModalPadrao('Tell me please!', 'You going to abort the writing. What do you want to do about the file(s)?', [
         {
             name: "Discard",
-            color: "danger",
-            float: "left",
+            color: "negative",
+            id: "discart",
             func: function () {
                 keepDSFile = false;
                 killProcess();
                 $("#percentageCancelIcon").css("display","none");
-                confirm.close();
+                $("#windowModalPadrao").hide()
             }
         },
         {
             name: "Keep",
             color: "primary",
-            float: "right",
+            id: "keep",
             func: function () {
                 keepDSFile = true;
                 killProcess();
                 $("#percentageCancelIcon").css("display","none");
-                confirm.close();
+                $("#windowModalPadrao").hide()
             }
         }
     ]);
@@ -1548,7 +1442,7 @@ function redrawPreview(){
 
         switch (e) {
             case 'Please, insert a sentence.':
-                alertModal(e);
+                setModalPadrao('Error!', "Please, insert a sentence.");
         }
         console.log(e);
 
@@ -1872,11 +1766,10 @@ function createModelFromDataSet(path) {
 
     fs.readFile(path, "utf-8", (err, strdata) => {
         if(err){
-            alertModal("Failed to load the dataSet. Verify if it is UTF-8 encoded.");
-            alertModal(err);
-            // data
-        }else{
-            let data = [];
+            setModalPadrao('Error!', "Failed to load the dataSet. Verify if it is UTF-8 encoded.");
+            return;
+        }
+        let data = [];
             let columns;
             if(path.endsWith(".csv") || path.endsWith(".tsv")){
                 console.log("Selecionou um CSV", path);
@@ -1937,7 +1830,6 @@ function createModelFromDataSet(path) {
 
             showModels();
             showGenerators();
-        }
     })
 }
 
