@@ -1,7 +1,9 @@
 
 let fs = require('fs');
+let { promisify } = require('util');
 const electron = require('electron').remote;
 const dialog = electron.dialog;
+const path = require('path');
 const BrowserWindow = electron.BrowserWindow;
 
 let DataGen = require("./datagen/datagen.js");
@@ -15,6 +17,14 @@ let collumnsSelected = [];
 let collumnsCopied = [];
 let lastCollumnSelected;
 let lastCollumnSelectedColor;
+
+const exist = promisify(fs.access);
+const exists = promisify(access);
+const save = promisify(rawSave);
+const writeFile = promisify(fs.writeFile);
+const createExportModel = promisify(createExpModel)
+const mk = promisify(fs.mkdir);
+const readFile = promisify(fs.readFile);
 
 let generatorEspecialPaste;
 let especialPasteState = 0; //0-Desativado, 1-Cola uma vez, 2-Cola até clicar de voltano botão, 3-Magic
@@ -35,14 +45,25 @@ const Json2csvParser = require('json2csv').Parser;
 
 const platformASpath = process.platform === "darwin" || process.platform === "linux" ? "/var/tmp/B_DataGen_AS/" : process.platform === "win32" ? String(process.env.temp+"/B_DataGen_AS/") : false;
 
-ipc.on('call-datagen', function(event, data){// ipc.send('receive-datagen', activeGenerator[currentDataGen].getGenParams());
+async function access(path, callback) {
+    try {
+        await exist(path)
+        callback(true);
+    } catch(e) {
+        console.log(e)
+        callback(false);
+    }
+}
+
+
+ipc.on('call-datagen', function(){// ipc.send('receive-datagen', activeGenerator[currentDataGen].getGenParams());
 });
 
 ipc.on('delete-dimension', function(){
     deleteCollumn();
 });
 
-ipc.on('alert', function(event,message) {
+ipc.on('alert', function(event, message) {
     alert(message);
 })
 
@@ -82,9 +103,9 @@ function openModel (path,backup) {
     }
 }
 
-ipc.on('undo-datagen', function(event, data, path){desrefazer("restore");});
+ipc.on('undo-datagen', function(){desrefazer("restore");});
 
-ipc.on('redo-datagen', function(event, data, path){desrefazer("forward");});
+ipc.on('redo-datagen', function(){desrefazer("forward");});
 
 function desrefazer (act){
     let idChange;
@@ -99,65 +120,83 @@ function desrefazer (act){
         propsConfigs(activeGenerator[currentDataGen], activeGenerator[currentDataGen].getRootGenerator().parent)
 }
 
-ipc.on('export-datagen', function(event, type, dtIndex){save(type,dtIndex);});
+ipc.on('export-datagen', function(event, type, dtIndex){save(type,dtIndex); });
 
-function save(type,dtIndex) {
-    return new Promise((resolve,reject) => {
-        let index = dtIndex !== undefined ? dtIndex : currentDataGen;
-        switch(type) {
-            case "save":
-                if(datagen[index].datagenChange) {
-                    if(datagen[index].filePath === undefined) {
-                        let saveScreen = new BrowserWindow({show: false, alwaysOnTop: true});
-                        dialog.showSaveDialog(saveScreen,{title:"Save Model", filters:[{name: 'json', extensions: ['json']}]}, function(targetPath) {
-                            if(targetPath){
-                                datagen[index].filePath = targetPath;
-                                if(confirm("Do you want to change the model's name to '"+ require('path').basename(targetPath,'.json')+"'?")){
-                                    datagen[index].name = require('path').basename(targetPath,'.json');
-                                    showModels();
-                                    showGenerators();
-                                }
-
-                                createExportModel(targetPath,index).then(() => {
-                                    datagen[index].datagenChange = false;
-                                    confirmSave = true;
-                                    resolve("Saved Successfully");
-                                }).catch((e) => {
-                                    console.log(e);
-                                    reject("Saved Failed");
-                                })
-                            } else {
-                                reject("Did not want to save :(");
-                            }
-                        });
-                    } else {
-                        createExportModel(datagen[index].filePath, index);
-                        datagen[index].datagenChange = false;
-                        resolve();
-                    }
-                }
-                break;
-            case "saveas":
+async function rawSave(type, dtIndex, callback) {
+    let index = dtIndex !== undefined ? dtIndex : currentDataGen;
+    switch(type) {
+        case "save":
+            if(!datagen[index].datagenChange) break;
+            if(datagen[index].filePath === undefined) {    
                 let saveScreen = new BrowserWindow({show: false, alwaysOnTop: true});
-                dialog.showSaveDialog(saveScreen,{title:"Save Model As", filters:[{name: 'json', extensions: ['json']}]}, function(targetPath) {
-                    if(targetPath){
-                        if(datagen[index].filePath === undefined) {datagen[index].filePath = targetPath; datagen[index].name = require('path').basename(targetPath,'.json');}
-                        createExportModel(targetPath);
-                        resolve();
-                    } else {
-                        reject();
+                dialog.showSaveDialog(
+                    saveScreen,
+                    { 
+                        title:"Save Model",
+                        filters: [ 
+                            {
+                                name: 'json', 
+                                extensions: ['json']
+                            }
+                        ]
+                    }, 
+                    async function(targetPath) {
+                        if(!targetPath) return;
+                        datagen[index].filePath = targetPath;
+                        const name = path.basename(targetPath,'.json');
+                        if(confirm(`Do you want to change the model's name to '${name}'?`)) {
+                            datagen[index].name = name;
+                        }
+                        exportAndSave()
+                    }
+                );
+            } else exportAndSave();
+            async function exportAndSave() {
+                try {
+                    if(!datagen[index].filePath) throw new Error('No path to save found.');
+                    await createExportModel(datagen[index].filePath, index)
+                    datagen[index].datagenChange = false;
+                    showModels();
+                    showGenerators();
+                } catch(e) {
+                    console.error(e);
+                    throw new Error("Saved Failed");
+                }
+            }
+            break;
+        case "saveas":
+            let saveScreen = new BrowserWindow({show: false, alwaysOnTop: true});
+            dialog.showSaveDialog(
+                saveScreen,
+                {
+                    title:"Save Model As",
+                    filters: [
+                        {
+                            name: 'json',
+                            extensions: ['json']
+                        }
+                    ]
+                }, 
+                async function(targetPath) {
+                    if(!targetPath) return;
+                    if(datagen[index].filePath === undefined) {
+                        datagen[index].filePath = targetPath; //Otherwise could be only a copy
+                        datagen[index].name = path.basename(targetPath,'.json');
+                    }
+                    try {
+                        await createExportModel(targetPath);
+                        callback();
+                    } catch(e) {
+                        throw new Error('exportModel failed!')
                     }
                 });
-                //TODO: Perguntar se quer mudar para o modelo salvo.
-                break;
-        }
-    });
+            break;
+    }
 }
 
-ipc.on('getDataModel', function(event, arg){
+ipc.on('getDataModel', function(){
     // ipc.send('receive-datagen', activeGenerator[currentDataGen].getGenParams());
     ipc.send('receive-dimension-generator', datagen[currentDataGen].exportModel());
-
 });
 
 ipc.on('change-datagen', function(event, arg){
@@ -167,7 +206,7 @@ ipc.on('change-datagen', function(event, arg){
             break;
         }
     }
-    hasChanged(true);
+    hasChanged();
 });
 
 ipc.on('change-WebService', function(event, arg){
@@ -397,7 +436,7 @@ $("html").ready(function(){
     $.contextMenu({
         selector: 'ul li.tabButton',
         trigger: 'right',
-        callback: function (key, options) {
+        callback: async function (key, options) {
             switch (key){
                 case "Rename":
                     let i = datagen.indexOf(this.get(0).__node__);
@@ -407,19 +446,17 @@ $("html").ready(function(){
                         datagen[i].name = $(this).val();
                         showModels();
                     }));
-                    hasChanged(true);
+                    hasChanged();
                     break;
                 case "Delete": {
                     let index = datagen.indexOf(this.get(0).__node__);
                     if (index > -1) {
-                        ipc.send("dtChanges-del",index);
                         if(platformASpath !== false) {
                             let inPath = platformASpath + datagen[index].ID + ".json";
-                            if(fs.existsSync(inPath)) {
+                            if(await exists(inPath)) {
                                 fs.unlink(inPath);
                             }
                         }
-
                         datagen.splice(index, 1);
                         if (index === currentDataGen)
                             currentDataGen = (index === 0) ? 0 : (index - 1);
@@ -544,7 +581,7 @@ $("html").ready(function(){
             $(this).val(datagen[currentDataGen].columns[index2].name);
         }
 
-        hasChanged(true);
+        hasChanged();
     });
 
     $("#trashDeleteCollumn").on("click", function(){
@@ -559,7 +596,7 @@ $("html").ready(function(){
                 datagen[currentDataGen].columns[index-1] = datagen[currentDataGen].columns[index];
                 datagen[currentDataGen].columns[index] = genTemp;
                 showGenerators();
-                hasChanged(true);
+                hasChanged();
 
                 lastCollumnSelected = $($("#tbody").find(".tdIndex")[index-1]).parent();
                 lastCollumnSelected.css("background-color", "cornflowerblue");
@@ -575,7 +612,7 @@ $("html").ready(function(){
                 datagen[currentDataGen].columns[index+1] = datagen[currentDataGen].columns[index];
                 datagen[currentDataGen].columns[index] = genTemp;
                 showGenerators();
-                hasChanged(true);
+                hasChanged();
 
                 lastCollumnSelected = $($("#tbody").find(".tdIndex")[index+1]).parent();
                 lastCollumnSelected.css("background-color", "cornflowerblue");
@@ -742,7 +779,7 @@ $("html").ready(function(){
         }
         datagen[currentDataGen].resetAll();
         setTimeout(()=>{ showGenerators(); }, 500);
-        hasChanged(true);
+        hasChanged();
         // showGenerators();
     });
 
@@ -771,7 +808,7 @@ $("html").ready(function(){
             let $active_chip = showGenerators();
             configGenProps.apply($active_chip.get(0),[true]);
             datagen[currentDataGen].resetAll();
-            hasChanged(true);
+            hasChanged();
         },
         items: configureMenuOfGens()
     });
@@ -814,7 +851,7 @@ $("html").ready(function(){
             }
             showGenerators();
         }
-        hasChanged(true);
+        hasChanged();
     }).on("click", "span.btnAddGen", function(){
         let l = $(this).parent().find("div.md-chip").length-1;
         $(this).parent().find("div.md-chip").get(l).__node__.addGenerator(new UniformGenerator());
@@ -826,7 +863,7 @@ $("html").ready(function(){
 
         let coluna = $(this).closest(".columnTr").get(0).__node__;
         propsConfigs(generators[generators.length-1],coluna)
-        hasChanged(true);
+        hasChanged();
 
     }).on("click", "span.btnRemoveColumn", function(){
         datagen[currentDataGen].removeColumn(parseInt($(this).parent().parent().find(".tdIndex").text()) - 1);
@@ -837,7 +874,7 @@ $("html").ready(function(){
             }
         })
         showGenerators();
-        hasChanged(true);
+        hasChanged();
 
     }).on("click", "span.btnFilter", function(){
         //Get the selected dimension.
@@ -912,7 +949,7 @@ $("html").ready(function(){
             }
             collumnsSelected = [];
             showGenerators();
-            hasChanged(true);
+            hasChanged();
         }
     });
 
@@ -949,24 +986,20 @@ function deleteCollumn(){
         datagen[currentDataGen].removeColumn(parseInt(lastCollumnSelected.find(".tdIndex").text()) - 1);
         lastCollumnSelected = null;
         showGenerators();
-        hasChanged(true);
+        hasChanged();
     }
 }
 
-function verifyUnsaveModels() {
-
-    if(fs.existsSync(platformASpath)) {
-        let files = fs.readdirSync(platformASpath);
-        if(files.length !== 0) {
-            try {
-                files.forEach(file => {
-                    openModel(platformASpath+file,true);
-                    ipc.sendSync("dtChanges-add", true);
-                });
-            } catch (e) {
-                setModalPadrao('Error!', 'We had problem to recover your backup files. Please, report the problem to our repository.');
-            }
-        }
+async function verifyUnsaveModels() {
+    if(!await exists(platformASpath)) return
+    let files = await readFile(platformASpath);
+    if(files.length === 0) return
+    try {
+        files.forEach(async file => {
+            openModel(platformASpath+file,true);
+        });
+    } catch (e) {
+        setModalPadrao('Error!', 'We had problem to recover your backup files. Please, report the problem to our repository.');
     }
 }
 
@@ -1252,7 +1285,7 @@ function generateStream(targetPath,resolve,reject) {
 function addGenerator(){
     datagen[currentDataGen].addColumn("Dimension "+(++datagen[currentDataGen].columnsCounter));
     showGenerators();
-    hasChanged(true);
+    hasChanged();
 }
 
 function dragGenerator(evt){
@@ -1314,17 +1347,10 @@ function dragAndDropGens(){
     });
 }
 
-function hasChanged(type) { //permite o Auto Save.
-
-    type = Boolean(type);
-    if(type) {
-        datagen[currentDataGen].datagenChange = true;
-        datagen[currentDataGen].saveState();
-    } else {
-        datagen[currentDataGen].datagenChange = false;
-    }
+function hasChanged() { //permite o Auto Save.
+    datagen[currentDataGen].datagenChange = true;
+    datagen[currentDataGen].saveState();
     reloadModelsIcon();
-    ipc.send("dtChanges-alter",currentDataGen,type);
 }
 
 /*Desenha na tela principal as colunas e seus respectivos geradores baseados nos dados armazendos no array datagen*/
@@ -1493,8 +1519,6 @@ function configGenProps(){
 
 }
 
-$(window).bind('beforeunload',function(){ipc.send("dtChanges-reload");});
-
 function reloadModelsIcon () {
     //WebService
     $(".fa-upload").css("visibility","hidden");
@@ -1535,7 +1559,7 @@ function showModels(){
 
         tabButton.on("click", "span.icon-cancel-circled", function () {
             let closeTabFlag = true;
-            if(datagen[currentDataGen].datagenChange){
+            if(datagen[currentDataGen].datagenChange) {
                 const options = {
                     type: 'question',
                     buttons: ['Cancel', 'Yes', 'No'],
@@ -1545,33 +1569,21 @@ function showModels(){
                     checkboxChecked: false,
                 };
 
-                dialog.showMessageBox(null, options, (response, checkboxChecked) => {
+                dialog.showMessageBox(null, options, async (response, checkboxChecked) => {
                     console.log(response);
                     console.log(checkboxChecked);
                     if (response === 1){
-                        save("save",currentDataGen)
-                            .then(function () {
-                                closeTab();
-                            },function(){
-                                console.log('Some error has occured');
-                            }).
-                            catch(function (e) {
-                                console.log(e);
-                            });
-                        //closeTab();
-                    }else if (response === 2){
-                        closeTab();
+                        try {await save("save",currentDataGen)} catch(e) {console.error(e)}
                     }
                 });
-            }else{
-                closeTab();
             }
+            console.log('Tab closed')
+            closeTab();
 
             function closeTab(){
                 //let index = datagen.indexOf($(this).parent().get(0).__node__);
                 let index = currentDataGen;
                 if (index > -1) {
-                    ipc.send("dtChanges-del",index);
                     if(platformASpath !== false) {
                         let inPath = platformASpath + datagen[index].ID + ".json";
                         if(fs.existsSync(inPath)) {
@@ -1640,37 +1652,28 @@ function createNewModel () {
     lastCollumnSelected = null;
     showModels();
     showGenerators();
-    ipc.send("dtChanges-add",false);
 }
 
-function createExportModel (path,dtIndex) {
-    return new Promise(function(resolve, reject) {
-        let index = dtIndex;
-        if(dtIndex === undefined) index = currentDataGen;
-
-        try {
-            fs.writeFileSync(path, datagen[index].exportModel());
-            resolve();
-        } catch(e) {
-            console.log(e);
-            reject();
-        }
-    });
+async function createExpModel (path,dtIndex, callback) {
+    let index = dtIndex;
+    if(dtIndex === undefined) index = currentDataGen;
+    try {
+        await writeFile(path, datagen[index].exportModel());
+        callback();
+    } catch(e) {
+        console.log(e);
+        throw new Error(e);
+    }
 }
 
 //Verifica a cada minuto se é preciso salvar automaticamente.
-
-setInterval(() => {
-
-    if(platformASpath != false) {
-
-        if (!fs.existsSync(platformASpath))
-            fs.mkdirSync(platformASpath);
-        for(let dt in datagen) {
-            if(datagen[dt].datagenChange) {
-                createExportModel(platformASpath + datagen[dt].ID + ".json",dt);
-            }
-        }
+setInterval(async () => {
+    if(platformASpath != false) return;
+    if (!await exists(platformASpath))
+        await mk(platformASpath);
+    for(let dt in datagen) {
+        if(!datagen[dt].datagenChange) continue;
+        await createExportModel(`${platformASpath}${datagen[dt].ID}.json`, dt);
     }
 },6000);
 

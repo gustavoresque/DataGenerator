@@ -56,26 +56,6 @@ ipcMain.on("get-path2", function (event, arg) {
     mainWindow.webContents.send('get-path', arg);
 });
 
-let dtChanges = [false];
-
-ipcMain.on("dtChanges-reload", (event,value) => {
-    dtChanges = [false];
-    event.returnValue = 1;
-})
-
-ipcMain.on("dtChanges-add", (event,value) => {
-    dtChanges.push(value);
-    event.returnValue = 1;
-})
-ipcMain.on("dtChanges-del", (event,index) => {
-    dtChanges.pop(index);
-    event.returnValue = 1;
-})
-ipcMain.on("dtChanges-alter", (event,index,value) => {
-    dtChanges[index] = value;
-    event.returnValue = 1;
-})
-
 function saveExport(targetPath) {
 
     let partsOfStr = targetPath.split('\\');
@@ -258,62 +238,109 @@ function createWindow () {
 
     const menuTemplateElectron = {
         label: 'Electron',
-        submenu: [
-            {label: 'Quit App', accelerator: process.platform === "darwin" ? 'Cmd+Q' : '', click: () => {mainWindow.webContents.send('quit-child-process');app.quit();}
-    }]}
+        submenu: 
+            [
+                {
+                    label: 'Quit App',
+                    accelerator: process.platform === "darwin" ? 'Cmd+Q' : '',
+                    click: () => {
+                        mainWindow.webContents.send('quit-child-process');
+                        app.quit();
+                    }   
+                }
+            ]
+    }
     const menuTemplateFile = {
         label: 'File',
-        submenu: [
-            {label: 'New Model', accelerator: process.platform === "darwin" ? 'Cmd+M' : 'Ctrl+M', click (){
-                    mainWindow.webContents.executeJavaScript('createNewModel();');
-                }},
-            {label: 'New Dimension', accelerator: process.platform === "darwin" ? 'Cmd+D' : 'Ctrl+D', click (){
-                    mainWindow.webContents.executeJavaScript('addGenerator();');
-                }},
-            {label: 'Open Model', click (){
-                    let pathFile = dialog.showOpenDialog(mainWindow, {
-                        properties: ['openFile']
-                    });
-                    if(pathFile){
-                        mainWindow.webContents.send('open-datagen', pathFile.toString());
-                        // let name = pathFile.toString().split('\\')[pathFile.toString().split('\\').length-1];
-                        // mainWindow.webContents.executeJavaScript("createImportModel('"+ name.split('.')[0] +"','"+ data +"');");
-
+        submenu: 
+            [
+                {
+                    label: 'New Model',
+                    accelerator: process.platform === "darwin" ? 'Cmd+M' : 'Ctrl+M',
+                    click () {
+                        mainWindow.webContents.executeJavaScript('createNewModel();');
                     }
-                    //mainWindow.webContents.executeJavaScript('createImportModel("'+ str +'");');
-                }},
-            {label: 'Save Model', accelerator: process.platform === "darwin" ? 'Cmd+S' : 'Ctrl+S', click (){
-                    mainWindow.webContents.send('export-datagen', "save");
-                }},
-            {label: 'Save Model As', click (){
-                    mainWindow.webContents.send('export-datagen', "saveas");
-                }},
-            {type: 'separator'},
-            {
-                label: 'Import Real DataSet', click (){
-                    dialog.showOpenDialog(mainWindow, {title:"Open DataSet", properties: ['openFile'], filters:[
-                                {name: 'JSON', extensions:['json']}, {name: 'CSV', extensions:['csv']}, {name: 'TSV', extensions:['tsv']}
-                            ]}, function(targetPath) {
-                            if(targetPath){
-                                mainWindow.webContents.executeJavaScript('createModelFromDataSet("'+targetPath[0].replace(/\\/g,'\\\\')+'");');
+                },
+                {
+                    label: 'New Dimension',
+                    accelerator: process.platform === "darwin" ? 'Cmd+D' : 'Ctrl+D',
+                    click () {
+                        mainWindow.webContents.executeJavaScript('addGenerator();');
+                    }
+                },
+                {
+                    label: 'Open Model',
+                    click () {
+                        let pathFile = dialog.showOpenDialog(mainWindow, {
+                            properties: ['openFile']
+                        });
+                    if(!pathFile) return;
+                    mainWindow.webContents.send('open-datagen', pathFile.toString());
+                    }
+                },
+                {
+                    label: 'Save Model',
+                    accelerator: process.platform === "darwin" ? 'Cmd+S' : 'Ctrl+S',
+                    click () {
+                        mainWindow.webContents.send('export-datagen', "save");   
+                    }
+                },
+                {
+                    label: 'Save Model As',
+                    click () {
+                        mainWindow.webContents.send('export-datagen', "saveas");
+                    }
+                },
+                { type: 'separator' },
+                {
+                    label: 'Import Real DataSet', click (){
+                        dialog.showOpenDialog(mainWindow, 
+                            {
+                                title:"Open DataSet",
+                                properties: ['openFile'],
+                                filters:
+                                    [
+                                        {
+                                            name: 'JSON',
+                                            extensions:['json']
+                                        }, {
+                                            name: 'CSV',
+                                            extensions:['csv']
+                                        }, {
+                                            name: 'TSV',
+                                            extensions:['tsv']
+                                        }
+                                    ]
+                            }, 
+                            function(targetPath) {
+                                if(!targetPath) return;
+                                mainWindow.webContents.executeJavaScript(`createModelFromDataSet("${targetPath[0].replace(/\\/g,'\\\\')}");`);
                             }
-                        }
-                    );
+                        );
+                    }
                 }
-            }
         ]
     };
     const menuTemplateEdit = {
         label: "Edit",
-        submenu: [
-            {label: 'Undo', accelerator: process.platform === "darwin" ? 'Cmd+Z' : 'Ctrl+Z', click () {
-                mainWindow.webContents.send('undo-datagen');
-            }},
-            {label: 'Redo', accelerator: process.platform === "darwin" ? 'Cmd+Shift+Z' : 'Ctrl+Shift+Z', click () {
-                mainWindow.webContents.send('redo-datagen');
-            }}
+        submenu: 
+        [
+            {
+                label: 'Undo',
+                accelerator: process.platform === "darwin" ? 'Cmd+Z' : 'Ctrl+Z',
+                click () {
+                    mainWindow.webContents.send('undo-datagen');
+                }
+            },
+            {
+                label: 'Redo',
+                accelerator: process.platform === "darwin" ? 'Cmd+Shift+Z' : 'Ctrl+Shift+Z',
+                click () {
+                    mainWindow.webContents.send('redo-datagen');
+                }
+            }
         ]
-    };
+    }
     const menuTemplateVisualize = {
         label: 'Visualize',
         submenu: [
