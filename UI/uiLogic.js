@@ -19,12 +19,12 @@ let lastCollumnSelected;
 let lastCollumnSelectedColor;
 
 const exist = promisify(fs.access);
-const exists = promisify(access);
 const save = promisify(rawSave);
 const writeFile = promisify(fs.writeFile);
-const createExportModel = promisify(createExpModel)
 const mk = promisify(fs.mkdir);
 const readFile = promisify(fs.readFile);
+const readDir = promisify(fs.readdir);
+const del = promisify(fs.unlink)
 
 let generatorEspecialPaste;
 let especialPasteState = 0; //0-Desativado, 1-Cola uma vez, 2-Cola até clicar de voltano botão, 3-Magic
@@ -43,15 +43,21 @@ let WSMA = {};//Note: It must be out of DataGen library! It stores the models th
 
 const Json2csvParser = require('json2csv').Parser;
 
-const platformASpath = process.platform === "darwin" || process.platform === "linux" ? "/var/tmp/B_DataGen_AS/" : process.platform === "win32" ? String(process.env.temp+"/B_DataGen_AS/") : false;
+const platformASpath = process.platform === "darwin" || process.platform === "linux" ? "/var/tmp/B_DataGen_AS/" : process.platform === "win32" ? String(process.env.temp+"\\B_DataGen_AS\\") : false;
 
-async function access(path, callback) {
+(async () => {
+    if ( platformASpath !== false && !await access(platformASpath) )
+        mk(platformASpath);
+})()
+
+async function access(path) {
     try {
         await exist(path)
-        callback(true);
+        return true
     } catch(e) {
-        console.log(e)
-        callback(false);
+        if(e.message.includes('ENOENT')) return false
+        else
+            throw new Error('Bad Access file or folder.')
     }
 }
 
@@ -61,7 +67,11 @@ ipc.on('call-datagen', function(){// ipc.send('receive-datagen', activeGenerator
 
 ipc.on('delete-dimension', function(){
     deleteCollumn();
-});
+})
+
+ipc.on('delete-model',() => {
+    deleteModel(currentDataGen);
+})
 
 ipc.on('alert', function(event, message) {
     alert(message);
@@ -77,29 +87,26 @@ ipc.on('get-path', function(event, path){
     }
 });
 
-ipc.on('open-datagen', function(event, path){openModel(path);});
+ipc.on('open-datagen', function(event, path){console.log(2222222); openModel(path); showModels(); showGenerators();});
 
-function openModel (path,backup) {
-    let data = fs.readFileSync(path.toString(), 'utf8');
+async function openModel (path, backup=false) {
+    const file = await readFile(path.toString(), 'utf8') 
     try {
         let dg = new DataGen();
         dg.columns = [];
-        dg.importModel(data);
+        dg.importModel(file);
         datagen.push(dg);
-        currentDataGen = (datagen.length-1);
-
-        if(backup) {
-            if(!datagen[currentDataGen].name.includes("[Backup]"))
-                datagen[currentDataGen].name = `${datagen[currentDataGen].name} [Backup]`;
-            datagen[currentDataGen].datagenChange = true;
-            fs.unlinkSync(path);
+        const lastIndex = datagen.length-1
+        if(!!backup) {
+            if(!datagen[lastIndex].name.includes("[Backup]"))
+                datagen[lastIndex].name = `${datagen[lastIndex].name} [Backup]`;
+            datagen[lastIndex].datagenChange = true;
+            await createExportModel(`${platformASpath}${datagen[lastIndex].ID}.json`, lastIndex);
         } else {
-            datagen[currentDataGen].filePath = path;
+            datagen[lastIndex].filePath = path;
         }
-        showModels();
-        showGenerators();
     } catch (e) {
-        throw e;
+        throw new Error(e)
     }
 }
 
@@ -122,7 +129,7 @@ function desrefazer (act){
 
 ipc.on('export-datagen', function(event, type, dtIndex){save(type,dtIndex); });
 
-async function rawSave(type, dtIndex, callback) {
+async function rawSave(type, dtIndex) {
     let index = dtIndex !== undefined ? dtIndex : currentDataGen;
     switch(type) {
         case "save":
@@ -185,7 +192,6 @@ async function rawSave(type, dtIndex, callback) {
                     }
                     try {
                         await createExportModel(targetPath);
-                        callback();
                     } catch(e) {
                         throw new Error('exportModel failed!')
                     }
@@ -395,9 +401,17 @@ function propsConfigs(generator,coluna, new_place){
     tippy('.tooltip-label');
 }
 
-$("html").ready(function(){
+console.log(platformASpath);
 
-    showModels();
+$("html").ready(function() {
+    
+    //showModels();
+    
+    verifyBackupModels().then(() => {
+        
+        console.log(datagen);
+        showModels();
+    })
 
     $("#reloadPreview").on("click", "", function(e){
         showGenerators();
@@ -436,10 +450,10 @@ $("html").ready(function(){
     $.contextMenu({
         selector: 'ul li.tabButton',
         trigger: 'right',
-        callback: async function (key, options) {
+        callback: function (key) {
             switch (key){
-                case "Rename":
-                    let i = datagen.indexOf(this.get(0).__node__);
+                case "Rename": {
+                    const i = datagen.indexOf(this.get(0).__node__);
                     let title = $(this).text();
                     $(this).empty();
                     $(this).append($("<input/>").attr("type", "text").attr("value", title).blur(function(){
@@ -448,24 +462,10 @@ $("html").ready(function(){
                     }));
                     hasChanged();
                     break;
-                case "Delete": {
-                    let index = datagen.indexOf(this.get(0).__node__);
-                    if (index > -1) {
-                        if(platformASpath !== false) {
-                            let inPath = platformASpath + datagen[index].ID + ".json";
-                            if(await exists(inPath)) {
-                                fs.unlink(inPath);
-                            }
-                        }
-                        datagen.splice(index, 1);
-                        if (index === currentDataGen)
-                            currentDataGen = (index === 0) ? 0 : (index - 1);
-                        else if (index < currentDataGen)
-                            currentDataGen--;
-                    }
-
-                    showModels();
-                    showGenerators();
+                }
+                case "Delete": { 
+                    const i = datagen.indexOf(this.get(0).__node__);
+                    deleteModel(i);
                     break;
                 }
                 case "exportDot": {
@@ -482,7 +482,7 @@ $("html").ready(function(){
                 }
                 case "CopyModelId": {
                     const {clipboard} = require('electron');
-                    let i = datagen.indexOf(this.get(0).__node__);
+                    const i = datagen.indexOf(this.get(0).__node__);
                     let varModelID = datagen[i].ID;
                     if(process.platform === 'darwin') {
                         clipboard.writeText(varModelID,'selection');
@@ -492,7 +492,7 @@ $("html").ready(function(){
                     break;
                 }
                 case "ToggleWS": {
-                    let i = datagen.indexOf(this.get(0).__node__);
+                    const i = datagen.indexOf(this.get(0).__node__);
                     let htmlItem = $(".fa-upload").eq(i);
                     let varModelID = datagen[i].ID;
                     if(!(varModelID in WSMA)) {
@@ -514,7 +514,7 @@ $("html").ready(function(){
                     break;
                 }
                 case "OpenWS": {
-                    let i = datagen.indexOf(this.get(0).__node__);
+                    const i = datagen.indexOf(this.get(0).__node__);
                     let htmlItem = $(".fa-upload").eq(i);
                     let varModelID = datagen[i].ID;
                     if(!(varModelID in WSMA)) {
@@ -531,7 +531,7 @@ $("html").ready(function(){
                 }
                 case "URIWS": {
                     const {clipboard} = require('electron');
-                    let i = datagen.indexOf(this.get(0).__node__);
+                    const i = datagen.indexOf(this.get(0).__node__);
                     if(process.platform === 'darwin') {
                         clipboard.writeText(`http://localhost:${wsPort}/?modelid=${datagen[i].ID}&nsample=${datagen[i].n_lines}&format=${datagen[i].save_as}`,'selection');
                     }else {
@@ -954,14 +954,10 @@ $("html").ready(function(){
     });
 
     dragAndDropGens();
-    verifyUnsaveModels();
-    
     $("#windowModalPadrao").click( () => {
         $("#windowModalPadrao").hide();
     })
-
     $("#windowModalPadrao-box").click( (event) => { event.stopPropagation();})
-
 });
 
 function setModalPadrao(title, content, buttons=[]) {
@@ -990,17 +986,52 @@ function deleteCollumn(){
     }
 }
 
-async function verifyUnsaveModels() {
-    if(!await exists(platformASpath)) return
-    let files = await readFile(platformASpath);
-    if(files.length === 0) return
-    try {
-        files.forEach(async file => {
-            openModel(platformASpath+file,true);
-        });
-    } catch (e) {
-        setModalPadrao('Error!', 'We had problem to recover your backup files. Please, report the problem to our repository.');
-    }
+function verifyBackupModels() { 
+    return new Promise(async (resolve, reject) => {
+        if(!await access(platformASpath)) resolve(false)
+        let files = await readDir(platformASpath);
+        if(files.length === 0) resolve(false)
+        try {
+            /*
+                let openings = []
+                let deletings = []
+                files.forEach(async file => {
+                    openings.push(openModel(platformASpath+file,true))
+                })
+                Promise.all(openings).then(() => {
+                    console.log(12312312222222);
+                    files.forEach(async file => {
+                        console.log(file)
+                        deletings.push(del(platformASpath+file));
+                    })
+                    Promise.all(deletings).then(() => {
+                        console.log(1231231)
+                        resolve(true)
+                    })
+                })  
+                */
+            // let readDeleteBeckupFiles = files.reduce(async (prevPromise, nextFile) => {
+            //     // await prevPromise;
+            //     console.log(nextFile);
+
+            //     return prevPromise.then(() => {
+            //         return openModel(platformASpath+nextFile,true)
+            //     })
+            // }, Promise.resolve())
+
+            files.reduce( async (previousPromise, nextFile) => {
+                await openModel(platformASpath+nextFile, true);
+                return del(platformASpath+nextFile);
+              }, Promise.resolve())
+              .then(() => {
+                console.log(12312312)
+                resolve(true)
+            })
+             
+        } catch (e) {
+            reject(e);
+        }
+    })
 }
 
 let modal = document.getElementById('myModal');
@@ -1236,7 +1267,7 @@ function generateWritingSimple(targetPath,resolve,reject) {
     }
 }
 
-function generateStream(targetPath,resolve,reject) {
+async function generateStream(targetPath,resolve,reject) {
     ipc.sendSync("active-child-process");
     let currentIteration;
     let it = datagen[currentDataGen].configs.iterator;
@@ -1257,11 +1288,13 @@ function generateStream(targetPath,resolve,reject) {
                     if(it.hasIt){
                         let ini = targetPath.substring(0,targetPath.lastIndexOf("[") ), fim = targetPath.substring(targetPath.lastIndexOf("]")+1);
                         for(let i in child) {
-                            fs.unlink(ini + i + fim);
+                            if(await access(ini + i + fim))
+                                fs.unlink(ini + i + fim);
                         }
                     }
                     else {
-                        fs.unlink(targetPath);
+                        if(await access(ini + i + fim))
+                                fs.unlink(targetPath);
                     }
                 }
                 reject('abort');
@@ -1346,11 +1379,13 @@ function dragAndDropGens(){
         dragged = event.target.__node__;
     });
 }
-
+let waitChanges;
 function hasChanged() { //permite o Auto Save.
+    clearTimeout(waitChanges);
     datagen[currentDataGen].datagenChange = true;
     datagen[currentDataGen].saveState();
     reloadModelsIcon();
+    waitChanges = setTimeout(function(){ autoSaveBackupFile() }, 1000);
 }
 
 /*Desenha na tela principal as colunas e seus respectivos geradores baseados nos dados armazendos no array datagen*/
@@ -1539,6 +1574,47 @@ function reloadModelsIcon () {
     }
 }
 
+function deleteModel(indexDatagen) {
+    if((isNaN(indexDatagen) || !isFinite(indexDatagen))) return;
+    if(!datagen[indexDatagen].datagenChange) {closeTab(indexDatagen); return;}
+    const options = {
+        type: 'question',
+        buttons: ['Cancel', 'Yes', 'No'],
+        defaultId: 0,
+        title: 'Save',
+        message: 'Save file "'+ datagen[indexDatagen].name +'"?',
+        checkboxChecked: false,
+    };
+
+    dialog.showMessageBox(null, options, async (response) => {
+        if (response === 1){
+            try {await save("save", indexDatagen)} catch(e) {console.error(e)}
+        }
+        if(response !== 0) closeTab(indexDatagen);
+    });
+
+    async function closeTab(index){
+        //let index = datagen.indexOf($(this).parent().get(0).__node__);
+        console.log(index);
+        if (index < 0) return;
+
+        if(platformASpath !== false) {
+            const inPath = `${platformASpath}${datagen[index].ID}.json`
+            if(await access(inPath)) {
+                await del(inPath);
+            }
+        }
+
+        datagen.splice(index, 1);
+        if (index === currentDataGen)
+            currentDataGen = (index === 0) ? 0 : (index - 1);
+        else if (index < currentDataGen)
+            currentDataGen--;
+        showModels();
+        showGenerators();        
+    }
+}
+
 function showModels(){
     $("#tabs").empty();
 
@@ -1557,50 +1633,9 @@ function showModels(){
         tabButton.addClass("tabButton");
         tabButton.get(0).__node__ = datagen[i];
 
-        tabButton.on("click", "span.icon-cancel-circled", function () {
-            let closeTabFlag = true;
-            if(datagen[currentDataGen].datagenChange) {
-                const options = {
-                    type: 'question',
-                    buttons: ['Cancel', 'Yes', 'No'],
-                    defaultId: 2,
-                    title: 'Save',
-                    message: 'Save file "'+ datagen[currentDataGen].name +'"?',
-                    checkboxChecked: false,
-                };
-
-                dialog.showMessageBox(null, options, async (response, checkboxChecked) => {
-                    console.log(response);
-                    console.log(checkboxChecked);
-                    if (response === 1){
-                        try {await save("save",currentDataGen)} catch(e) {console.error(e)}
-                    }
-                });
-            }
-            console.log('Tab closed')
-            closeTab();
-
-            function closeTab(){
-                //let index = datagen.indexOf($(this).parent().get(0).__node__);
-                let index = currentDataGen;
-                if (index > -1) {
-                    if(platformASpath !== false) {
-                        let inPath = platformASpath + datagen[index].ID + ".json";
-                        if(fs.existsSync(inPath)) {
-                            fs.unlink(inPath);
-                        }
-                    }
-
-                    datagen.splice(index, 1);
-                    if (index === currentDataGen)
-                        currentDataGen = (index === 0) ? 0 : (index - 1);
-                    else if (index < currentDataGen)
-                        currentDataGen--;
-                }
-
-                showModels();
-                showGenerators();
-            }
+        tabButton.on("mouseup", "span.icon-cancel-circled", function (event) {
+            event.stopPropagation();
+            deleteModel(i);
         });
 
         if (currentDataGen === i){
@@ -1624,6 +1659,7 @@ function showModels(){
                     break;
                 case 2:
                     console.log('Middle Mouse button pressed on ' + $(this).text());
+                    deleteModel(i);
                     break;
                 case 3:
                     //ipc.send('context-menu-datamodel', {x: e.pageX, y: e.pageY, m: i});
@@ -1646,6 +1682,7 @@ function createNewModel () {
     datagen.push(new DataGen());
     datagen[datagen.length-1].name += " " + datagen.length;
     currentDataGen = datagen.length-1;
+    hasChanged()
     $("#leftSideBar").empty();
     $('#selectGeneratorType').empty().attr("disabled", true);
     $('#generatorPropertiesForm').empty();
@@ -1654,12 +1691,12 @@ function createNewModel () {
     showGenerators();
 }
 
-async function createExpModel (path,dtIndex, callback) {
+async function createExportModel (path,dtIndex) {
     let index = dtIndex;
     if(dtIndex === undefined) index = currentDataGen;
     try {
         await writeFile(path, datagen[index].exportModel());
-        callback();
+
     } catch(e) {
         console.log(e);
         throw new Error(e);
@@ -1667,15 +1704,12 @@ async function createExpModel (path,dtIndex, callback) {
 }
 
 //Verifica a cada minuto se é preciso salvar automaticamente.
-setInterval(async () => {
-    if(platformASpath != false) return;
-    if (!await exists(platformASpath))
-        await mk(platformASpath);
+async function autoSaveBackupFile() {
     for(let dt in datagen) {
-        if(!datagen[dt].datagenChange) continue;
+        if(!datagen[dt].filePath) continue;
         await createExportModel(`${platformASpath}${datagen[dt].ID}.json`, dt);
     }
-},6000);
+}
 
 function createImportModel (modelName, data) {
 

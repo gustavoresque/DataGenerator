@@ -8,14 +8,12 @@ const Menu = electron.Menu;
 const MenuItem = electron.MenuItem;
 
 const app = electron.app;
-const globalShortcut = electron.globalShortcut;
 const ipcMain = require('electron').ipcMain;
 // Module to create native browser window.
 const BrowserWindow = electron.BrowserWindow;
 
 const path = require('path');
 const url = require('url');
-const fs = require('fs');
 
 const menu = new Menu();
 
@@ -24,11 +22,8 @@ const menu = new Menu();
 let mainWindow, visWindows = [], visDimenWindows = [];
 let visDimensionWindow;
 
-let file_path = undefined;
-
 let sockets = [];
 let isCPActive = false; //isChildProcessActive;
-let dtSaved = false; // Blocks de Application do quit. Set false only if the html load successfully!
 
 ipcMain.on("active-child-process", (event) => {
     isCPActive = true;
@@ -46,26 +41,9 @@ ipcMain.on("child-process-killed", (event) => {
     event.returnValue = 1;
 })
 
-ipcMain.on("autosave-verified", (event) => {
-    dtSaved = true;
-    app.quit();
-    event.returnValue = 1;
-});
-
 ipcMain.on("get-path2", function (event, arg) {
     mainWindow.webContents.send('get-path', arg);
 });
-
-function saveExport(targetPath) {
-
-    let partsOfStr = targetPath.split('\\');
-    targetPath = "";
-    for (let i = 0; i < partsOfStr.length; i++){
-        let backslash = i == partsOfStr.length - 1 ? "" : "\\\\";
-        targetPath += partsOfStr[i] + backslash;
-    }
-    mainWindow.webContents.executeJavaScript("createExportModel('" + targetPath + "');");
-}
 
 function createWindow () {
 
@@ -259,6 +237,13 @@ function createWindow () {
                     accelerator: process.platform === "darwin" ? 'Cmd+M' : 'Ctrl+M',
                     click () {
                         mainWindow.webContents.executeJavaScript('createNewModel();');
+                    }
+                },
+                {
+                    label: 'Delete Model',
+                    accelerator: process.platform === "darwin" ? 'Cmd+W' : 'Ctrl+W',
+                    click () {
+                        mainWindow.webContents.send('delete-model');
                     }
                 },
                 {
@@ -648,26 +633,25 @@ function addVisWindowMenu(visWindow){
 
 let wss;
 function initServerWebSocket() {
-    if(!wss){
-        let WebSocketServer = require('ws').Server;
-        wss = new WebSocketServer({port: 6661});
-        wss.on("connection", (ws)=>{
-            sockets.push(ws);
-            console.log("WebSocket Opened!");
-            mainWindow.webContents.send('update-sampledata');
-            ws.on('message', function (data) {
-                console.log("WS Message: ", data);
-            });
-            ws.on('close', function(){
-                let i = sockets.indexOf(ws);
-                sockets.splice(i,1);
-                if(sockets.length === 0){
-                    wss.close(()=>console.log("WSS Closed!"));
-                    wss = undefined;
-                }
-            });
+    if(wss) return;
+    let WebSocketServer = require('ws').Server;
+    wss = new WebSocketServer({port: 6661});
+    wss.on("connection", (ws)=>{
+        sockets.push(ws);
+        console.log("WebSocket Opened!");
+        mainWindow.webContents.send('update-sampledata');
+        ws.on('message', function (data) {
+            console.log("WS Message: ", data);
         });
-    }
+        ws.on('close', function(){
+            let i = sockets.indexOf(ws);
+            sockets.splice(i,1);
+            if(sockets.length === 0){
+                wss.close(()=>console.log("WSS Closed!"));
+                wss = undefined;
+            }
+        });
+    });
 
 }
 

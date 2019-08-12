@@ -3503,6 +3503,7 @@ class DataGen {
             name: this.name,
             generator: [],
             n_lines: this.n_lines,
+            columnsCounter: this.columnsCounter,
             save_as: this.save_as,
             header: this.header,
             header_type: this.header_type
@@ -3522,15 +3523,16 @@ class DataGen {
             }
             model.generator[i].generator = fullGenNames;
         }
-
         return JSON.stringify(model);
     }
 
     //TODO: resolver funções e ruido.
-    importModel(model_str, resetColumns){
+    importModel(model_str, resetColumns) {
         let model = JSON.parse(model_str);
+        if(model.generator[0].generator[0].name === "Real Data Wrapper") throw new Error('Real Data Wrapper is strange!');
         this.name = model.name || this.name;
         this.n_lines = model.n_lines || this.n_lines;
+        this.columnsCounter = model.columnsCounter;
         this.save_as = model.save_as || this.save_as;
         this.header = model.header || this.header;
         this.header_type = model.header_type || this.header_type;
@@ -3538,18 +3540,15 @@ class DataGen {
         if(resetColumns)
             this.columns = [];
 
-        for(let i=0; i<model.generator.length; i++){
-
+        for(let i=0; i < model.generator.length; i++){
             let generator;
-
             for(let j=0; j<model.generator[i].generator.length; j++){
                 let selectedGenerator = DataGen.listOfGens[model.generator[i].generator[j].name];
-                if(generator){
+                if (generator){
                     let newgen = new selectedGenerator();
                     generator.addGenerator(newgen);
                     copyAttrs(model.generator[i].generator[j], newgen, this);
-
-                }else{
+                }else {
                     generator = new selectedGenerator();
                     copyAttrs(model.generator[i].generator[j], generator, this);
                 }
