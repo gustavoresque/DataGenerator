@@ -94,7 +94,14 @@ async function openModel (path, backup=false) {
     try {
         let dg = new DataGen();
         dg.columns = [];
-        dg.importModel(file);
+        try{
+            dg.importModel(file);
+        } catch(e) {
+            console.log(e)
+            if(!e.message.includes("Real Data Wrapper is strange!"))
+                throw new Error("Something Bad Happened")
+        }
+
         datagen.push(dg);
         const lastIndex = datagen.length-1
         if(!!backup) {
@@ -105,8 +112,9 @@ async function openModel (path, backup=false) {
         } else {
             datagen[lastIndex].filePath = path;
         }
+        return true
     } catch (e) {
-        throw new Error(e)
+        throw new Error("Something Bad Happened")
     }
 }
 
@@ -405,11 +413,9 @@ console.log(platformASpath);
 
 $("html").ready(function() {
     
-    //showModels();
+    showModels();
     
     verifyBackupModels().then(() => {
-        
-        console.log(datagen);
         showModels();
     })
 
@@ -986,52 +992,22 @@ function deleteCollumn(){
     }
 }
 
-function verifyBackupModels() { 
-    return new Promise(async (resolve, reject) => {
-        if(!await access(platformASpath)) resolve(false)
-        let files = await readDir(platformASpath);
-        if(files.length === 0) resolve(false)
-        try {
-            /*
-                let openings = []
-                let deletings = []
-                files.forEach(async file => {
-                    openings.push(openModel(platformASpath+file,true))
-                })
-                Promise.all(openings).then(() => {
-                    console.log(12312312222222);
-                    files.forEach(async file => {
-                        console.log(file)
-                        deletings.push(del(platformASpath+file));
-                    })
-                    Promise.all(deletings).then(() => {
-                        console.log(1231231)
-                        resolve(true)
-                    })
-                })  
-                */
-            // let readDeleteBeckupFiles = files.reduce(async (prevPromise, nextFile) => {
-            //     // await prevPromise;
-            //     console.log(nextFile);
-
-            //     return prevPromise.then(() => {
-            //         return openModel(platformASpath+nextFile,true)
-            //     })
-            // }, Promise.resolve())
-
-            files.reduce( async (previousPromise, nextFile) => {
-                await openModel(platformASpath+nextFile, true);
-                return del(platformASpath+nextFile);
-              }, Promise.resolve())
-              .then(() => {
-                console.log(12312312)
-                resolve(true)
-            })
-             
-        } catch (e) {
-            reject(e);
+async function verifyBackupModels() {
+    if(!await access(platformASpath)) throw new Error("No Files")
+    let files = await readDir(platformASpath);
+    if(files.length === 0) throw new Error("No Files")
+    try {
+        for (let nextFile of files) {
+            await openModel(platformASpath+nextFile, true);
+            await del(platformASpath+nextFile);
         }
-    })
+        return true
+            
+    } catch (e) {
+        console.log(e)
+        if(e.message.includes("Real Data Wrapper is strange!")) return true
+        throw new Error("Something Bad Happened")
+    }
 }
 
 let modal = document.getElementById('myModal');
@@ -1267,7 +1243,7 @@ function generateWritingSimple(targetPath,resolve,reject) {
     }
 }
 
-async function generateStream(targetPath,resolve,reject) {
+function generateStream(targetPath,resolve,reject) {
     ipc.sendSync("active-child-process");
     let currentIteration;
     let it = datagen[currentDataGen].configs.iterator;
@@ -1277,7 +1253,7 @@ async function generateStream(targetPath,resolve,reject) {
         currentIteration = 0;
     }
     child[currentIteration] = require('child_process').fork("./Stream",[datagen[currentDataGen].exportModel(),it.hasIt ? currentIteration : "",targetPath]);
-    child[currentIteration].on('exit', (code) => {
+    child[currentIteration].on('exit', async (code) => {
         if(code == 0) {
             datagen[currentDataGen].resetAll();
             ipc.sendSync("child-process-ended");
@@ -1287,6 +1263,7 @@ async function generateStream(targetPath,resolve,reject) {
                 if(!keepDSFile) {
                     if(it.hasIt){
                         let ini = targetPath.substring(0,targetPath.lastIndexOf("[") ), fim = targetPath.substring(targetPath.lastIndexOf("]")+1);
+                    
                         for(let i in child) {
                             if(await access(ini + i + fim))
                                 fs.unlink(ini + i + fim);
@@ -1294,7 +1271,7 @@ async function generateStream(targetPath,resolve,reject) {
                     }
                     else {
                         if(await access(ini + i + fim))
-                                fs.unlink(targetPath);
+                            fs.unlink(targetPath);
                     }
                 }
                 reject('abort');

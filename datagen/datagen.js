@@ -3529,7 +3529,7 @@ class DataGen {
     //TODO: resolver funções e ruido.
     importModel(model_str, resetColumns) {
         let model = JSON.parse(model_str);
-        if(model.generator[0].generator[0].name === "Real Data Wrapper") throw new Error('Real Data Wrapper is strange!');
+        if(model.generator[0].generator[0].name === "Real Data Wrapper") {throw new Error('Real Data Wrapper is strange!')}
         this.name = model.name || this.name;
         this.n_lines = model.n_lines || this.n_lines;
         this.columnsCounter = model.columnsCounter;
