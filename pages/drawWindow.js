@@ -72,7 +72,7 @@ class Bezier extends Drawings{
             }
         }
 
-        g.append('path').attr("class", "definitive").attr("id", 0).attr("d",str)
+        g.append('path').attr("class", "definitive").attr("id", this.id).attr("d",str)
             .style("fill","none").style("stroke","black").style("stroke-width","3px");
 
         let distance = 0;
@@ -82,7 +82,7 @@ class Bezier extends Drawings{
             .data(this.points)
             .enter().append("svg:circle")
             .attr("fill", "blue")
-            .attr("r", 3)
+            .attr("r", 6)
             .attr("cx", function (d) { return d.x; })
             .attr("cy", function (d) { return d.y; })
             .call(d3.drag()
@@ -105,8 +105,9 @@ class Bezier extends Drawings{
                 })
                 .on("drag", function(d,i) {
                     g.selectAll(".lineGuide").remove();
-                    thisDrawingProperties.points[i].x = d3.event.x;
-                    thisDrawingProperties.points[i].y = d3.event.y;
+                    //console.log($('#canvas')[0]);
+                    thisDrawingProperties.points[i].x = d3.mouse(document.getElementById("canvas"))[0];
+                    thisDrawingProperties.points[i].y = d3.mouse(document.getElementById("canvas"))[1];
 
                     let j = 0;
                     if(i % 3 === 1){
@@ -125,7 +126,7 @@ class Bezier extends Drawings{
                     thisDrawingProperties.funcao();
                 })
                 .on("end", function(d,i) {
-                    ipc.send('get-path2', thisDrawingProperties.getPath());
+                    ipc.send('get-path2', thisDrawingProperties.getAllPath());
                 }));
 
         g.attr('class', 'drawing');
@@ -134,6 +135,10 @@ class Bezier extends Drawings{
 
     setOnStateChange(funcao){
         this.funcao = funcao;
+    }
+
+    allPath(funcao){
+        this.getAllPath = funcao;
     }
 
     pontoOposto (x1,y1,x2,y2){

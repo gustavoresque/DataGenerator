@@ -51,7 +51,7 @@
             vertical-align: middle;
         }
 
-        #canvas{
+        #tripod{
             background-color: white;
             box-shadow: 5px 5px 5px black;
             border-style: solid;
@@ -92,7 +92,7 @@
                     <div>y min: <input id="ymin" type="number" style="width: 40px;"></div>
                 </div>
                 <div style="display:flex; flex-direction: column;">
-                    <id id="canvas"></id>
+                    <id id="tripod"></id>
                     <div style="display:flex; flex-direction: row;justify-content: space-between;align-items: center;">
                         <div>x min: <input id="xmin" type="number" style="width: 40px;"></div>
                         <div>x max:<input id="xmax" type="number" style="width: 40px;"></div>
@@ -142,8 +142,9 @@
             .domain([$("input#ymin").val(), $("input#ymax").val()])
             .range([600, 25]);
 
-        let svg2 = d3.select("#canvas")
+        let svg2 = d3.select("#tripod")
             .append("svg")
+            .attr("id", "canvas")
             .attr("width", 850)
             .attr("height", 650)
             .call(d3.drag()
@@ -160,6 +161,7 @@
                         selectingPath.push(pontoOposto(aux[0], aux[1], d3.mouse(this)[0], d3.mouse(this)[1]));
                         selectingPath.push(aux);
                         selectingPath.push(d3.mouse(this));
+                        console.log(this);
                         update();
                     }
                 })
@@ -210,98 +212,17 @@
             svg.selectAll("g.drawing").remove();
 
             drawings.forEach(function(e,i){
-                svg.append(function(){return e.drawPath();});
-            });
-
-            /*control_points.forEach(function(e,i){
-                let str = "";
-                if (e.length > 0){//Primeiro ponto
-                    str = "M "+e[0][0]+","+e[0][1]+" C";
-                    let line;
-                    let middle = e[0], anchor1 = e[1];
-                    line = "M "+middle[0]+","+middle[1]+" L"+anchor1[0]+","+anchor1[1];
-
-                    svg.append('path').attr("class", "lineGuide").attr("d",line)
-                        .style("stroke","red").style("stroke-width","1px");
-                }
-
-                for(let i=1; i<e.length; i++){//Pontos do meio
-                    str += " "+e[i][0]+","+e[i][1];
-
-                    if (i%3 === 0 && i<e.length-1){
-                        let line;
-                        let middle = e[i], anchor1 = e[i+1], anchor2 = e[i-1];
-                        line = "M "+middle[0]+","+middle[1]+" L"+anchor1[0]+","+anchor1[1];
-                        line += "M "+anchor2[0]+","+anchor2[1]+" L"+middle[0]+","+middle[1];
-
-                        svg.append('path').attr("class", "lineGuide").attr("d",line)
-                            .style("stroke","red").style("stroke-width","1px");
-                    }
-
-                    if (i === e.length-1){//Último ponto
-                        let line;
-                        let middle = e[e.length-1], anchor1 = e[e.length-2];
-                        line = "M "+middle[0]+","+middle[1]+" L"+anchor1[0]+","+anchor1[1];
-
-                        svg.append('path').attr("class", "lineGuide").attr("d",line)
-                            .style("stroke","red").style("stroke-width","1px");
-                    }
-                }
-
-                /*svg.append('path').attr("class", "definitive").attr("id", i).attr("d",str)
-                    .style("fill","none").style("stroke","black").style("stroke-width","3px")
-                    .call(d3.drag()
+                svg.append(function(){return e.drawPath();})
+                .call(d3.drag()
                         .on("start", function(d){
                             selectedPath = this.id;
                         })
                         .on("drag", function(d){
-
                         })
                         .on("end", function(d){
-
-                        }));
-
-                svg.selectAll("circle.control")
-                    .data(e)
-                    .enter().append("svg:circle")
-                    .attr("fill", "blue")
-                    .attr("r", 3)
-                    .attr("cx", function (d) { return d[0]; })
-                    .attr("cy", function (d) { return d[1]; })
-                    .call(d3.drag()
-                        .on("start", function(d,i) {
-                            distance = Math.sqrt(Math.pow((e[i-1][0] - e[i][0]),2) + Math.pow((e[i-1][1] - e[i][1]),2));
-
-                            let delta_x = e[i-1][0] - e[i][0];
-                            let delta_y = e[i-1][1] - e[i][1];
-                            theta_radians = Math.atan2(delta_y, delta_x);
                         })
-                        .on("drag", function(d,i) {
-                            svg.selectAll(".lineGuide").remove();
-                            e[i][0] = d3.event.x;
-                            e[i][1] = d3.event.y;
-
-                            let j = 0;
-                            if(i % 3 === 1){
-                                j = i-1;
-                                e[j-1] = pontoOposto(e[j][0], e[j][1], e[i][0], e[i][1]);
-                            }else if(i % 3 === 2){
-                                j = i+1;
-                                if(j+1 < e.length) e[j+1] = pontoOposto(e[j][0], e[j][1], e[i][0], e[i][1]);
-                            }else{
-                                let x3 = e[i][0] + (distance * Math.cos(theta_radians));
-                                let y3 = e[i][1] + (distance * Math.sin(theta_radians));
-                                e[i-1] = [x3,y3];
-
-                                if(i+1 < e.length) e[i+1] = pontoOposto(e[i][0], e[i][1], e[i-1][0], e[i-1][1]);
-                            }
-
-                            update();
-                        })
-                        .on("end", function(d,i) {
-                            ipc.send('get-path2', getPath());
-                        }));
-            });*/
+                    );
+            });
 
             let strSelecting = "";
             if (selectingPath.length > 0)
@@ -368,12 +289,15 @@
                 b.setOnStateChange(function(){
                     update();
                 });
+                b.allPath(function(){
+                    return getAllPath();
+                });
                 drawings.push(b);
                 previewPath = [];
                 selectingPath = [];
                 //document.body.classList.remove('busy-cursor');
                 update();
-                ipc.send('get-path2', getPath());
+                ipc.send('get-path2', getAllPath());
             }else if(keycode == '27'){//ESC
                 getPoints = false;
                 previewPath = [];
@@ -461,6 +385,9 @@
                         aux.setOnStateChange(function(){
                             update();
                         });
+                        aux.allPath(function(){
+                            return getAllPath();
+                        });
                         drawings.push(aux);
                         output = [];
                     }
@@ -474,6 +401,9 @@
             b.setOnStateChange(function(){
                 update();
             });
+            b.allPath(function(){
+                return getAllPath();
+            });
             drawings.push(b);
 
             console.log(drawings);
@@ -481,8 +411,12 @@
             update();
         });
 
-        function helloWorld(){
-            console.log('Hello World');
+        function getAllPath(){
+            let allPath = '';
+            drawings.forEach((e,i) => {
+                allPath += e.getPath();
+            });
+            return allPath;
         }
     </script>
 </body>
