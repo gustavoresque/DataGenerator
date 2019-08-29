@@ -216,7 +216,7 @@ function createWindow () {
 
     const menuTemplateElectron = {
         label: 'Electron',
-        submenu: 
+        submenu:
             [
                 {
                     label: 'Quit App',
@@ -224,13 +224,13 @@ function createWindow () {
                     click: () => {
                         mainWindow.webContents.send('quit-child-process');
                         app.quit();
-                    }   
+                    }
                 }
             ]
     }
     const menuTemplateFile = {
         label: 'File',
-        submenu: 
+        submenu:
             [
                 {
                     label: 'New Model',
@@ -267,7 +267,7 @@ function createWindow () {
                     label: 'Save Model',
                     accelerator: process.platform === "darwin" ? 'Cmd+S' : 'Ctrl+S',
                     click () {
-                        mainWindow.webContents.send('export-datagen', "save");   
+                        mainWindow.webContents.send('export-datagen', "save");
                     }
                 },
                 {
@@ -279,7 +279,7 @@ function createWindow () {
                 { type: 'separator' },
                 {
                     label: 'Import Real DataSet', click (){
-                        dialog.showOpenDialog(mainWindow, 
+                        dialog.showOpenDialog(mainWindow,
                             {
                                 title:"Open DataSet",
                                 properties: ['openFile'],
@@ -296,7 +296,7 @@ function createWindow () {
                                             extensions:['tsv']
                                         }
                                     ]
-                            }, 
+                            },
                             function(targetPath) {
                                 if(!targetPath) return;
                                 mainWindow.webContents.executeJavaScript(`createModelFromDataSet("${targetPath[0].replace(/\\/g,'\\\\')}");`);
@@ -308,7 +308,7 @@ function createWindow () {
     };
     const menuTemplateEdit = {
         label: "Edit",
-        submenu: 
+        submenu:
         [
             {
                 label: 'Undo',

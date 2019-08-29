@@ -161,7 +161,6 @@
                         selectingPath.push(pontoOposto(aux[0], aux[1], d3.mouse(this)[0], d3.mouse(this)[1]));
                         selectingPath.push(aux);
                         selectingPath.push(d3.mouse(this));
-                        console.log(this);
                         update();
                     }
                 })
@@ -284,12 +283,10 @@
             if(keycode == '13'){//ENTER
                 getPoints = false;
                 previewPath.pop();
-                control_points.push(previewPath);
-                let b = new Bezier(previewPath,drawings.length);
-                b.setOnStateChange(function(){
+                //control_points.push(previewPath);
+                let b = new Bezier(previewPath,drawings.length,function(){
                     update();
-                });
-                b.allPath(function(){
+                },function(){
                     return getAllPath();
                 });
                 drawings.push(b);
@@ -314,12 +311,45 @@
 
         });
 
-        $("input").change(function(){
+        $("input").change(changeScales);
+
+        $('#canvas').bind('mousewheel', function(e){
+            let xMin = +($("input#xmin").val());
+            let xMax = +($("input#xmax").val());
+            let yMin = +($("input#ymin").val());
+            let yMax = +($("input#ymax").val());
+
+
+            if(e.originalEvent.wheelDelta /120 > 0) {
+                //scrolling up
+                $("input#xmin").val(xMin-0.5);
+                $("input#xmax").val(xMax+0.5);
+                $("input#ymin").val(yMin-0.5);
+                $("input#ymax").val(yMax+0.5);
+            }
+            else{
+                //scrolling down
+                if(xMax - xMin > 2 && yMax - yMin > 1){
+                    $("input#xmin").val(xMin+0.5);
+                    $("input#xmax").val(xMax-0.5);
+                    $("input#ymin").val(yMin+0.5);
+                    $("input#ymax").val(yMax-0.5);
+                }
+            }
+            changeScales();
+        });
+
+        function changeScales(){
             xScale.domain([$("input#xmin").val(),$("input#xmax").val()]);
             yScale.domain([$("input#ymin").val(),$("input#ymax").val()]);
             svg.select(".xaxis").call(d3.axisBottom(xScale));
             svg.select(".yaxis").call(d3.axisLeft(yScale));
-        });
+            for (let i = 0; i < drawings.length; i++){
+                drawings[i].updatePointsPosition();
+            }
+
+            update();
+        }
 
         function getPath(){
             let cp_scaled = [];
@@ -346,7 +376,11 @@
         }
 
         ipc.on('open-window', function(event, message){
-            let svgObj = DataGen.Utils.decodeSvgPathD(message.path);
+            let path = '';
+            message.forEach((e,i) => {
+                path += e.path;
+            });
+            let svgObj = DataGen.Utils.decodeSvgPathD(path);
             let greaterX = null, greaterY = null;
             let lowerX = null, lowerY = null;
             let output = [];
@@ -355,13 +389,14 @@
                 for (let j = 0; j < e.params.length; j += 2){
                     if (e.params[j] > greaterX || greaterX === null){
                         greaterX = e.params[j];
-                    }else if (e.params[j] < lowerX || lowerX === null){
+                    }
+                    if (e.params[j] < lowerX || lowerX === null){
                         lowerX = e.params[j];
                     }
-
                     if (e.params[j+1] > greaterY || greaterY === null){
                         greaterY = e.params[j+1];
-                    }else if (e.params[j+1] < lowerY || lowerY === null){
+                    }
+                    if (e.params[j+1] < lowerY || lowerY === null){
                         lowerY = e.params[j+1];
                     }
                 }
@@ -379,13 +414,10 @@
 
             svgObj.forEach((e,i) => {
                 for (let j = 0; j < e.params.length; j += 2){
-                    if (e.command === "L"){
-                        //control_points.push(output);
-                        let aux = new Bezier(output,drawings.length);
-                        aux.setOnStateChange(function(){
+                    if (e.command === "L" && j != 0){
+                        let aux = new Bezier(output,drawings.length,function(){
                             update();
-                        });
-                        aux.allPath(function(){
+                        },function(){
                             return getAllPath();
                         });
                         drawings.push(aux);
@@ -395,26 +427,21 @@
                     output.push([x, y]);
                 }
             });
-            //control_points.push(output);
 
-            let b = new Bezier(output,drawings.length);
-            b.setOnStateChange(function(){
+            let b = new Bezier(output,drawings.length,function(){
                 update();
-            });
-            b.allPath(function(){
+            },function(){
                 return getAllPath();
             });
             drawings.push(b);
-
-            console.log(drawings);
 
             update();
         });
 
         function getAllPath(){
-            let allPath = '';
+            let allPath = [];
             drawings.forEach((e,i) => {
-                allPath += e.getPath();
+                allPath.push({name:e.constructor.name, path: e.getPath()});
             });
             return allPath;
         }

@@ -7,14 +7,25 @@ class Point{
 class Drawings{
     constructor(_points, _id){
         let pointsList = [];
+        let pointsInDomainList = [];
 
         _points.forEach(function(e,i){
             let p = new Point(e[0],e[1]);
             pointsList.push(p);
+
+            let pd = new Point(xScale.invert(e[0]),yScale.invert(e[1]));
+            pointsInDomainList.push(pd);
         });
 
-        this.points = pointsList;
+        this.points = pointsList; //Points in range, position on the screen
+        this.pointsInDomain = pointsInDomainList;//Points in domain, position relative to scale
         this.id = _id;
+    }
+
+    updatePointsPosition(){
+        this.points.forEach((e,i)=>{
+            this.points[i] = new Point(xScale(this.pointsInDomain[i].x), yScale(this.pointsInDomain[i].y));
+        });
     }
 }
 
@@ -25,12 +36,17 @@ class Line extends Drawings{
 }
 
 class Circle extends Drawings{
-
+    constructor(_points, radius, _id){
+        super(_points, _id);
+        this.radius = radius;
+    }
 }
 
 class Bezier extends Drawings{
-    constructor(_points, _id){
+    constructor(_points, _id, _globalUpdate, _getAllPath){
         super(_points, _id);
+        this.globalUpdate = _globalUpdate;
+        this.getAllPath = _getAllPath;
     }
 
     drawPath(){
@@ -105,7 +121,6 @@ class Bezier extends Drawings{
                 })
                 .on("drag", function(d,i) {
                     g.selectAll(".lineGuide").remove();
-                    //console.log($('#canvas')[0]);
                     thisDrawingProperties.points[i].x = d3.mouse(document.getElementById("canvas"))[0];
                     thisDrawingProperties.points[i].y = d3.mouse(document.getElementById("canvas"))[1];
 
@@ -123,22 +138,15 @@ class Bezier extends Drawings{
 
                         if(i+1 < thisDrawingProperties.points.length) thisDrawingProperties.points[i+1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y, thisDrawingProperties.points[i-1].x, thisDrawingProperties.points[i-1].y);
                     }
-                    thisDrawingProperties.funcao();
+                    thisDrawingProperties.globalUpdate();
                 })
                 .on("end", function(d,i) {
+                    thisDrawingProperties.pointsInDomain[i] = new Point(xScale.invert(thisDrawingProperties.points[i].x),yScale.invert(thisDrawingProperties.points[i].y));
                     ipc.send('get-path2', thisDrawingProperties.getAllPath());
                 }));
 
         g.attr('class', 'drawing');
         return g.node();
-    }
-
-    setOnStateChange(funcao){
-        this.funcao = funcao;
-    }
-
-    allPath(funcao){
-        this.getAllPath = funcao;
     }
 
     pontoOposto (x1,y1,x2,y2){

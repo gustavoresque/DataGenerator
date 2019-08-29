@@ -3874,7 +3874,6 @@ DataGen.Utils = {
                 case "C":
                     params = c.substring(1).trim().split(/[,\s]+/);
                     quant = params.length/6;
-                    console.log(params, quant);
                     for(let i=0;i<quant;i++){
                         let x1 = +params[i*6], y1 = +params[i*6+1];
                         let x2 = +params[i*6+2], y2 = +params[i*6+3];

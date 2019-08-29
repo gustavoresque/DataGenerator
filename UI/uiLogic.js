@@ -77,8 +77,13 @@ ipc.on('alert', function(event, message) {
     alert(message);
 })
 
-ipc.on('get-path', function(event, path){
-    console.log(path);
+var paths = []
+ipc.on('get-path', function(event, allPath){
+    paths = allPath;
+    let path = '';
+    allPath.forEach((e,i) => {
+        path += e.path;
+    });
     //TODO: Pegar o path por aqui
     if(activeGenerator[currentDataGen] instanceof DataGen.superTypes["Geometric"]){
         activeGenerator[currentDataGen].path = path;
@@ -87,10 +92,10 @@ ipc.on('get-path', function(event, path){
     }
 });
 
-ipc.on('open-datagen', function(event, path){console.log(2222222); openModel(path); showModels(); showGenerators();});
+ipc.on('open-datagen', function(event, path){openModel(path); showModels(); showGenerators();});
 
 async function openModel (path, backup=false) {
-    const file = await readFile(path.toString(), 'utf8') 
+    const file = await readFile(path.toString(), 'utf8')
     try {
         let dg = new DataGen();
         dg.columns = [];
@@ -142,19 +147,19 @@ async function rawSave(type, dtIndex) {
     switch(type) {
         case "save":
             if(!datagen[index].datagenChange) break;
-            if(datagen[index].filePath === undefined) {    
+            if(datagen[index].filePath === undefined) {
                 let saveScreen = new BrowserWindow({show: false, alwaysOnTop: true});
                 dialog.showSaveDialog(
                     saveScreen,
-                    { 
+                    {
                         title:"Save Model",
-                        filters: [ 
+                        filters: [
                             {
-                                name: 'json', 
+                                name: 'json',
                                 extensions: ['json']
                             }
                         ]
-                    }, 
+                    },
                     async function(targetPath) {
                         if(!targetPath) return;
                         datagen[index].filePath = targetPath;
@@ -191,7 +196,7 @@ async function rawSave(type, dtIndex) {
                             extensions: ['json']
                         }
                     ]
-                }, 
+                },
                 async function(targetPath) {
                     if(!targetPath) return;
                     if(datagen[index].filePath === undefined) {
@@ -412,9 +417,9 @@ function propsConfigs(generator,coluna, new_place){
 console.log(platformASpath);
 
 $("html").ready(function() {
-    
+
     showModels();
-    
+
     verifyBackupModels().then(() => {
         showModels();
     })
@@ -469,7 +474,7 @@ $("html").ready(function() {
                     hasChanged();
                     break;
                 }
-                case "Delete": { 
+                case "Delete": {
                     const i = datagen.indexOf(this.get(0).__node__);
                     deleteModel(i);
                     break;
@@ -678,9 +683,13 @@ $("html").ready(function() {
 
     $("#btnDesenho").on("click", function(){
         if(activeGenerator[currentDataGen] instanceof DataGen.superTypes["Geometric"]){
-            console.log("Tudo certo.")
             //TODO: Aqui Yvan!
-            let configs = activeGenerator[currentDataGen].getModel();
+            // let configs = activeGenerator[currentDataGen].getModel();
+            if (paths.length === 0){
+                let configs = activeGenerator[currentDataGen].getModel();
+            }else{
+                let configs = paths;
+            }
             ipc.send('draw-window', configs);
         }
     });
@@ -1002,7 +1011,7 @@ async function verifyBackupModels() {
             await del(platformASpath+nextFile);
         }
         return true
-            
+
     } catch (e) {
         console.log(e)
         if(e.message.includes("Real Data Wrapper is strange!")) return true
@@ -1263,7 +1272,7 @@ function generateStream(targetPath,resolve,reject) {
                 if(!keepDSFile) {
                     if(it.hasIt){
                         let ini = targetPath.substring(0,targetPath.lastIndexOf("[") ), fim = targetPath.substring(targetPath.lastIndexOf("]")+1);
-                    
+
                         for(let i in child) {
                             if(await access(ini + i + fim))
                                 fs.unlink(ini + i + fim);
@@ -1588,7 +1597,7 @@ function deleteModel(indexDatagen) {
         else if (index < currentDataGen)
             currentDataGen--;
         showModels();
-        showGenerators();        
+        showGenerators();
     }
 }
 
