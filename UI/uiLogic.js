@@ -684,11 +684,11 @@ $("html").ready(function() {
     $("#btnDesenho").on("click", function(){
         if(activeGenerator[currentDataGen] instanceof DataGen.superTypes["Geometric"]){
             //TODO: Aqui Yvan!
-            // let configs = activeGenerator[currentDataGen].getModel();
+            let configs = [];
             if (paths.length === 0){
-                let configs = activeGenerator[currentDataGen].getModel();
+                configs.push(activeGenerator[currentDataGen].getModel());
             }else{
-                let configs = paths;
+                configs = paths;
             }
             ipc.send('draw-window', configs);
         }

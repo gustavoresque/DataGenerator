@@ -1,11 +1,29 @@
+let ctrlKey = false;
+
+$(document).keydown(function(e){
+    if (e.ctrlKey)
+    {
+        ctrlKey = true;
+    }
+    else ctrlKey = false;
+});
+
+$(document).keyup(function(e){
+
+    if (ctrlKey)
+    {
+        ctrlKey = false;
+    }
+});
+
 class Point{
     constructor(_x, _y,){
         this.x = _x;
         this.y = _y;
     }
 }
-class Drawings{
-    constructor(_points, _id){
+class Drawing{
+    constructor(_points, _id, _globalUpdate, _getAllPath){
         let pointsList = [];
         let pointsInDomainList = [];
 
@@ -20,6 +38,8 @@ class Drawings{
         this.points = pointsList; //Points in range, position on the screen
         this.pointsInDomain = pointsInDomainList;//Points in domain, position relative to scale
         this.id = _id;
+        this.globalUpdate = _globalUpdate;
+        this.getAllPath = _getAllPath;
     }
 
     updatePointsPosition(){
@@ -29,24 +49,26 @@ class Drawings{
     }
 }
 
-class Line extends Drawings{
+class Line extends Drawing{
+    drawPath(){
+
+    }
+
     getPath(){
         return "M "+this.points[0].x+","+this.points[0].y+" L"+this.points[1].x+","+this.points[1].y;
     }
 }
 
-class Circle extends Drawings{
+class Circle extends Drawing{
     constructor(_points, radius, _id){
         super(_points, _id);
         this.radius = radius;
     }
 }
 
-class Bezier extends Drawings{
+class Bezier extends Drawing{
     constructor(_points, _id, _globalUpdate, _getAllPath){
-        super(_points, _id);
-        this.globalUpdate = _globalUpdate;
-        this.getAllPath = _getAllPath;
+        super(_points, _id, _globalUpdate, _getAllPath);
     }
 
     drawPath(){
@@ -118,29 +140,71 @@ class Bezier extends Drawings{
                         delta_y = thisDrawingProperties.points[i].y - thisDrawingProperties.points[i+1].y;
                     }
                     theta_radians = Math.atan2(delta_y, delta_x);
+
+                    console.log(ctrlKey);
                 })
                 .on("drag", function(d,i) {
                     g.selectAll(".lineGuide").remove();
-                    thisDrawingProperties.points[i].x = d3.mouse(document.getElementById("canvas"))[0];
-                    thisDrawingProperties.points[i].y = d3.mouse(document.getElementById("canvas"))[1];
 
-                    let j = 0;
-                    if(i % 3 === 1){
-                        j = i-1;
-                        thisDrawingProperties.points[j-1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[j].x, thisDrawingProperties.points[j].y, thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y);
-                    }else if(i % 3 === 2){
-                        j = i+1;
-                        if(j+1 < thisDrawingProperties.points.length) thisDrawingProperties.points[j+1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[j].x, thisDrawingProperties.points[j].y, thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y);
+                    console.log(ctrlKey);
+
+                    if(distance < 1 && !ctrlKey){
+                        let t = i;
+                        if(i % 3 === 1){
+                            t = i-1;
+                        }else if(i % 3 === 2) {
+                            t = i + 1;
+                        }
+                        thisDrawingProperties.points[t].x = d3.mouse(document.getElementById("canvas"))[0];
+                        thisDrawingProperties.points[t].y = d3.mouse(document.getElementById("canvas"))[1];
+
+                        let x3 = thisDrawingProperties.points[t].x + (distance * Math.cos(theta_radians));
+                        let y3 = thisDrawingProperties.points[t].y + (distance * Math.sin(theta_radians));
+                        thisDrawingProperties.points[t-1] = new Point(x3,y3);
+
+                        if(t+1 < thisDrawingProperties.points.length) thisDrawingProperties.points[t+1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[t].x, thisDrawingProperties.points[t].y, thisDrawingProperties.points[t-1].x, thisDrawingProperties.points[t-1].y);
                     }else{
-                        let x3 = thisDrawingProperties.points[i].x + (distance * Math.cos(theta_radians));
-                        let y3 = thisDrawingProperties.points[i].y + (distance * Math.sin(theta_radians));
-                        thisDrawingProperties.points[i-1] = new Point(x3,y3);
+                        console.log(i);
+                        thisDrawingProperties.points[i].x = d3.mouse(document.getElementById("canvas"))[0];
+                        thisDrawingProperties.points[i].y = d3.mouse(document.getElementById("canvas"))[1];
+                        let j = 0;
+                        if(i % 3 === 1){
+                            j = i-1;
+                            thisDrawingProperties.points[j-1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[j].x, thisDrawingProperties.points[j].y, thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y);
+                        }else if(i % 3 === 2){
+                            j = i+1;
+                            if(j+1 < thisDrawingProperties.points.length) thisDrawingProperties.points[j+1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[j].x, thisDrawingProperties.points[j].y, thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y);
+                        }else{
+                            let x3 = thisDrawingProperties.points[i].x + (distance * Math.cos(theta_radians));
+                            let y3 = thisDrawingProperties.points[i].y + (distance * Math.sin(theta_radians));
+                            thisDrawingProperties.points[i-1] = new Point(x3,y3);
 
-                        if(i+1 < thisDrawingProperties.points.length) thisDrawingProperties.points[i+1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y, thisDrawingProperties.points[i-1].x, thisDrawingProperties.points[i-1].y);
+                            if(i+1 < thisDrawingProperties.points.length) thisDrawingProperties.points[i+1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y, thisDrawingProperties.points[i-1].x, thisDrawingProperties.points[i-1].y);
+                        }
                     }
+
                     thisDrawingProperties.globalUpdate();
                 })
                 .on("end", function(d,i) {
+                    let t = i;
+                    if(i % 3 === 1){
+                        t = i-1;
+                    }else if(i % 3 === 2) {
+                        t = i + 1;
+                    }
+                    if (thisDrawingProperties.points[t-1]){
+                        distance = Math.sqrt(Math.pow((thisDrawingProperties.points[t-1].x - thisDrawingProperties.points[t].x),2) + Math.pow((thisDrawingProperties.points[t-1].y - thisDrawingProperties.points[t].y),2));
+                    }
+                    else{
+                        distance = Math.sqrt(Math.pow((thisDrawingProperties.points[t].x - thisDrawingProperties.points[t+1].x),2) + Math.pow((thisDrawingProperties.points[t].y - thisDrawingProperties.points[t+1].y),2));
+                    }
+                    console.log(distance);
+                    if (distance <= 5){
+                        if (thisDrawingProperties.points[t-1]) thisDrawingProperties.points[t-1] = thisDrawingProperties.points[t];
+                        if (thisDrawingProperties.points[t+1]) thisDrawingProperties.points[t+1] = thisDrawingProperties.points[t];
+                    }
+                    thisDrawingProperties.globalUpdate();
+
                     thisDrawingProperties.pointsInDomain[i] = new Point(xScale.invert(thisDrawingProperties.points[i].x),yScale.invert(thisDrawingProperties.points[i].y));
                     ipc.send('get-path2', thisDrawingProperties.getAllPath());
                 }));
@@ -187,9 +251,11 @@ class Bezier extends Drawings{
     }
 }
 
-class Spiral extends Drawings{
+class Spiral extends Drawing{
 
 }
+
+
 
 if(module){
     module.exports = Bezier;

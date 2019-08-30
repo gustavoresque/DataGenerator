@@ -61,7 +61,9 @@
     </style>
 </head>
 <body>
-    <div class="content">
+    <div id="teste
+
+" class="content">
         <div id="toolBox">
             <button id="bezierPencil" type="button" title="Draw a Bezier curve" class="btn btn-default img-icon">
                 <img width="20" src="../UI/img/bezier.png">
@@ -283,6 +285,7 @@
             if(keycode == '13'){//ENTER
                 getPoints = false;
                 previewPath.pop();
+                console.log(previewPath);
                 //control_points.push(previewPath);
                 let b = new Bezier(previewPath,drawings.length,function(){
                     update();
@@ -307,6 +310,8 @@
                     selectedPath = -1;
                     update();
                 }
+            }else{
+                Bezier.eventKey = event;
             }
 
         });
@@ -322,18 +327,18 @@
 
             if(e.originalEvent.wheelDelta /120 > 0) {
                 //scrolling up
-                $("input#xmin").val(xMin-0.5);
-                $("input#xmax").val(xMax+0.5);
-                $("input#ymin").val(yMin-0.5);
-                $("input#ymax").val(yMax+0.5);
+                $("input#xmin").val(xMin+0.5);
+                $("input#xmax").val(xMax-0.5);
+                $("input#ymin").val(yMin+0.5);
+                $("input#ymax").val(yMax-0.5);
             }
             else{
                 //scrolling down
                 if(xMax - xMin > 2 && yMax - yMin > 1){
-                    $("input#xmin").val(xMin+0.5);
-                    $("input#xmax").val(xMax-0.5);
-                    $("input#ymin").val(yMin+0.5);
-                    $("input#ymax").val(yMax-0.5);
+                    $("input#xmin").val(xMin-0.5);
+                    $("input#xmax").val(xMax+0.5);
+                    $("input#ymin").val(yMin-0.5);
+                    $("input#ymax").val(yMax+0.5);
                 }
             }
             changeScales();
@@ -414,7 +419,7 @@
 
             svgObj.forEach((e,i) => {
                 for (let j = 0; j < e.params.length; j += 2){
-                    if (e.command === "L" && j != 0){
+                    if (e.command === "L"){
                         let aux = new Bezier(output,drawings.length,function(){
                             update();
                         },function(){
