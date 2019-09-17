@@ -3474,9 +3474,17 @@ class DataGen {
         return sampleData;
     }
 
-    generate () {
+    generate (quantity=NaN) {
+        //TODO: pedir uma quantidade exata de dados para serem gerados e associar isso com as configurações ao lado do Generate na Tela Inicial.
         let data = [];
-        for (let i = 0; i < this.n_lines; i++){
+        const numberLines = 
+            Number(quantity) ?
+                quantity > 10000 ? 
+                    10000 
+                : quantity
+            : this.n_lines;
+            
+        for (let i = 0; i < numberLines; i++){
             data.push( this.save_as === "json" && !this.header ? [] : {});
             for (let j = 0; j < this.columns.length; j++){
                 if(this.columns[j].display) {

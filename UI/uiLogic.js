@@ -24,7 +24,9 @@ const writeFile = promisify(fs.writeFile);
 const mk = promisify(fs.mkdir);
 const readFile = promisify(fs.readFile);
 const readDir = promisify(fs.readdir);
-const del = promisify(fs.unlink)
+const del = promisify(fs.unlink);
+const stats = promisify(fs.stat);
+const appendFile = promisify(fs.appendFile);
 
 let generatorEspecialPaste;
 let especialPasteState = 0; //0-Desativado, 1-Cola uma vez, 2-Cola até clicar de voltano botão, 3-Magic
@@ -42,6 +44,9 @@ let wsPort = 8000;
 let WSMA = {};//Note: It must be out of DataGen library! It stores the models that is avaliable to web server (Web Server Model Available). It receives the model id, the boolean and the currentDatagen. Model is the Key.
 
 const Json2csvParser = require('json2csv').Parser;
+
+let stopGeneration = false; // Stop Data Generation.
+let itFiles = []; //Save the index and paths of Iterator Files.
 
 const platformASpath = process.platform === "darwin" || process.platform === "linux" ? "/var/tmp/B_DataGen_AS/" : process.platform === "win32" ? String(process.env.temp+"\\B_DataGen_AS\\") : false;
 
@@ -1020,7 +1025,6 @@ async function verifyBackupModels() {
 }
 
 let modal = document.getElementById('myModal');
-let child = [];
 
 function generateDatas(){
     try {
@@ -1036,136 +1040,28 @@ function generateDatas(){
             saveScreen.close();
             modal.style.display = "none";
             if (targetPath) {
-                //generateStream(targetPath);
-                const path = require("path");
+                
                 if(path.dirname(targetPath) == "/") {
                     setModalPadrao('Error!', 'Invalid Directory!');
-                    $("#percentageGD").text("Aborted!");
+                    $("#percentageGDMessage").text("Error!");
                     return ;
                 }
-                function promiseRecursiveGS(i,prevValue) {
-                    return new Promise( (resolve,reject) => {
-                        generateStream(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
-                            return p1 + "[" + i + "]" + p2;
-                        }), resolve, reject);
-                    }).then( () => {
-                        if(datagen[currentDataGen].configs.iterator.numberIt == i+1) {
-                            $("#percentageGD").text("Finished!");
-                            $("#percentageCancelIcon").css("display","none");
-                            setModalPadrao('Success!', 'All Files Saved!');
-                            datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] = prevValue;
-                            child = [];
-                        } else {
-                            datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] += datagen[currentDataGen].configs.iterator.stepIt;
-                            promiseRecursiveGS((i+1),prevValue)
-                        }
 
-                    }).catch((err) => {
-                        switch (err) {
-                            case 'abort':
-                                $("#percentageCancelIcon").css("display","none");
-                                $("#percentageGD").text("Aborted!");
-                                child = [];
-                                break;
-                            case 'error':
-                                $("#percentageGD").text("Finished!");
-                                $("#percentageCancelIcon").css("display","none");
-                                setModalPadrao('Error!', 'Something bad happened!');
-                                child = [];
-                                break;
-
-                        }
-                    })
-                }
-
-                function promiseRecursiveGWS(i,prevValue) {
-                    return new Promise( (resolve,reject) => {
-                        generateWritingSimple(targetPath.replace(/(.*)(\.\w+)$/g, (match, p1, p2) => {
-                            return p1 + "[" + i + "]" + p2;
-                        }), resolve, reject);
-                    }).then( () => {
-                        if(datagen[currentDataGen].configs.iterator.numberIt == i+1) {
-                            $("#percentageCancelIcon").css("display","none");
-                            $("#percentageGD").text("Finished!");
-                            datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] = prevValue;
-                            child = [];
-                            setModalPadrao('Success!', 'All Files Saved!');
-                        } else {
-                            datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] += datagen[currentDataGen].configs.iterator.stepIt;
-                            promiseRecursiveGWS((i+1),prevValue)
-                        }
-
-                    }).catch( (err) => {
-                        switch (err) {
-                            case 'abort':
-                                $("#percentageGD").text("Aborted!");
-                                child = [];
-                                break;
-                            case 'error':
-                                setModalPadrao('Error!', 'Something bad happened!');
-                                $("#percentageGD").text("Finished!");
-                                child = [];
-                                break;
-                        }
-                    });
-                }
-
-                $("#percentageGD").text("Starting...");
+                stopGeneration = false; //Não impedir que a geração pare quando usuário tenha parado por algum erro.
+                $("#percentageGDMessage").text("Starting...");
+                $("#percentageCancelIcon").css("display", `block`);
                 if (datagen[currentDataGen].configs.iterator.hasIt) {
-                    let it = datagen[currentDataGen].configs.iterator;
-                    let prevValue = it.generator[it.parameterIt];
-                    it.generator[it.parameterIt] = it.beginIt;
-
-                    if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
-                        $("#percentageCancelIcon").css("display","block");
-                        promiseRecursiveGS(0,prevValue)
-                    } else {
-                        promiseRecursiveGWS(0,prevValue)
-                    }
-
+                    generateDataIt(targetPath)
                 } else {
-                    if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
-                        $("#percentageCancelIcon").css("display","block");
-                        new Promise( (resolve,reject) => {
-                            generateStream(targetPath,resolve,reject);
-                        }).then( () => {
-                            $("#percentageGD").text("Finished!");
-                            $("#percentageCancelIcon").css("display","none");
+                    dataGeneration(targetPath)
+                        .then( () => {
+                            $("#percentageGDMessage").text("Finished!");
+                            $("#percentageGDBar").css("display", `none`);
+                            $("#percentageCancelIcon").css("display", `none`);
                             setModalPadrao('Success!', 'Data Saved!');
                         }).catch((err) => {
-                            switch (err) {
-                                case 'abort':
-                                    $("#percentageGD").text("Aborted!");
-                                    $("#percentageCancelIcon").css("display","none");
-                                    break;
-                                case 'error':
-                                    $("#percentageGD").text("Failed!");
-                                    $("#percentageCancelIcon").css("display","none");
-                                    setModalPadrao('Error!', 'Something bad happened!');
-                                    break;
-                            }
+                            catchs(err.message)
                         })
-
-                    } else {
-                        new Promise( (resolve,reject) => {
-                            generateWritingSimple(targetPath,resolve,reject);
-                        }).then( () => {
-                            $("#percentageGD").text("Finished!");
-                            setModalPadrao('Success!', 'Data Saved!');
-                        }).catch((err) => {
-
-                            switch (err) {
-                                case 'abort':
-                                    $("#percentageGD").text("Aborted!");
-                                    break;
-                                case 'error':
-                                    setModalPadrao('Error!', 'Something bad happened!');
-                                    $("#percentageGD").text("Failed!");
-                                    break;
-                            }
-                        })
-
-                    }
                 }
             }
         })
@@ -1180,7 +1076,61 @@ function generateDatas(){
         modal.style.display = "none";
     }
 }
-let keepDSFile = false;
+
+function catchs(message) {
+    switch (message) {
+        case 'abort':
+            if(itFiles.length === 0)
+                stopGeneration = false;
+            setModalPadrao('Success!', 'The data generation was aborted succefully!');
+            $("#percentageGDMessage").text("Aborted!");
+            $("#percentageGDBar").css("display", "none");
+            $("#percentageCancelIcon").css("display", `none`);
+            break;
+        default:
+            setModalPadrao('Error!', 'Something bad happened!');
+            $("#percentageCancelIcon").css("display", `none`);
+            $("#percentageGDMessage").text("Failed!");
+            $("#percentageGDBar").css("display", "none");
+            break;
+    }
+}
+
+async function generateDataIt(targetPath) {
+    // TODO: colocar configs no exportModel e Importmodel.
+    let it = datagen[currentDataGen].configs.iterator;
+    let prevValue = it.generator[it.parameterIt];
+    it.generator[it.parameterIt] = it.beginIt;
+    // if(datagen[currentDataGen].n_lines > 10000 || (datagen[currentDataGen].n_lines > 5000 && datagen[currentDataGen].columns.length>30)) {
+
+    $("#percentageCancelIcon").css("display","block");
+    let files = [];
+    for(let i = 0; i < datagen[currentDataGen].configs.iterator.numberIt; i++) {
+        const curPath = targetPath.replace(
+            /(.*)(\.\w+)$/g,
+            (match, p1, p2) => {
+                return p1 + "[" + i + "]" + p2;
+            }
+        )
+        itFiles.push(curPath);
+        files.push(dataGeneration(curPath))
+        datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] 
+        += 
+        datagen[currentDataGen].configs.iterator.stepIt;
+    }
+    Promise.all(files)
+        .then(() => {
+            $("#percentageCancelIcon").css("display","none");
+            $("#percentageGDMessage").text("Finished!");
+            $("#percentageGDBar").css("display", `none`);
+            datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] = prevValue;
+            setModalPadrao('Success!', 'All Files Saved!');
+            itFiles = [];
+        })
+        .catch( (err) => {
+            catchs(err.message);
+        });
+}
 
 $("#percentageCancelIcon").click(function(e){
     setModalPadrao('Tell me please!', 'You going to abort the writing. What do you want to do about the file(s)?', [
@@ -1189,8 +1139,7 @@ $("#percentageCancelIcon").click(function(e){
             color: "negative",
             id: "discart",
             func: function () {
-                keepDSFile = false;
-                killProcess();
+                stopGeneration = "discart"
                 $("#percentageCancelIcon").css("display","none");
                 $("#windowModalPadrao").hide()
             }
@@ -1200,8 +1149,7 @@ $("#percentageCancelIcon").click(function(e){
             color: "primary",
             id: "keep",
             func: function () {
-                keepDSFile = true;
-                killProcess();
+                stopGeneration = "keep";
                 $("#percentageCancelIcon").css("display","none");
                 $("#windowModalPadrao").hide()
             }
@@ -1209,96 +1157,125 @@ $("#percentageCancelIcon").click(function(e){
     ]);
 });
 
-let quit = false;
-ipc.on("quit-child-process", () => {
-    quit = true;
-    //TODO: perguntar ao usuário se deseja fechar a aplicação, mas manter o DS.
-    killProcess();
-});
-
-function killProcess() {
-    if(child.length !== 0) {
-        const it = datagen[currentDataGen].configs.iterator;
-        if(it.hasIt) {
-            for(let i = 0; i < it.numberIt; i++) {
-                if(child[i]) {
-                    child[i].kill("SIGKILL");
-                }
-            }
-        } else {
-            child[0].kill("SIGKILL");
-        }
+async function displayMessage(file, value) {
+    let index = false;
+    if(datagen[currentDataGen].configs.iterator.hasIt) {
+        index = file.slice(file.indexOf("[")+1,file.indexOf("]"));
     }
+    $("#percentageGDBar").css("display", `block`);
+    $("#percentageGDprogressBar").css("width", `${Math.fround(value*100)}%`)
+    $("#percentageGDlabelBar").text(`${Math.round(value*10000)/100}%`)
+    try {
+        const fileStats = await stats(file);
+        const usedSpace = fileStats.size;
+        $("#percentageGDMessage").text(
+            `${index ? `[${index}]` : ""} Cur: ${sizeFormatter(usedSpace, true)} 
+            \n~Total: ${sizeFormatter(usedSpace/value, true)}`
+        );
+    } catch(e) {}
 }
 
-function generateWritingSimple(targetPath,resolve,reject) {
-    switch(datagen[currentDataGen].save_as) {
-        case 'json':
-            fs.writeFile(targetPath,JSON.stringify(datagen[currentDataGen].generate()),"utf8",(err) => {
-                if(err){ reject('error'); }
-                resolve(true)
-            })
-            break;
-        case 'csv':
-        case 'tsv':
-            const parser = new Json2csvParser({fields: datagen[currentDataGen].getDisplayedColumnsNames(), delimiter: datagen[currentDataGen].save_as=='csv' ? ',' : '\t'});
-            const csv = parser.parse(datagen[currentDataGen].generate());
-            fs.writeFile(targetPath,csv,"utf8",(err) => {
-                if(err){ reject('error'); }
-                resolve(true)
-            })
-            break;
-
-    }
-}
-
-function generateStream(targetPath,resolve,reject) {
-    ipc.sendSync("active-child-process");
-    let currentIteration;
-    let it = datagen[currentDataGen].configs.iterator;
-    if(it.hasIt) {
-        currentIteration = Number( targetPath.substring( targetPath.lastIndexOf("[")+1,targetPath.lastIndexOf("]") ) );
-    } else {
-        currentIteration = 0;
-    }
-    child[currentIteration] = require('child_process').fork("./Stream",[datagen[currentDataGen].exportModel(),it.hasIt ? currentIteration : "",targetPath]);
-    child[currentIteration].on('exit', async (code) => {
-        if(code == 0) {
-            datagen[currentDataGen].resetAll();
-            ipc.sendSync("child-process-ended");
-            resolve(true);
-        } else {
-            if(child[currentIteration].killed) {
-                if(!keepDSFile) {
-                    if(it.hasIt){
-                        let ini = targetPath.substring(0,targetPath.lastIndexOf("[") ), fim = targetPath.substring(targetPath.lastIndexOf("]")+1);
-
-                        for(let i in child) {
-                            if(await access(ini + i + fim))
-                                fs.unlink(ini + i + fim);
+async function dataGeneration(targetPath) {
+    try {
+        const dt = new DataGen();
+        dt.importModel(datagen[currentDataGen].exportModel());
+        switch(dt.save_as) {
+            case 'json':
+                await writeFile(
+                    targetPath,
+                    JSON.stringify(
+                        dt.generate(dt.n_lines)
+                    )
+                        .slice(0,dt.n_lines > 10000 ? -1 : 0),
+                    "utf8"
+                )
+                if(dt.n_lines > 10000) {
+                    for(let i = 10000; i < dt.n_lines; i+=10000) {
+                        if(stopGeneration !== false) {
+                            if(stopGeneration === "discart") {
+                                console.log(123111)
+                                if(itFiles.length !== 0) itFiles.pop();
+                                if(await exist(targetPath))
+                                    await del(targetPath);
+                            } else if(stopGeneration === "keep") {
+                                await appendFile(targetPath, "]", "utf8");
+                            }
+                            if(itFiles.length === 0) 
+                                throw new Error('abort');
                         }
+                        await appendFile(targetPath, ",", "utf8");
+                        await appendFile(
+                            targetPath,
+                            JSON.stringify(
+                                dt.generate(dt.n_lines)
+                            ).slice(1, -1),
+                            "utf8");
+                        displayMessage(targetPath, i/dt.n_lines)
+                        // console.log(i);
                     }
-                    else {
-                        if(await access(ini + i + fim))
-                            fs.unlink(targetPath);
+                    await appendFile(targetPath, "]", "utf8");
+                }
+                break;
+            case 'csv':
+            case 'tsv':
+                const parser = new Json2csvParser (
+                    {
+                        fields: dt.getDisplayedColumnsNames(),
+                        delimiter: 
+                            dt.save_as === 'csv' ? ',' : '\t'
+                    }
+                );
+                const csv = parser.parse(dt.generate(dt.n_lines));
+                await writeFile(targetPath, csv, "utf8");
+                if(dt.n_lines > 10000) {
+                    const appendParser = new Json2csvParser (
+                        {
+                            header: false,
+                            delimiter: 
+                                dt.save_as === 'csv' ? ',' : '\t'
+                        }
+                    );
+                    for(let i = 10000; i < dt.n_lines; i+=10000) {
+                        if(stopGeneration !== false) {
+                            if(stopGeneration === "discart") {
+                                await del(targetPath);
+                                if(itFiles.length !== 0) itFiles.pop();
+                            }
+                            if(itFiles.length === 0)
+                                throw new Error('abort')
+                            return;
+                        }
+                        const apcsv = appendParser.parse(dt.generate(dt.n_lines-i));
+                        await appendFile(targetPath, "\n", "utf8");
+                        await appendFile(targetPath, apcsv, "utf8");
+                        displayMessage(targetPath, i/dt.n_lines)
                     }
                 }
-                reject('abort');
-                if(quit) {ipc.sendSync("child-process-killed");} else {ipc.sendSync("child-process-ended");}
-            } else {
-                fs.unlink(targetPath);
-                reject('error');
-                //TODO: Tratar error EBUSY // See: https://github.com/danielgindi/node-memory-lock
-            }
+                break;
         }
+    } catch (e) {
+        throw e;
+    }
+}
 
-    })
-    .on('message',(message) => {
-        $("#percentageGD").text(message);
-    })
-    .on("error", (err) => {
-        throw err;
-    })
+function sizeFormatter(size, hasUnit) {
+    if(Number(size)<1024) {
+        size = String(size).substr(0,6);
+        if(hasUnit) size += " B";
+    } else if(Number(size)<1024*1024) {
+        size = String(size/(1024)).substr(0,6);
+        if(hasUnit) size += " KB";
+    } else if(Number(size)<1024*1024*1024) {
+        size = String(size/(1024*1024)).substr(0,6);
+        if(hasUnit) size += " MB";
+    } else if(Number(size)<1024*1024*1024*1024) {
+        size = String(size/(1024*1024*1024)).substr(0,6);
+        if(hasUnit) size += " GB";
+    } else {
+        size = size/(1024*1024*1024*1024);
+        if(hasUnit) size += " TB";
+    }
+    return size;
 }
 
 function addGenerator(){

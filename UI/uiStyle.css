@@ -198,6 +198,37 @@ select#selectGeneratorType:focus > option {
 }
 #percentageGD{
     width: 108px;
+    float: left; 
+    margin: 3px 0 0 6px;
+}
+#percentageGDBar {
+    display: none;
+    position: relative;
+    width: 100%;
+    text-align: left;
+    height:20px;
+    background-color: grey;
+}
+#percentageGDprogressBar{
+    position: relative;
+    width: 0;
+    height:20px;
+    background-color: green;
+}
+#percentageGDlabelBar{
+    font-weight: 300;
+    color: whitesmoke;
+    padding-left: 40px;
+}
+#showPreview{
+    float: left;
+    background-color: #ccc;
+    color: black;
+}
+#percentageCancelIcon{
+    float: left;
+    margin: 3px 0 0 3px;
+    display: none;
 }
 .fa-upload, .fa-circle {
     /*visibility: hidden;*/
