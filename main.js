@@ -23,23 +23,6 @@ let mainWindow, visWindows = [], visDimenWindows = [];
 let visDimensionWindow;
 
 let sockets = [];
-let isCPActive = false; //isChildProcessActive;
-
-ipcMain.on("active-child-process", (event) => {
-    isCPActive = true;
-    event.returnValue = 1;
-})
-
-ipcMain.on("child-process-ended", (event) => {
-    isCPActive = false;
-    event.returnValue = 1;
-})
-
-ipcMain.on("child-process-killed", (event) => {
-    isCPActive = false;
-    app.quit();
-    event.returnValue = 1;
-})
 
 ipcMain.on("get-path2", function (event, arg) {
     mainWindow.webContents.send('get-path', arg);
@@ -425,12 +408,6 @@ function createWindow () {
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
 
-    mainWindow.on('close',function (e) {
-        if(isCPActive) {
-            e.preventDefault();
-            mainWindow.webContents.send('quit-child-process');
-        }
-    });
     // Emitted when the window is closed.
   mainWindow.on('closed', function () {
 

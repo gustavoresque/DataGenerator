@@ -134,9 +134,18 @@
 
     <footer class="toolbar toolbar-footer">
         <div class="toolbar-actions">
-            <span id="showPreview" style="float: left; background-color: #ccc; color: black;"><span class="icon btSn icon-chart-line"> Preview</span></span>
-            <span id="percentageGD" style="float: left; margin: 3px 0 0 6px;"></span>
-            <button id="percentageCancelIcon" class="btn btn-warning" style="float: left; margin: 3px 0 0 3px; display: none">Cancel</button>
+            <span id="showPreview">
+                <span class="icon btSn icon-chart-line"> Preview</span>
+            </span>
+            <div id="percentageGD">
+                <span id="percentageGDMessage"></span>
+                <div id="percentageGDBar">
+                    <div id="percentageGDprogressBar">
+                        <span id="percentageGDlabelBar"></span>
+                    </div>
+                </div>
+            </div>
+            <button id="percentageCancelIcon" class="btn btn-warning">Cancel</button>
             <div class="btn-group pull-right">
                 <button id="generateButton" onclick="generateDatas()" class="btn btn-primary">
                     Generate
