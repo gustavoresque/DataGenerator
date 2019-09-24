@@ -677,7 +677,7 @@ $("html").ready(function() {
                         func: () => {console.log('clicou Let go!')}
                     }
                 ]
-            setModalPadrao('Configure Magic Painter', '', buttons);
+            setModalPadrao('Configure Magic Painter', '', "info", buttons);
             $(this).addClass("superactive");
             $("#btnPincelGerador").removeClass("active superactive");
         }else if(especialPasteState>0){
@@ -980,14 +980,23 @@ $("html").ready(function() {
     $("#windowModalPadrao-box").click( (event) => { event.stopPropagation();})
 });
 
-function setModalPadrao(title, content, buttons=[]) {
+function setModalPadrao(title, content, style="", buttons=[]) {
     const modalTitle = document.getElementById("windowModalPadrao-title");
     const modalContent = document.getElementById("windowModalPadrao-content");
     const modalFooter = document.getElementById("windowModalPadrao-footer");
+
+    if(style) {
+        modalTitle.classList.add(`title-modal-${style}`)
+    }
     let setFooter = "";
     for (const button of buttons) {
         setFooter += `<button id="${button.id}" class="btn btn-${button.color}">${button.name}</button>`;
-        $(`#windowModalPadrao-footer`).on('click', `#${button.id}`, button.func);
+        $(`#windowModalPadrao-footer`).on('click', `#${button.id}`, () => {
+            if(style) {
+                modalTitle.classList.remove(`title-modal-${style}`)
+            }
+            button.func();
+        });
     }
     modalTitle.innerText = title;
     modalContent.innerHTML = `<p>${content}</p>`;
@@ -996,6 +1005,7 @@ function setModalPadrao(title, content, buttons=[]) {
     $("#windowModalPadrao").show();
 
 }
+
 
 function deleteCollumn(){
     if (lastCollumnSelected){
@@ -1042,7 +1052,7 @@ function generateDatas(){
             if (targetPath) {
                 
                 if(path.dirname(targetPath) == "/") {
-                    setModalPadrao('Error!', 'Invalid Directory!');
+                    setModalPadrao('Error!', 'Invalid Directory!', "error");
                     $("#percentageGDMessage").text("Error!");
                     return ;
                 }
@@ -1058,7 +1068,7 @@ function generateDatas(){
                             $("#percentageGDMessage").text("Finished!");
                             $("#percentageGDBar").css("display", `none`);
                             $("#percentageCancelIcon").css("display", `none`);
-                            setModalPadrao('Success!', 'Data Saved!');
+                            setModalPadrao('Success!', 'Data Saved!', "success");
                         }).catch((err) => {
                             catchs(err.message)
                         })
@@ -1071,7 +1081,7 @@ function generateDatas(){
         console.log(e);
         setModalPadrao('Error!', 'Some problem happened!!! Verify generators properties.\n' +
         'Tips:\n' +
-        '     * Be sure that Input Property of Function Generators isn\'t null ');
+        '     * Be sure that Input Property of Function Generators isn\'t null ', "error");
 
         modal.style.display = "none";
     }
@@ -1082,13 +1092,13 @@ function catchs(message) {
         case 'abort':
             if(itFiles.length === 0)
                 stopGeneration = false;
-            setModalPadrao('Success!', 'The data generation was aborted succefully!');
+            setModalPadrao('Success!', 'The data generation was aborted succefully!', "success");
             $("#percentageGDMessage").text("Aborted!");
             $("#percentageGDBar").css("display", "none");
             $("#percentageCancelIcon").css("display", `none`);
             break;
         default:
-            setModalPadrao('Error!', 'Something bad happened!');
+            setModalPadrao('Error!', 'Something bad happened!', "error");
             $("#percentageCancelIcon").css("display", `none`);
             $("#percentageGDMessage").text("Failed!");
             $("#percentageGDBar").css("display", "none");
@@ -1124,7 +1134,7 @@ async function generateDataIt(targetPath) {
             $("#percentageGDMessage").text("Finished!");
             $("#percentageGDBar").css("display", `none`);
             datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] = prevValue;
-            setModalPadrao('Success!', 'All Files Saved!');
+            setModalPadrao('Success!', 'All Files Saved!', "success");
             itFiles = [];
         })
         .catch( (err) => {
@@ -1133,7 +1143,7 @@ async function generateDataIt(targetPath) {
 }
 
 $("#percentageCancelIcon").click(function(e){
-    setModalPadrao('Tell me please!', 'You going to abort the writing. What do you want to do about the file(s)?', [
+    setModalPadrao('Tell me please!', 'You going to abort the writing. What do you want to do about the file(s)?', "info", [
         {
             name: "Discard",
             color: "negative",
@@ -1466,7 +1476,7 @@ function redrawPreview(){
 
         switch (e) {
             case 'Please, insert a sentence.':
-                setModalPadrao('Error!', "Please, insert a sentence.");
+                setModalPadrao('Error!', "Please, insert a sentence.", "error");
         }
         console.log(e);
 
@@ -1766,7 +1776,7 @@ function createModelFromDataSet(path) {
 
     fs.readFile(path, "utf-8", (err, strdata) => {
         if(err){
-            setModalPadrao('Error!', "Failed to load the dataSet. Verify if it is UTF-8 encoded.");
+            setModalPadrao('Error!', "Failed to load the dataSet. Verify if it is UTF-8 encoded.", "error");
             return;
         }
         let data = [];

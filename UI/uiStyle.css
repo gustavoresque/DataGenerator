@@ -172,6 +172,7 @@ select#selectGeneratorType:focus > option {
 }
 
 /* The Modal (background) */
+
 .modal {
     display: none;  /*Hidden by default */
     position: fixed; /* Stay in place */
@@ -191,6 +192,7 @@ select#selectGeneratorType:focus > option {
     padding-top: 230px;
     width: 0%;
 }
+
 /*Filter icon in index.html*/
 .fa-filter,.fa-filter-slash {
     margin-top: 5px;
@@ -338,4 +340,37 @@ button.btn[disabled] > img {
     background-color: white;
 }
 
+/*-------------------------------------*/
+/* Modal styling */
+.title-modal-error{
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #8F0303), color-stop(100%, #8F0303)) !important;
+    background-image: -webkit-linear-gradient(top, #8F0303 0%, #8F0303 100%) !important;
+    background-image: linear-gradient(to bottom, #8F0303 0%, #8F0303 100%) !important;
+}
+.title-modal-success{
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #006400), color-stop(100%, #006400)) !important;
+    background-image: -webkit-linear-gradient(top, #006400 0%, #006400 100%) !important;
+    background-image: linear-gradient(to bottom, #006400 0%, #006400 100%) !important;
+}
+.title-modal-warning{
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #ff9966), color-stop(100%, #ff9966)) !important;
+    background-image: -webkit-linear-gradient(top, #ff9966 0%, #ff9966 100%) !important;
+    background-image: linear-gradient(to bottom, #ff9966 0%, #ff9966 100%) !important;
+}
+.title-modal-info{
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #31B0D5), color-stop(100%, #31B0D5)) !important;
+    background-image: -webkit-linear-gradient(top, #31B0D5 0%, #31B0D5 100%) !important;
+    background-image: linear-gradient(to bottom, #31B0D5 0%, #31B0D5 100%) !important;
+}
+.title-modal{
+    color: white;
+    text-align: center;
+    font-size: 2em;
+}
+.content-modal{
+    padding: 1px 10px;
+    font-size: 1.3em;
+    font-weight: 400;
+    text-align: justify;
+}
 /*-------------------------------------*/

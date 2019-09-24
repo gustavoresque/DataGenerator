@@ -3465,7 +3465,7 @@ class DataGen {
         let sb = this.save_as;
         let hb = this.header;
         this.n_lines = this.n_sample_lines;
-        this.save_as = "json";
+        this.save_as = "csv";
         this.header = true;
         let sampleData = this.generate();
         this.n_lines = lb;
