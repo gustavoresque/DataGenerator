@@ -4,20 +4,60 @@
     <meta charset="UTF-8">
     <title>About</title>
     <style>
-        #homesite:hover {
+        .homesite:hover, .reposite:hover {
             cursor: pointer;
         }
 
-        #homesite{
+        .homesite, .reposite{
             color: blue;
+        }
+        html {
+            text-align: center;
+        }
+        img {
+            margin: 0 auto;
+        }
+        #imgBox {
+            display: flex;
+            justify-content: space-around;
+        }
+        #imgBox img {
+            width: 100px;
+            height: 100px;
         }
     </style>
 </head>
 <body>
+    <img src="../icon3.png" alt="Blocks Logo"/>
     <h1>Blocks</h1>
-    <h2>Synthetic Data Generator</h2>
-    <u id="homesite">Visit Blocks' Homepage</u>
-
+    <h2>Synthetic Data Generator and Visualizator</h2>
+    <h3>Developed by <span class="homesite">LABVIS</span>'s Team</h3>
+    <small>Copyright © 2018-2019</small>
+    <hr>
+    <h2>Team</h2>
+    <!-- <img src="https://avatars1.githubusercontent.com/u/1729921?s=150" alt="Gustavo Resque's image"> -->
+    <h4>Prof. Dr. Carlos Gustavo Resque dos Santos</h4>
+    <!-- <img src="https://avatars3.githubusercontent.com/u/8627826?s=150" alt="Yvan Brito's image"> -->
+    <h4>MSc. Yvan Pereira dos Santos Brito</h4>
+    <!-- <img src="https://avatars1.githubusercontent.com/u/32720779?s=150" alt="Jairo Filho's image"> -->
+    <h4>Jairo Nascimento de Sousa Filho</h4>
+    <h4>Elvis Thermo Carvalho Miranda</h4>
+    <h4>Rodrigo Santos do Amor Divino Lima</h4>
+    <hr>
+    <h2>License</h2>
+    <p>Apache 2.0</p>
+    <hr>
+    <u class="homesite">Visit Block's Homepage</u>
+    <br>
+    <u class="reposite">Visit Block's Repository</u>
+    <hr>
+    <br>
+    <div id="imgBox">
+        <img src="../assets/img/labvis.png" alt="LABVIS">
+        <img src="../assets/img/logo_ufpa.png" alt="UFPA">
+        <img src="../assets/img/capes.png" alt="CAPES">
+    </div>
+    <br>
     <script>
         if (typeof module === 'object') {
             window.module = module;
@@ -30,8 +70,11 @@
     <script>
         const { shell } = require('electron')
 
-        $('#homesite').click(function(){
+        $('.homesite').click(function(){
             shell.openExternal('http://labvis.ufpa.br')
+        });
+        $('.reposite').click(function(){
+            shell.openExternal('https://github.com/gustavoresque/DataGenerator/')
         });
 
     </script>
