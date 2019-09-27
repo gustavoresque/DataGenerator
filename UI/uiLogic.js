@@ -1188,22 +1188,23 @@ async function displayMessage(file, value) {
 async function dataGeneration(targetPath) {
     try {
         const dt = new DataGen();
+        dt.columns = []
         dt.importModel(datagen[currentDataGen].exportModel());
         switch(dt.save_as) {
             case 'json':
+                console.log(dt.generate(dt.n_lines))
                 await writeFile(
                     targetPath,
                     JSON.stringify(
                         dt.generate(dt.n_lines)
                     )
-                        .slice(0,dt.n_lines > 10000 ? -1 : 0),
+                        .slice(0, dt.n_lines > 10000 ? -1 : undefined),
                     "utf8"
                 )
                 if(dt.n_lines > 10000) {
                     for(let i = 10000; i < dt.n_lines; i+=10000) {
                         if(stopGeneration !== false) {
                             if(stopGeneration === "discart") {
-                                console.log(123111)
                                 if(itFiles.length !== 0) itFiles.pop();
                                 if(await exist(targetPath))
                                     await del(targetPath);
@@ -1221,13 +1222,13 @@ async function dataGeneration(targetPath) {
                             ).slice(1, -1),
                             "utf8");
                         displayMessage(targetPath, i/dt.n_lines)
-                        // console.log(i);
                     }
                     await appendFile(targetPath, "]", "utf8");
                 }
                 break;
             case 'csv':
             case 'tsv':
+                console.log(dt.getDisplayedColumnsNames())
                 const parser = new Json2csvParser (
                     {
                         fields: dt.getDisplayedColumnsNames(),
@@ -1235,7 +1236,7 @@ async function dataGeneration(targetPath) {
                             dt.save_as === 'csv' ? ',' : '\t'
                     }
                 );
-                const csv = parser.parse(dt.generate(dt.n_lines));
+                const csv = parser.parse(dt.generate(dt.n_lines));  
                 await writeFile(targetPath, csv, "utf8");
                 if(dt.n_lines > 10000) {
                     const appendParser = new Json2csvParser (
