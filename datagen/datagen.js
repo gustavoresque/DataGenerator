@@ -3335,6 +3335,7 @@ class DataGen {
     constructor () {
         this.name = "Model";
         this.n_lines = 100; // Quantidade de linhas na geração
+        this.step_lines = 10000;
         this.n_sample_lines = 100;
         this.save_as = "csv";
         this.header = true;
@@ -3479,8 +3480,8 @@ class DataGen {
         let data = [];
         const numberLines = 
             Number(quantity) ?
-                quantity > 10000 ? 
-                    10000 
+                quantity > this.step_lines ? 
+                    this.step_lines 
                 : quantity
             : this.n_lines;
             
@@ -3511,6 +3512,7 @@ class DataGen {
             name: this.name,
             generator: [],
             n_lines: this.n_lines,
+            step_lines: this.step_lines,
             columnsCounter: this.columnsCounter,
             save_as: this.save_as,
             header: this.header,
@@ -3540,6 +3542,7 @@ class DataGen {
         if(model.generator[0].generator[0].name === "Real Data Wrapper") {throw new Error('Real Data Wrapper is strange!')}
         this.name = model.name || this.name;
         this.n_lines = model.n_lines || this.n_lines;
+        this.step_lines = modal.step_lines || this.step_lines;
         this.columnsCounter = model.columnsCounter;
         this.save_as = model.save_as || this.save_as;
         this.header = model.header || this.header;

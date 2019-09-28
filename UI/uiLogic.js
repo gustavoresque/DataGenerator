@@ -1192,17 +1192,16 @@ async function dataGeneration(targetPath) {
         dt.importModel(datagen[currentDataGen].exportModel());
         switch(dt.save_as) {
             case 'json':
-                console.log(dt.generate(dt.n_lines))
                 await writeFile(
                     targetPath,
                     JSON.stringify(
                         dt.generate(dt.n_lines)
                     )
-                        .slice(0, dt.n_lines > 10000 ? -1 : undefined),
+                        .slice(0, dt.n_lines > dt.step_lines ? -1 : undefined),
                     "utf8"
                 )
-                if(dt.n_lines > 10000) {
-                    for(let i = 10000; i < dt.n_lines; i+=10000) {
+                if(dt.n_lines > dt.step_lines) {
+                    for(let i = dt.step_lines; i < dt.n_lines; i+=dt.step_lines) {
                         if(stopGeneration !== false) {
                             if(stopGeneration === "discart") {
                                 if(itFiles.length !== 0) itFiles.pop();
@@ -1224,11 +1223,11 @@ async function dataGeneration(targetPath) {
                         displayMessage(targetPath, i/dt.n_lines)
                     }
                     await appendFile(targetPath, "]", "utf8");
+                    await displayMessage(targetPath, 1);
                 }
                 break;
             case 'csv':
             case 'tsv':
-                console.log(dt.getDisplayedColumnsNames())
                 const parser = new Json2csvParser (
                     {
                         fields: dt.getDisplayedColumnsNames(),
@@ -1238,7 +1237,7 @@ async function dataGeneration(targetPath) {
                 );
                 const csv = parser.parse(dt.generate(dt.n_lines));  
                 await writeFile(targetPath, csv, "utf8");
-                if(dt.n_lines > 10000) {
+                if(dt.n_lines > dt.step_lines) {
                     const appendParser = new Json2csvParser (
                         {
                             header: false,
@@ -1246,7 +1245,7 @@ async function dataGeneration(targetPath) {
                                 dt.save_as === 'csv' ? ',' : '\t'
                         }
                     );
-                    for(let i = 10000; i < dt.n_lines; i+=10000) {
+                    for(let i = dt.step_lines; i < dt.n_lines; i+=dt.step_lines) {
                         if(stopGeneration !== false) {
                             if(stopGeneration === "discart") {
                                 await del(targetPath);
@@ -1261,6 +1260,7 @@ async function dataGeneration(targetPath) {
                         await appendFile(targetPath, apcsv, "utf8");
                         displayMessage(targetPath, i/dt.n_lines)
                     }
+                    await displayMessage(targetPath, 1);
                 }
                 break;
         }
