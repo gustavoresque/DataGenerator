@@ -64,6 +64,16 @@ class Circle extends Drawing{
         super(_points, _id);
         this.radius = radius;
     }
+
+    drawPath (){
+    /*<path d="
+        M cx - r, cy
+        a r,r 0 1,0 (r * 2),0
+        a r,r 0 1,0 -(r * 2),0
+        "/>*/
+
+
+    }
 }
 
 class Bezier extends Drawing{

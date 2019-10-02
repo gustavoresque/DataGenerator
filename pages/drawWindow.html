@@ -124,6 +124,7 @@
         let control_points = [];
         let previewPath = [];
         let selectingPath = [];
+        let element = { getPoints: false, type: 'Bezier' };
         let getPoints = false;
         let aux = [];
         let distance = 0;
@@ -151,12 +152,12 @@
             .attr("height", 650)
             .call(d3.drag()
                 .on("start", function(){
-                    if (getPoints){
+                    if (element.getPoints){
                         aux = d3.mouse(this);
                     }
                 })
                 .on("drag", function(){
-                    if (getPoints){
+                    if (element.getPoints){
                         selectingPath = [];
                         selectingPath.push(previewPath[previewPath.length-2]);
                         selectingPath.push(previewPath[previewPath.length-1]);
@@ -167,7 +168,7 @@
                     }
                 })
                 .on("end", function(){
-                    if (getPoints){
+                    if (element.getPoints){
                         if (previewPath.length > 0){
                             previewPath.push(pontoOposto(aux[0], aux[1], d3.mouse(this)[0], d3.mouse(this)[1]));
                         }
@@ -277,21 +278,30 @@
         }
 
         $("#bezierPencil").on("click", function(){
-            getPoints = true;
+            element.getPoints = true;
+            element.type = 'Bezier';
             //document.body.classList.add('busy-cursor');
         });
         $(document).keydown(function(event){
             let keycode = (event.keyCode ? event.keyCode : event.which);
             if(keycode == '13'){//ENTER
-                getPoints = false;
+                element.getPoints = false;
                 previewPath.pop();
                 console.log(previewPath);
                 //control_points.push(previewPath);
-                let b = new Bezier(previewPath,drawings.length,function(){
-                    update();
-                },function(){
-                    return getAllPath();
-                });
+                let b;
+                switch(element.type){
+                    case 'Bezier':
+                        b = new Bezier(previewPath,drawings.length,function(){
+                            update();
+                        },function(){
+                            return getAllPath();
+                        });
+                        break;
+                    default:
+                        console.log("Error: element does not exist");
+                }
+
                 drawings.push(b);
                 previewPath = [];
                 selectingPath = [];
@@ -299,7 +309,7 @@
                 update();
                 ipc.send('get-path2', getAllPath());
             }else if(keycode == '27'){//ESC
-                getPoints = false;
+                element.getPoints = false;
                 previewPath = [];
                 selectingPath = [];
                 document.body.classList.remove('busy-cursor');
