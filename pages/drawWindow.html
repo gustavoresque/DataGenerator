@@ -71,7 +71,7 @@
             <button type="button" title="Draw lines" class="btn btn-default img-icon">
                 <img width="20"  src="../UI/img/line.svg">
             </button>
-            <button type="button" title="Draw circle" class="btn btn-default img-icon">
+            <button id="circlePencil" type="button" title="Draw circle" class="btn btn-default img-icon">
                 <img width="20"  src="../UI/img/circle.svg">
             </button>
             <button type="button" title="Draw square" class="btn btn-default img-icon">
@@ -118,7 +118,7 @@
     <script>if (window.module) module = window.module;</script>
     <script src="../lib/d3.v5.min.js"></script>
     <script>
-        let Bezier = require("./drawWindow.js");
+        let Drawing = require("./drawWindow.js");
         let DataGen = require("../datagen/datagen.js");
         let ipc = require('electron').ipcRenderer;
         let control_points = [];
@@ -158,25 +158,51 @@
                 })
                 .on("drag", function(){
                     if (element.getPoints){
-                        selectingPath = [];
-                        selectingPath.push(previewPath[previewPath.length-2]);
-                        selectingPath.push(previewPath[previewPath.length-1]);
-                        selectingPath.push(pontoOposto(aux[0], aux[1], d3.mouse(this)[0], d3.mouse(this)[1]));
-                        selectingPath.push(aux);
-                        selectingPath.push(d3.mouse(this));
+                        switch(element.type){
+                            case "Bezier":
+                                selectingPath = [];
+                                selectingPath.push(previewPath[previewPath.length-2]);
+                                selectingPath.push(previewPath[previewPath.length-1]);
+                                selectingPath.push(pontoOposto(aux[0], aux[1], d3.mouse(this)[0], d3.mouse(this)[1]));
+                                selectingPath.push(aux);
+                                selectingPath.push(d3.mouse(this));
+                                break;
+                            case 'Circle':
+                                selectingPath = [];
+                                selectingPath.push(aux);
+                                selectingPath.push(d3.mouse(this));
+                                break;
+                            default:
+                                console.log('Error: element does not exist');
+                        }
+
                         update();
                     }
                 })
                 .on("end", function(){
                     if (element.getPoints){
-                        if (previewPath.length > 0){
-                            previewPath.push(pontoOposto(aux[0], aux[1], d3.mouse(this)[0], d3.mouse(this)[1]));
+                        switch(element.type){
+                            case 'Bezier':
+                                if (previewPath.length > 0){
+                                    previewPath.push(pontoOposto(aux[0], aux[1], d3.mouse(this)[0], d3.mouse(this)[1]));
+                                }
+                                previewPath.push(aux);
+                                previewPath.push(d3.mouse(this));
+                                aux = [];
+                                selectingPath = [];
+                                break;
+                            case 'Circle':
+                                console.log(aux);
+                                console.log(d3.mouse(this));
+                                previewPath.push(aux);
+                                previewPath.push(d3.mouse(this));
+                                aux = [];
+                                selectingPath = [];
+                                break;
+                            default:
+                                console.log('Error: element does not exist');
                         }
 
-                        previewPath.push(aux);
-                        previewPath.push(d3.mouse(this));
-                        aux = [];
-                        selectingPath = [];
                         update();
                     }
                 }));
@@ -227,19 +253,42 @@
             });
 
             let strSelecting = "";
-            if (selectingPath.length > 0)
-                strSelecting = "M "+selectingPath[0][0]+","+selectingPath[0][1]+" C";
-
-            for(let i=1; i<selectingPath.length; i++){
-                strSelecting += " "+selectingPath[i][0]+","+selectingPath[i][1];
-            }
-
             let strPreview = "";
-            if (previewPath.length > 0)
-                strPreview = "M "+previewPath[0][0]+","+previewPath[0][1]+" C";
 
-            for(let i=1; i<previewPath.length; i++){
-                strPreview += " "+previewPath[i][0]+","+previewPath[i][1];
+            switch(element.type){
+                case 'Bezier':
+                    if (selectingPath.length > 0)
+                        strSelecting = "M "+selectingPath[0][0]+","+selectingPath[0][1]+" C";
+
+                    for(let i=1; i<selectingPath.length; i++){
+                        strSelecting += " "+selectingPath[i][0]+","+selectingPath[i][1];
+                    }
+
+                    if (previewPath.length > 0)
+                        strPreview = "M "+previewPath[0][0]+","+previewPath[0][1]+" C";
+
+                    for(let i=1; i<previewPath.length; i++){
+                        strPreview += " "+previewPath[i][0]+","+previewPath[i][1];
+                    }
+                    break;
+                case 'Circle':
+                    /*<path d="M cx - r, cy a r,r 0 1,0 (r * 2),0 a r,r 0 1,0 -(r * 2),0 "/>*/
+                    /*if (selectingPath.length > 0)
+                        strSelecting = "M "+selectingPath[0][0]+","+selectingPath[0][1]+" C";
+
+                    for(let i=1; i<selectingPath.length; i++){
+                        strSelecting += " "+selectingPath[i][0]+","+selectingPath[i][1];
+                    }
+
+                    if (previewPath.length > 0)
+                        strPreview = "M "+previewPath[0][0]+","+previewPath[0][1]+" C";
+
+                    for(let i=1; i<previewPath.length; i++){
+                        strPreview += " "+previewPath[i][0]+","+previewPath[i][1];
+                    }*/
+                    break;
+                default:
+                    console.log('Error: element does not exist');
             }
 
             svg.select("path#selecting").attr("d",strSelecting);
@@ -282,17 +331,27 @@
             element.type = 'Bezier';
             //document.body.classList.add('busy-cursor');
         });
+        $("#circlePencil").on("click", function(){
+            element.getPoints = true;
+            element.type = 'Circle';
+        });
         $(document).keydown(function(event){
             let keycode = (event.keyCode ? event.keyCode : event.which);
             if(keycode == '13'){//ENTER
                 element.getPoints = false;
-                previewPath.pop();
-                console.log(previewPath);
                 //control_points.push(previewPath);
                 let b;
                 switch(element.type){
                     case 'Bezier':
-                        b = new Bezier(previewPath,drawings.length,function(){
+                        previewPath.pop();
+                        b = new Drawing.listOfDrawings['Bezier'](previewPath,drawings.length,function(){
+                            update();
+                        },function(){
+                            return getAllPath();
+                        });
+                        break;
+                    case 'Circle':
+                        b = new Drawing.listOfDrawings['Circle'](previewPath,drawings.length,function(){
                             update();
                         },function(){
                             return getAllPath();
@@ -321,7 +380,7 @@
                     update();
                 }
             }else{
-                Bezier.eventKey = event;
+                Drawing.listOfDrawings['Bezier'].eventKey = event;
             }
 
         });
@@ -430,7 +489,7 @@
             svgObj.forEach((e,i) => {
                 for (let j = 0; j < e.params.length; j += 2){
                     if (e.command === "L"){
-                        let aux = new Bezier(output,drawings.length,function(){
+                        let aux = new Drawing.listOfDrawings['Bezier'](output,drawings.length,function(){
                             update();
                         },function(){
                             return getAllPath();
@@ -443,7 +502,7 @@
                 }
             });
 
-            let b = new Bezier(output,drawings.length,function(){
+            let b = new Drawing.listOfDrawings['Bezier'](output,drawings.length,function(){
                 update();
             },function(){
                 return getAllPath();
