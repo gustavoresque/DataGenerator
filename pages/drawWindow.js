@@ -60,18 +60,40 @@ class Line extends Drawing{
 }
 
 class Circle extends Drawing{
-    constructor(_points, radius, _id){
-        super(_points, _id);
-        this.radius = radius;
+    constructor(_points, _id, _globalUpdate, _getAllPath){
+        super(_points, _id, _globalUpdate, _getAllPath);
+        this.radius = Math.sqrt(Math.pow((this.points[1].x - this.points[0].x),2) + Math.pow((this.points[1].y - this.points[0].y),2));;
     }
 
     drawPath (){
+        /*<circle cx="100" cy="100" r="75" />
+
+    <path d="
+        M 100, 100
+        m -75, 0
+        a 75,75 0 1,0 150,0
+        a 75,75 0 1,0 -150,0
+    "/>*/
     /*<path d="
-        M cx - r, cy
+        M cx, cy
+        m -r, 0
         a r,r 0 1,0 (r * 2),0
         a r,r 0 1,0 -(r * 2),0
-        "/>*/
+    "/>*/
+        let g = d3.select('g').insert('g');
+        $(g).get(0).__node__ = this;
+        let thisDrawingProperties = $(g).get(0).__node__;
+        let str = '';
 
+        str = "M " + this.points[0].x + ", " + this.points[0].y +
+            " m -" + this.radius + ", 0 " +
+            "a " + this.radius + ", " + this.radius + " 0 1,0 " + this.radius* 2 + ",0 " +
+            "a " + this.radius + ", " + this.radius + " 0 1,0 -" + this.radius* 2 + ",0 ";
+
+        console.log(str);
+
+        g.append('path').attr("class", "definitive").attr("id", this.id).attr("d",str)
+            .style("fill","none").style("stroke","black").style("stroke-width","3px");
 
     }
 }
@@ -174,7 +196,6 @@ class Bezier extends Drawing{
 
                         if(t+1 < thisDrawingProperties.points.length) thisDrawingProperties.points[t+1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[t].x, thisDrawingProperties.points[t].y, thisDrawingProperties.points[t-1].x, thisDrawingProperties.points[t-1].y);
                     }else{
-                        console.log(i);
                         thisDrawingProperties.points[i].x = d3.mouse(document.getElementById("canvas"))[0];
                         thisDrawingProperties.points[i].y = d3.mouse(document.getElementById("canvas"))[1];
                         let j = 0;
@@ -265,8 +286,11 @@ class Spiral extends Drawing{
 
 }
 
-
+Drawing.listOfDrawings = {
+    'Bezier' : Bezier,
+    'Circle' : Circle
+};
 
 if(module){
-    module.exports = Bezier;
+    module.exports = Drawing;
 }
