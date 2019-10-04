@@ -308,7 +308,56 @@ function createWindow () {
                 }
             }
         ]
-    }
+    };
+    const menuTemplateDataModel = {
+        label: 'Data Model',
+        submenu:
+            [
+                {
+                    label: 'Rename',
+                    click () {
+                    }
+                },
+                {
+                    label: 'Export',
+                    click () {
+                    }
+                },
+                {
+                    label: 'Delete',
+                    click () {
+
+                    }
+                },
+                {
+                    label: 'Model ID to Clipboard',
+                    click () {
+                    }
+                },
+                { type: 'separator' },
+                {
+                    label: 'Toggle Web Service',
+                    click () {
+                    }
+                },
+                {
+                    label: 'Open Web Service',
+                    click () {
+                    }
+                },
+                {
+                    label: 'Web Service URI to Clipboard',
+                    click () {
+                    }
+                },
+                { type: 'separator' },
+                {
+                    label: 'Settings',
+                    click () {
+                    }
+                }
+            ]
+    };
     const menuTemplateVisualize = {
         label: 'Visualize',
         submenu: [
@@ -392,7 +441,7 @@ function createWindow () {
     //Work on Mac.
     if(process.platform === 'darwin'){
         mainWindow.on("focus", ()=>{
-            const menuTemplate = [menuTemplateElectron,menuTemplateFile, menuTemplateEdit, menuTemplateVisualize, menuTemplateDebug];
+            const menuTemplate = [menuTemplateElectron,menuTemplateFile, menuTemplateEdit, menuTemplateDataModel, menuTemplateVisualize, menuTemplateDebug];
             Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
         });
     }
@@ -400,6 +449,7 @@ function createWindow () {
     //Work on Windows.
     menu.append(new MenuItem(menuTemplateFile));
     menu.append(new MenuItem(menuTemplateEdit));
+    menu.append(new MenuItem(menuTemplateDataModel));
     menu.append(new MenuItem(menuTemplateVisualize));
     menu.append(new MenuItem(menuTemplateDebug));
     menu.append(new MenuItem(menuTemplateAbout));
