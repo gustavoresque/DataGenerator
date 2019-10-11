@@ -3569,7 +3569,7 @@ class DataGen {
             generator.reset();
             let col = new Column(model.generator[i].name, generator);
             col.ID = model.generator[i].ID || col.ID;
-            col.display = model.generator[i].display || col.display;
+            col.display = model.generator[i].display === undefined ? col.display : model.generator[i].display;
             this.columns.push(col);
         }
     }
