@@ -3334,9 +3334,9 @@ class DataGen {
 
     constructor () {
         this.name = "Model";
-        this.n_lines = 100; // Quantidade de linhas na geração
+        this.n_lines = 250000; // Quantidade de linhas na geração
         this.step_lines = 10000;
-        this.n_sample_lines = 100;
+        this.n_sample_lines = 10000;
         this.save_as = "csv";
         this.header = true;
         this.header_type = true;
@@ -3569,7 +3569,7 @@ class DataGen {
             generator.reset();
             let col = new Column(model.generator[i].name, generator);
             col.ID = model.generator[i].ID || col.ID;
-            col.display = model.generator[i].display || col.display;
+            col.display = model.generator[i].display === undefined ? col.display : model.generator[i].display;
             this.columns.push(col);
         }
     }

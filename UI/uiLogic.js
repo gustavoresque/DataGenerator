@@ -1186,20 +1186,24 @@ async function displayMessage(file, value) {
 }
 
 async function dataGeneration(targetPath) {
+    let csvgen, csvconversion, csvconversiontotal, csvgentotal, csvsave, csvsavetotal, jsongen, jsongentotal, jsonsave, jsonsavetotal;
     try {
         const dt = new DataGen();
         dt.columns = []
         dt.importModel(datagen[currentDataGen].exportModel());
         switch(dt.save_as) {
             case 'json':
+                jsongen = Date.now()
+                const jsongeneration = dt.generate(dt.n_lines)
+                jsongentotal = Date.now() - jsongen;
+                jsonsave = Date.now() 
                 await writeFile(
                     targetPath,
-                    JSON.stringify(
-                        dt.generate(dt.n_lines)
-                    )
+                    JSON.stringify(jsongeneration)
                         .slice(0, dt.n_lines > dt.step_lines ? -1 : undefined),
                     "utf8"
                 )
+                jsonsavetotal = Date.now() - jsonsave
                 if(dt.n_lines > dt.step_lines) {
                     for(let i = dt.step_lines; i < dt.n_lines; i+=dt.step_lines) {
                         if(stopGeneration !== false) {
@@ -1213,13 +1217,17 @@ async function dataGeneration(targetPath) {
                             if(itFiles.length === 0) 
                                 throw new Error('abort');
                         }
+                        
+                        jsongen = Date.now()
+                        const jsongeneration = dt.generate(dt.n_lines-i)
+                        jsongentotal += Date.now() - jsongen;
+                        jsonsave = Date.now()
                         await appendFile(targetPath, ",", "utf8");
                         await appendFile(
                             targetPath,
-                            JSON.stringify(
-                                dt.generate(dt.n_lines)
-                            ).slice(1, -1),
+                            JSON.stringify(jsongeneration).slice(1, -1),
                             "utf8");
+                        jsonsavetotal += Date.now() - jsonsave
                         displayMessage(targetPath, i/dt.n_lines)
                     }
                     await appendFile(targetPath, "]", "utf8");
@@ -1235,8 +1243,15 @@ async function dataGeneration(targetPath) {
                             dt.save_as === 'csv' ? ',' : '\t'
                     }
                 );
-                const csv = parser.parse(dt.generate(dt.n_lines));  
+                csvgen = Date.now()
+                const csvgeneration = dt.generate(dt.n_lines)
+                csvgentotal = Date.now() - csvgen;
+                csvconversion = Date.now()
+                const csv = parser.parse(csvgeneration);
+                csvconversiontotal = Date.now() - csvconversion
+                csvsave = Date.now()
                 await writeFile(targetPath, csv, "utf8");
+                csvsavetotal = Date.now() - csvsave;
                 if(dt.n_lines > dt.step_lines) {
                     const appendParser = new Json2csvParser (
                         {
@@ -1255,9 +1270,17 @@ async function dataGeneration(targetPath) {
                                 throw new Error('abort')
                             return;
                         }
-                        const apcsv = appendParser.parse(dt.generate(dt.n_lines-i));
+                        csvgen = Date.now()
+                        const csvgeneration = dt.generate(dt.n_lines-i)
+                        csvgentotal += Date.now() - csvgen;
+                        csvconversion = Date.now()
+                        const apcsv = appendParser.parse(csvgeneration);
+                        csvconversiontotal += Date.now() - csvconversion
+                        csvsave = Date.now()
                         await appendFile(targetPath, "\n", "utf8");
                         await appendFile(targetPath, apcsv, "utf8");
+                        csvsavetotal += Date.now() - csvsave;                      
+                        
                         displayMessage(targetPath, i/dt.n_lines)
                     }
                     await displayMessage(targetPath, 1);
@@ -1266,6 +1289,14 @@ async function dataGeneration(targetPath) {
         }
     } catch (e) {
         throw e;
+    }
+
+    if(datagen[currentDataGen].save_as !== "csv") {
+        console.log(`generation: ${jsongentotal}`)
+        console.log(`json saving: ${jsonsavetotal}`)
+    } else {
+        console.log(`csv conversion: ${csvconversiontotal}`)
+        console.log(`csv saving: ${csvsavetotal}`)
     }
 }
 
