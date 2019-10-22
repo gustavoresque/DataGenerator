@@ -1943,7 +1943,6 @@ class Path2DFillGenerator extends Geometric{
         };
 
         let lastp, polyline;
-        console.log(commands);
         for(let c of commands){
             switch (c[0]){
                 case "M":
@@ -1959,7 +1958,6 @@ class Path2DFillGenerator extends Geometric{
                     params = c.substring(1).trim().split(/[,\s]+/);
                     quant = params.length/2;
                     for(let i=0;i<quant;i++){
-                        console.log("m", lastPoint[0], +params[i*2]);
                         lastPoint[0] += +params[i*2];
                         lastPoint[1] += +params[i*2+1];
                     }
@@ -3832,6 +3830,10 @@ DataGen.Utils = {
 
         for(let c of commands){
             switch (c[0]){
+                case "A":
+                    params = c.substring(1).trim().split(/[,\s]+/);
+                    output.push({command: "A", params: [+params[0], +params[1], +params[2], +params[3], +params[4], +params[5], +params[6]]});
+                    break;
                 case "M":
                     params = c.substring(1).trim().split(/[,\s]+/);
                     if(params.length > 2){

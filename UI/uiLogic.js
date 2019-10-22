@@ -691,7 +691,8 @@ $("html").ready(function() {
             //TODO: Aqui Yvan!
             let configs = [];
             if (paths.length === 0){
-                configs.push(activeGenerator[currentDataGen].getModel());
+                //configs.push(activeGenerator[currentDataGen].getModel());
+                configs.push({name:'Bezier', path: activeGenerator[currentDataGen].getModel().path});
             }else{
                 configs = paths;
             }

@@ -102,11 +102,11 @@
                 </div>
             </div>
         </div>
-        <div id="panelControl" class="components">
+        <!--<div id="panelControl" class="components">
             <div class="elements">
                 <button type="button">New button</button>
             </div>
-        </div>
+        </div>-->
     </div>
     <script>
         if (typeof module === 'object') {
@@ -351,10 +351,15 @@
                         });
                         break;
                     case 'Circle':
-                        b = new Drawing.listOfDrawings['Circle'](previewPath,drawings.length,function(){
-                            update();
-                        },function(){
-                            return getAllPath();
+                        b = new Drawing.listOfDrawings['Circle']({
+                            _points: previewPath,
+                            _id: drawings.length,
+                            _globalUpdate: function(){
+                                update();
+                            },
+                            _getAllPath: function(){
+                                return getAllPath();
+                            }
                         });
                         break;
                     default:
@@ -450,10 +455,14 @@
         }
 
         ipc.on('open-window', function(event, message){
-            let path = '';
+            let path = '', pathCircles = '';
             message.forEach((e,i) => {
-                path += e.path;
+                if (e.name === 'Bezier')
+                    path += e.path;
+                else if (e.name === 'Circle')
+                    pathCircles += e.path;
             });
+
             let svgObj = DataGen.Utils.decodeSvgPathD(path);
             let greaterX = null, greaterY = null;
             let lowerX = null, lowerY = null;
@@ -508,6 +517,42 @@
                 return getAllPath();
             });
             drawings.push(b);
+
+            let svgObjCircles = [];
+            if (pathCircles !== '') {
+                svgObjCircles = DataGen.Utils.decodeSvgPathD(pathCircles);
+            }
+            let counter = 0;
+            let stack = [];
+            svgObjCircles.forEach((e,i) => {
+                counter++;
+                stack.push(e);
+                if (counter === 4){
+                    let point = [];
+                    point.push(stack[0].params[0]);
+                    point.push(stack[0].params[1]);
+                    let radius = point[0] - stack[1].params[0];
+                    let points = [];
+                    points.push(point);
+                    console.log(stack);
+
+                    let b = new Drawing.listOfDrawings['Circle']({
+                        _points: points,
+                        _id: drawings.length,
+                        _radius: radius,
+                        _globalUpdate: function(){
+                            update();
+                        },
+                        _getAllPath: function(){
+                            return getAllPath();
+                        }
+                    });
+                    drawings.push(b);
+
+                    stack = [];
+                    counter = 0;
+                }
+            });
 
             update();
         });
