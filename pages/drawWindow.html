@@ -243,7 +243,8 @@
                 svg.append(function(){return e.drawPath();})
                 .call(d3.drag()
                         .on("start", function(d){
-                            selectedPath = this.id;
+                            selectedPath = e.id;
+                            console.log(e.id);
                         })
                         .on("drag", function(d){
                         })
@@ -339,7 +340,6 @@
             let keycode = (event.keyCode ? event.keyCode : event.which);
             if(keycode == '13'){//ENTER
                 element.getPoints = false;
-                //control_points.push(previewPath);
                 let b;
                 switch(element.type){
                     case 'Bezier':
@@ -380,7 +380,7 @@
                 update();
             }else if (keycode == '46'){//DEL
                 if (selectedPath >= 0){
-                    control_points.splice(selectedPath, 1);
+                    drawings.splice(selectedPath, 1);
                     selectedPath = -1;
                     update();
                 }
@@ -534,7 +534,6 @@
                     let radius = point[0] - stack[1].params[0];
                     let points = [];
                     points.push(point);
-                    console.log(stack);
 
                     let b = new Drawing.listOfDrawings['Circle']({
                         _points: points,

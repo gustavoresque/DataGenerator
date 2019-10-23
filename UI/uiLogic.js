@@ -93,6 +93,8 @@ ipc.on('get-path', function(event, allPath){
     if(activeGenerator[currentDataGen] instanceof DataGen.superTypes["Geometric"]){
         activeGenerator[currentDataGen].path = path;
         activeGenerator[currentDataGen].accessPath = path;
+        $('#input_accessPath').val(path);
+        console.log(activeGenerator[currentDataGen]);
         showGenerators();
     }
 });
@@ -304,14 +306,22 @@ function propsConfigs(generator,coluna, new_place){
             $tr.append($("<td/>").append($input));
 
         }else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
-            let $input = $("<input/>")
-                .addClass("form-control")
+            let $input;
+            console.log(generator);
+            if (generator.name === "Path2D Stroke Generator" || generator.name === "Path2D Fill Generator"){
+                $input = $("<textarea/>");
+                $input.val(generator.path);
+            } else {
+                $input = $("<input/>").attr("value", generator[p.variableName]);
+            }
+            $input.addClass("form-control")
                 .addClass("smallInput")
                 .attr("type","text")
-                .attr("value", generator[p.variableName])
+                //.attr("value", generator[p.variableName])
                 .attr("id", "input_"+p.variableName)
                 .attr("data-variable", p.variableName)
                 .attr("data-type", p.type);
+
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input));
             if(p.type === "Generator"){
