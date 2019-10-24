@@ -316,44 +316,64 @@ function createWindow () {
                 {
                     label: 'Rename',
                     click () {
+                        mainWindow.webContents.executeJavaScript('renameModel();');
                     }
                 },
                 {
                     label: 'Export',
                     click () {
+                        mainWindow.webContents.executeJavaScript('exportModelDot();');
                     }
                 },
                 {
                     label: 'Delete',
                     click () {
-
+                        mainWindow.webContents.executeJavaScript('deleteModel();');
                     }
                 },
                 {
                     label: 'Model ID to Clipboard',
                     click () {
+                        mainWindow.webContents.executeJavaScript('CopyModelId();');
                     }
                 },
                 { type: 'separator' },
                 {
                     label: 'Toggle Web Service',
                     click () {
+                        mainWindow.webContents.executeJavaScript('toggleWS();');
                     }
                 },
                 {
                     label: 'Open Web Service',
                     click () {
+                        mainWindow.webContents.executeJavaScript('openWS();');
                     }
                 },
                 {
                     label: 'Web Service URI to Clipboard',
                     click () {
+                        mainWindow.webContents.executeJavaScript('uriWS();');
+                    }
+                },
+                { type: 'separator' },
+                {
+                    label: 'Toggle Server Distributed System',
+                    click () {
+                        mainWindow.webContents.executeJavaScript('createServerSocket();');
+                    }
+                },
+                {
+                    label: 'Toggle Client Distributed System',
+                    click () {
+                        mainWindow.webContents.executeJavaScript('createClientSocket();');
                     }
                 },
                 { type: 'separator' },
                 {
                     label: 'Settings',
                     click () {
+                        mainWindow.webContents.executeJavaScript('configGeneration();');
                     }
                 }
             ]

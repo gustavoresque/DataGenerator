@@ -3,6 +3,7 @@ const fs = require('fs');
 const net = require('net');
 const { promisify } = require('util');
 const electron = require('electron').remote;
+const {clipboard} = require('electron');
 const dialog = electron.dialog;
 const path = require('path');
 const BrowserWindow = electron.BrowserWindow;
@@ -51,12 +52,12 @@ const Json2csvParser = require('json2csv').Parser;
 let stopGeneration = false; // Stop Data Generation.
 let itFiles = []; //Save the index and paths of Iterator Files.
 
-const tmpDir = process.platform === "darwin" || process.platform === "linux" ? "/var/tmp" : process.platform === "win32" ? String(process.env.temp) : false;
-const platformASpath = tmp === false ? false : tmpDir + "/B_DataGen_AS/"
+const tmpDir = process.platform === "darwin" || process.platform === "linux" ? path.join("/", "var", "tmp") : process.platform === "win32" ? String(process.env.temp) : false;
+const platformASpath = tmpDir === false ? false : path.join(tmpDir, "B_DataGen_AS");
 
 (async () => {
     if ( platformASpath !== false && !await access(platformASpath) )
-        mk(platformASpath);
+        await mk(platformASpath);
 })()
 
 async function access(path) {
@@ -86,7 +87,7 @@ ipc.on('alert', function(event, message) {
     alert(message);
 })
 
-var paths = []
+let paths = []
 ipc.on('get-path', function(event, allPath){
     paths = allPath;
     let path = '';
@@ -479,92 +480,35 @@ $("html").ready(function() {
         selector: 'ul li.tabButton',
         trigger: 'right',
         callback: function (key) {
+            const i = datagen.indexOf(this.get(0).__node__);
             switch (key){
                 case "Rename": {
-                    const i = datagen.indexOf(this.get(0).__node__);
-                    let title = $(this).text();
-                    $(this).empty();
-                    $(this).append($("<input/>").attr("type", "text").attr("value", title).blur(function(){
-                        datagen[i].name = $(this).val();
-                        showModels();
-                    }));
-                    hasChanged();
+                    renameModel(i)
                     break;
                 }
                 case "Delete": {
-                    const i = datagen.indexOf(this.get(0).__node__);
                     deleteModel(i);
                     break;
                 }
                 case "exportDot": {
-                    console.log(this.get(0).__node__.exportDot());
                     let datastr = this.get(0).__node__.exportDot();
-                    dialog.showSaveDialog({title:"Save Data", filters:[{name:"Graph",extensions:["dot"]}]}, function(targetPath) {
-                        if(targetPath){
-                            fs.writeFile(targetPath, datastr, (err) => {
-                                if (err) throw err;
-                            });
-                        }
-                    });
+                    exportModelDot(datastr)
                     break;
                 }
                 case "CopyModelId": {
-                    const {clipboard} = require('electron');
-                    const i = datagen.indexOf(this.get(0).__node__);
-                    let varModelID = datagen[i].ID;
-                    if(process.platform === 'darwin') {
-                        clipboard.writeText(varModelID,'selection');
-                    }else {
-                        clipboard.writeText(varModelID);
-                    }
+                    CopyModelId(i)
                     break;
                 }
                 case "ToggleWS": {
-                    const i = datagen.indexOf(this.get(0).__node__);
-                    let htmlItem = $(".fa-upload").eq(i);
-                    let varModelID = datagen[i].ID;
-                    if(!(varModelID in WSMA)) {
-                        WSMA[varModelID] = [true,i];
-                        htmlItem.css("visibility","visible");
-                    }
-                    else if(WSMA[varModelID][0]) {
-                        WSMA[varModelID] = [false,i];
-                       htmlItem.css("visibility","hidden");
-                    } else {
-                        WSMA[varModelID] = [true,i];
-                        htmlItem.css("visibility","visible");
-                    }
-                    if(!wsActive) {
-                        wsActive = true;
-                        createServer();
-                        changePort(wsPort);
-                    }
+                    toggleWS(i)
                     break;
                 }
                 case "OpenWS": {
-                    const i = datagen.indexOf(this.get(0).__node__);
-                    let htmlItem = $(".fa-upload").eq(i);
-                    let varModelID = datagen[i].ID;
-                    if(!(varModelID in WSMA)) {
-                        WSMA[varModelID] = [true,i];
-                        htmlItem.css("visibility","visible");
-                    }
-                    if(!wsActive) {
-                        wsActive = true;
-                        createServer();
-                        changePort(wsPort);
-                    }
-                    require("electron").shell.openExternal(`http://localhost:${wsPort}/?modelid=${datagen[i].ID}&nsample=${datagen[i].n_lines}&format=${datagen[i].save_as}`);
+                    openWS(i)
                     break;
                 }
                 case "URIWS": {
-                    const {clipboard} = require('electron');
-                    const i = datagen.indexOf(this.get(0).__node__);
-                    if(process.platform === 'darwin') {
-                        clipboard.writeText(`http://localhost:${wsPort}/?modelid=${datagen[i].ID}&nsample=${datagen[i].n_lines}&format=${datagen[i].save_as}`,'selection');
-                    }else {
-                        clipboard.writeText(`http://localhost:${wsPort}/?modelid=${datagen[i].ID}&nsample=${datagen[i].n_lines}&format=${datagen[i].save_as}`);
-                    }
+                    uriWS(i)
                     break;
                 }
                 default:
@@ -591,7 +535,7 @@ $("html").ready(function() {
         for (let i = 0; i < datagen[currentDataGen].columns.length; i++){
             if (newName === datagen[currentDataGen].columns[i].name){
                 if (colID !== datagen[currentDataGen].columns[i].ID){
-                    setModalPadrao("Error!", "Dimension name already exists");
+                    setModalPadrao("Error!", "Dimension name already exists", "error");
                 }
                 flag = false;
             }else{
@@ -864,12 +808,7 @@ $("html").ready(function() {
     });
 
     $("#btnConfigGeneration").click(function(){
-        let configs = datagen[currentDataGen].configs;
-        configs.modelid = datagen[currentDataGen].ID;
-        configs.modelName = datagen[currentDataGen].name;
-        configs.wsActive = wsActive;
-        configs.wsPort = wsPort;
-        ipc.send('open-config-datagen-window', configs);
+        configGeneration()
     });
 
     $("#tableCollumn").on("click", "span.btnRemoveGen", function(){
@@ -1432,7 +1371,7 @@ async function createClientSocket() {
         return
     }
     
-    client.on('data', await function (data) {
+    client.on('data', async function (data) {
         jdata = JSON.parse(data)
         if(!jdata.hasOwnProperty("code")) return 
         const code = jdata['code'];
@@ -1440,7 +1379,7 @@ async function createClientSocket() {
         switch(code) {
             case 2:
                 model.importModel(jdata['model'])
-                pathToChunks = tmpDir+"/"+jdata['id']
+                pathToChunks = path.join(tmpDir, jdata['id'])
 
                 if(!await access(pathToChunks))
                     await mk(pathToChunks)
@@ -1474,38 +1413,38 @@ async function createClientSocket() {
                 break;
         }
     });
-}
 
-client.on('close', function() {
-	console.log('Connection closed');
-});
-
-async function dd_generate(chunk) {
-    // TODO: Verificar cada coluna e modificar o begin de cada gerador sequencial.
-    const targetPath = `${pathToChunks}/${chunk}.${model.save_as}`
-    switch(model.save_as) {
-        case 'json':
-            await writeFile(
-                targetPath,
-                JSON.stringify(
-                    model.generate(model.step_lines)
-                ),
-                "utf8"
-            )
-            break;
-        case 'csv':
-        case 'tsv':
-            const parser = new Json2csvParser (
-                {
-                    fields: model.getDisplayedColumnsNames(),
-                    header: chunk > 0 ? false : true,
-                    delimiter: 
-                        model.save_as === 'csv' ? ',' : '\t'
-                }
-            );
-            const csv = parser.parse(model.generate(model.step_lines));  
-            await writeFile(targetPath, csv, "utf8");
-            break;
+    client.on('close', function() {
+        console.log('Connection closed');
+    });
+    
+    async function dd_generate(chunk) {
+        // TODO: Verificar cada coluna e modificar o begin de cada gerador sequencial.
+        const targetPath = path.join(pathToChunks, `${chunk}.${model.save_as}`)
+        switch(model.save_as) {
+            case 'json':
+                await writeFile(
+                    targetPath,
+                    JSON.stringify(
+                        model.generate(model.step_lines)
+                    ),
+                    "utf8"
+                )
+                break;
+            case 'csv':
+            case 'tsv':
+                const parser = new Json2csvParser (
+                    {
+                        fields: model.getDisplayedColumnsNames(),
+                        header: chunk > 0 ? false : true,
+                        delimiter: 
+                            model.save_as === 'csv' ? ',' : '\t'
+                    }
+                );
+                const csv = parser.parse(model.generate(model.step_lines));  
+                await writeFile(targetPath, csv, "utf8");
+                break;
+        }
     }
 }
 
@@ -1768,7 +1707,31 @@ function reloadModelsIcon () {
     }
 }
 
-function deleteModel(indexDatagen) {
+function renameModel(i=currentDataGen) {
+
+    const id = datagen[i].name.toLowerCase().replace(' ','')
+    let title = $(`#${id}`).text();
+    $(`#${id}`).empty();
+    $(`#${id}`).append($("<input/>").attr("type", "text").blur(function(){
+        const name = $(this).val();
+
+        if(!name || name === datagen[i].name) return showModels()
+
+        if(!uniqueModelName(i, name)) {
+            setModalPadrao("Error!", "A model already have this name!", "error")
+            renameModel(i)
+        } else {
+            datagen[i].name = $(this).val();
+            showModels();
+            hasChanged();
+        }
+    }))
+    $(`#${id}`).find("input").focus()
+    $(`#${id}`).find("input").val(title)
+
+}
+
+function deleteModel(indexDatagen=currentDataGen) {
     if((isNaN(indexDatagen) || !isFinite(indexDatagen))) return;
     if(!datagen[indexDatagen].datagenChange) {closeTab(indexDatagen); return;}
     const options = {
@@ -1789,7 +1752,6 @@ function deleteModel(indexDatagen) {
 
     async function closeTab(index){
         //let index = datagen.indexOf($(this).parent().get(0).__node__);
-        console.log(index);
         if (index < 0) return;
 
         if(platformASpath !== false) {
@@ -1807,6 +1769,84 @@ function deleteModel(indexDatagen) {
         showModels();
         showGenerators();
     }
+}
+
+function exportModelDot(datastr=datagen[currentDataGen].exportDot()) {
+
+    dialog.showSaveDialog({title:"Save Data", filters:[{name:"Graph",extensions:["dot"]}]}, function(targetPath) {
+        if(targetPath){
+            fs.writeFile(targetPath, datastr, (err) => {
+                if (err) throw err;
+            });
+        }
+    });
+}
+
+function CopyModelId(i=currentDataGen) {
+
+    const varModelID = datagen[i].ID;
+    if(process.platform === 'darwin') {
+        clipboard.writeText(varModelID,'selection');
+    }else {
+        clipboard.writeText(varModelID);
+    }
+}
+
+function toggleWS(i=currentDataGen) {
+
+    let htmlItem = $(".fa-upload").eq(i);
+    const varModelID = datagen[i].ID;
+    if(!(varModelID in WSMA)) {
+        WSMA[varModelID] = [true,i];
+        htmlItem.css("visibility","visible");
+    }
+    else if(WSMA[varModelID][0]) {
+        WSMA[varModelID] = [false,i];
+        htmlItem.css("visibility","hidden");
+    } else {
+        WSMA[varModelID] = [true,i];
+        htmlItem.css("visibility","visible");
+    }
+    if(!wsActive) {
+        wsActive = true;
+        createServer();
+        changePort(wsPort);
+    }
+}
+
+function openWS(i=currentDataGen) {
+
+    let htmlItem = $(".fa-upload").eq(i);
+    const varModelID = datagen[i].ID;
+    if(!(varModelID in WSMA)) {
+        WSMA[varModelID] = [true,i];
+        htmlItem.css("visibility","visible");
+    }
+    if(!wsActive) {
+        wsActive = true;
+        createServer();
+        changePort(wsPort);
+    }
+    require("electron").shell.openExternal(`http://localhost:${wsPort}/?modelid=${datagen[i].ID}&nsample=${datagen[i].n_lines}&format=${datagen[i].save_as}`);
+}
+
+function uriWS(i=currentDataGen) {
+
+    if(process.platform === 'darwin') {
+        clipboard.writeText(`http://localhost:${wsPort}/?modelid=${datagen[i].ID}&nsample=${datagen[i].n_lines}&format=${datagen[i].save_as}`,'selection');
+    }else {
+        clipboard.writeText(`http://localhost:${wsPort}/?modelid=${datagen[i].ID}&nsample=${datagen[i].n_lines}&format=${datagen[i].save_as}`);
+    }
+}
+
+function configGeneration() {
+    
+    let configs = datagen[currentDataGen].configs;
+    configs.modelid = datagen[currentDataGen].ID;
+    configs.modelName = datagen[currentDataGen].name;
+    configs.wsActive = wsActive;
+    configs.wsPort = wsPort;
+    ipc.send('open-config-datagen-window', configs);
 }
 
 function showModels(){
@@ -1872,11 +1912,31 @@ function showModels(){
     reloadModelsIcon();
 }
 
+function uniqueModelName(curIndex, name) {
+    let nameok = true
+    for (let i = 0; i < datagen.length; i++) {
+        if(datagen[i].name === name && i !== curIndex) {
+            nameok = false
+            break;
+        }   
+    }
+    return nameok
+}
+
 function createNewModel () {
     datagen.push(new DataGen());
-    datagen[datagen.length-1].name += " " + datagen.length;
+
     currentDataGen = datagen.length-1;
-    hasChanged()
+    let name = datagen[currentDataGen].name + " " + datagen.length;
+    let nameNumber = 2
+    //Necessary because the model tab id depends on the model name.
+    if(datagen.length !== 1) {
+        while(!uniqueModelName(currentDataGen)) {
+            name = datagen[currentDataGen].name + " " + nameNumber++
+        }
+    }
+    datagen[currentDataGen].name = name
+
     $("#leftSideBar").empty();
     $('#selectGeneratorType').empty().attr("disabled", true);
     $('#generatorPropertiesForm').empty();
