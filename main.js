@@ -120,6 +120,14 @@ function createWindow () {
         }
     });
 
+    ipcMain.on('change-DistributedSystem', (event, message) => {
+        if(message) {
+            mainWindow.webContents.send('change-DistributedSystem', message);
+        } else {
+            mainWindow.webContents.send('change-DistributedSystem', 'error');
+        }
+    });
+
     ipcMain.on('change-datasample', (event, message) => {
         if(message)
             for(let s of sockets)

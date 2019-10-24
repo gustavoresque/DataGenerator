@@ -33,7 +33,7 @@ const appendFile = promisify(fs.appendFile);
 let generatorEspecialPaste;
 let especialPasteState = 0; //0-Desativado, 1-Cola uma vez, 2-Cola até clicar de voltano botão, 3-Magic
 
-let generating = false;
+let generating = false; //Avoid more then 1 generation at a time, include local and Distributed generation. 
 
 
 let ipc = require('electron').ipcRenderer;
@@ -46,6 +46,8 @@ const {createServer,closeServer,changePort} = require('./WebService');
 let wsActive = false;
 let wsPort = 8000;
 let WSMA = {};//Note: It must be out of DataGen library! It stores the models that is avaliable to web server (Web Server Model Available). It receives the model id, the boolean and the currentDatagen. Model is the Key.
+
+let distributedSystemSocket;
 
 const Json2csvParser = require('json2csv').Parser;
 
@@ -264,6 +266,16 @@ ipc.on('change-WebService', function(event, arg){
                 })
             }
         }
+    }
+});
+
+ipc.on('change-DistributedSystem', function(event, arg){
+    console.log(arg)
+    if(arg.hasOwnProperty("dsPort")) {
+        datagen[currentDataGen].dsPort = arg["dsPort"]
+    }
+    if(arg.hasOwnProperty("dsIpAddress")) {
+        datagen[currentDataGen].ddIpAddress = arg["dsIpAddress"]
     }
 });
 
@@ -1253,20 +1265,40 @@ function sizeFormatter(size, hasUnit) {
 // ========== Distribuited System ===============
 
 async function createServerSocket() {
+
+    //TODO: Mostrar no progressBar que o há um server ativo [S]
+
+    if(generating) {
+        setModalPadrao("Error!", "You already have a generation running!", "error!")
+        return;
+    }
+
+    if(distributedSystemSocket !== undefined) {
+        if(distributedSystemSocket.hasOwnProperty("_slaves")) { //close server
+            //TODO: Are You Sure...
+            distributedSystemSocket.close()
+            setModalPadrao("Success!", "You close the Server successfully!", "success")
+        } else {
+            setModalPadrao("Error!", "You have a Client Distributed System running.", "error")
+        }
+        return
+    }
+
     let clients = {};
 
-    const model = datagen[currentDataGen].exportModel(); console.log(model)
-    const dd_datagen = new datagen()
+    const model = datagen[currentDataGen].exportModel();
+    const {dsPort} = datagen[currentDataGen]
+    const ds_datagen = new DataGen()
 
-    dd_datagen.columns = []
-    dd_datagen.importModel(model)
+    ds_datagen.columns = []
+    ds_datagen.importModel(model)
 
-    clients["id"] = dd_datagen.ID
+    clients["id"] = ds_datagen.ID
 
-    const chunksNumber = dd_datagen.n_lines/dd_datagen.n_sample_lines
+    const chunksNumber = ds_datagen.n_lines/ds_datagen.n_sample_lines
     let chunksCounter = 0
     
-    const server = net.createServer(function (socket) {
+    distributedSystemSocket = net.createServer(function (socket) {
     
         const name = socket.remoteAddress + ":" + socket.remotePort 
     
@@ -1294,7 +1326,7 @@ async function createServerSocket() {
                         socket.write(JSON.stringify(
                             {
                                 code: 2,
-                                "ID": dd_datagen.ID,
+                                "ID": ds_datagen.ID,
                                 "model": model,
                                 "chunk": chunk
                             }
@@ -1325,7 +1357,7 @@ async function createServerSocket() {
             }
         });
     
-    }).listen(5000);
+    }).listen(dsPort);
 
     // Enviar clients para mostrar ao usuário e criar json.
 
@@ -1340,11 +1372,26 @@ async function createServerSocket() {
 
 async function createClientSocket() {
 
-    // Arquivo para salvar o servidor que está enviando solicitação,
-    // Os chunks gerados
+    //TODO: Mostrar no progressBar que o há um cliente ativo [C]
 
-    const ipAddress = datagen[currentDataGen]["dd_ipAddress"]
-    const port = datagen[currentDataGen]["dd_port"]
+    if(generating) {
+        setModalPadrao("Error!", "You already have a generation running!", "error!")
+        return;
+    }
+
+    if(distributedSystemSocket !== undefined) {
+        if(!distributedSystemSocket.hasOwnProperty("_slaves")) { //close client
+            //TODO: Are You Sure...
+            closeConnection()
+            setModalPadrao("Success!", "You close the Client connection successfully!", "success")
+        } else {
+            setModalPadrao("Error!", "You have a Server Distributed System running.", "error")
+        }
+        return
+    }
+
+    const ipAddress = datagen[currentDataGen]["dsIpAddress"]
+    const port = datagen[currentDataGen]["dsPort"]
 
     const clientLog = {
         server: `${ipAddress}_${port}`,
@@ -1356,95 +1403,116 @@ async function createClientSocket() {
 
     const pathToChunks = ""
     
-    const client = new net.Socket(); // Todo: tornar global para melhor controle. Associar à variável generating!
+    distributedSystemSocket = new net.Socket(); // Todo: tornar global para melhor controle. Associar à variável generating!
+
     try {
-        client.connect(port, ipAddress, function() {
-            client.write(JSON.stringify({
+        distributedSystemSocket.connect(port, ipAddress, function (err) {
+            if(err) 
+                throw err
+    
+            distributedSystemSocket.write(JSON.stringify({
                 "code" : 1,
                 "username": username
             }))
+        })
+
+        distributedSystemSocket.on("error", function(e) {
+            if(e.message.includes("ECONNREFUSED")) {
+                console.error("was not possible to connect")
+                setModalPadrao("Error!", "It was not possible to connect. Please, verify the Ip Address and Port if those are correct.", "error")
+            } else {
+                throw e
+            }
+            closeConnection()
+        })
+        
+        distributedSystemSocket.on('data', async function (data) {
+            jdata = JSON.parse(data)
+            if(!jdata.hasOwnProperty("code")) return 
+            const code = jdata['code'];
+        
+            switch(code) {
+                case 2:
+                    model.importModel(jdata['model'])
+                    pathToChunks = path.join(tmpDir, jdata['id'])
+    
+                    if(!await access(pathToChunks))
+                        await mk(pathToChunks)
+                    
+                    try{
+                        await dd_generate(jdata['chunk'])
+                        clientLog['chunks'].push(jdata['chunk'])
+                        distributedSystemSocket.write(JSON.stringify({"code": 4, "chunk": jdata['chunk']}))
+                    } catch(e) {
+                        console.log(e)
+                        console.error("Failed to generate chunk "+jdata['chunk'])
+                    }
+                    break;
+                case 3:
+                    try{
+                        await dd_generate(jdata['chunk'])
+                        clientLog['chunks'].push(jdata['chunk'])
+                        distributedSystemSocket.write(JSON.stringify({"code": 4, "chunk": jdata['chunk']}))
+                    } catch(e) {
+                        console.log(e)
+                        console.error("Failed to generate chunk "+jdata['chunk'])
+                    }
+                    break;
+                case 5:
+                    // Encerrar client
+                    closeConnection()
+                    break;
+                case 6:
+                    //TODO: Verificar formas de recuperação dos arquivos.
+                    break;
+            }
         });
-    } catch(e) {
+    
+        distributedSystemSocket.on('close', function() {
+            //TODO: Avisar que o servidor caiu.
+            //Escrever no progress bar
+            closeConnection()
+            console.log('DS Connection closed');
+        });
+        
+        async function dd_generate(chunk) {
+            // TODO: Verificar cada coluna e modificar o begin de cada gerador sequencial.
+            const targetPath = path.join(pathToChunks, `${chunk}.${model.save_as}`)
+            switch(model.save_as) {
+                case 'json':
+                    await writeFile(
+                        targetPath,
+                        JSON.stringify(
+                            model.generate(model.step_lines)
+                        ),
+                        "utf8"
+                    )
+                    break;
+                case 'csv':
+                case 'tsv':
+                    const parser = new Json2csvParser (
+                        {
+                            fields: model.getDisplayedColumnsNames(),
+                            header: chunk > 0 ? false : true,
+                            delimiter: 
+                                model.save_as === 'csv' ? ',' : '\t'
+                        }
+                    );
+                    const csv = parser.parse(model.generate(model.step_lines));  
+                    await writeFile(targetPath, csv, "utf8");
+                    break;
+            }
+        }
+
+        function closeConnection() {
+            distributedSystemSocket.destroy()
+            distributedSystemSocket = undefined
+        }
+    }
+    catch(e) {
         console.error(e)
-        console.trace("error ao se conectar com servidor de Sistema Distribuído.")
         //avisar ao cliente
         return
-    }
-    
-    client.on('data', async function (data) {
-        jdata = JSON.parse(data)
-        if(!jdata.hasOwnProperty("code")) return 
-        const code = jdata['code'];
-    
-        switch(code) {
-            case 2:
-                model.importModel(jdata['model'])
-                pathToChunks = path.join(tmpDir, jdata['id'])
-
-                if(!await access(pathToChunks))
-                    await mk(pathToChunks)
-                
-                try{
-                    await dd_generate(jdata['chunk'])
-                    clientLog['chunks'].push(jdata['chunk'])
-                    client.write(JSON.stringify({"code": 4, "chunk": jdata['chunk']}))
-                } catch(e) {
-                    console.log(e)
-                    console.error("Houve erro ao gerar esse chunk")
-                }
-                
-                break;
-            case 3:
-                try{
-                    await dd_generate(jdata['chunk'])
-                    clientLog['chunks'].push(jdata['chunk'])
-                    client.write(JSON.stringify({"code": 4, "chunk": jdata['chunk']}))
-                } catch(e) {
-                    console.log(e)
-                    console.error("Houve erro ao gerar esse chunk")
-                }
-                break;
-            case 5:
-                // Encerrar client
-                //client.destroy()
-                break;
-            case 6:
-                //TODO: Verificar formas de recuperação dos arquivos.
-                break;
-        }
-    });
-
-    client.on('close', function() {
-        console.log('Connection closed');
-    });
-    
-    async function dd_generate(chunk) {
-        // TODO: Verificar cada coluna e modificar o begin de cada gerador sequencial.
-        const targetPath = path.join(pathToChunks, `${chunk}.${model.save_as}`)
-        switch(model.save_as) {
-            case 'json':
-                await writeFile(
-                    targetPath,
-                    JSON.stringify(
-                        model.generate(model.step_lines)
-                    ),
-                    "utf8"
-                )
-                break;
-            case 'csv':
-            case 'tsv':
-                const parser = new Json2csvParser (
-                    {
-                        fields: model.getDisplayedColumnsNames(),
-                        header: chunk > 0 ? false : true,
-                        delimiter: 
-                            model.save_as === 'csv' ? ',' : '\t'
-                    }
-                );
-                const csv = parser.parse(model.generate(model.step_lines));  
-                await writeFile(targetPath, csv, "utf8");
-                break;
-        }
     }
 }
 
@@ -1846,6 +1914,8 @@ function configGeneration() {
     configs.modelName = datagen[currentDataGen].name;
     configs.wsActive = wsActive;
     configs.wsPort = wsPort;
+    configs.dsIpAddress = datagen[currentDataGen].dsIpAddress
+    configs.dsPort = datagen[currentDataGen].dsPort
     ipc.send('open-config-datagen-window', configs);
 }
 

@@ -68,10 +68,6 @@
             padding-top:5px;
             background:#ddd;
         }
-        .ativa span, .selected span{
-        }
-        .TabControl #content{
-        }
         .TabControl .conteudo{
             width:100%;
             display:none;
@@ -171,6 +167,7 @@
         let dimensionsInserted = [];
         let datagenInfos = "";
         let wsConfig = {};
+        let dsConfig = {};
 
         ipc.on('configure-datagen', (event, arg) => {
             obj = jQuery.extend(true, {}, arg);
@@ -178,6 +175,9 @@
             // WebService
             $("#wsActive").prop('checked',obj.wsActive);
             $("#wsPort").val(obj.wsPort);
+            console.log(obj.dsIpAddress, obj.dsPort)
+            $("#dsIpAddress").val(obj.dsIpAddress);
+            $("#dsPort").val(obj.dsPort);
             if(!obj.wsActive)
                 $(".webService input[type=number]").attr("disabled","disabled").css("opacity","0.5");
 
@@ -247,6 +247,9 @@
                     if(!jQuery.isEmptyObject(wsConfig)) {
                         ipc.send('change-WebService', wsConfig);
                     }
+                    if(!jQuery.isEmptyObject(dsConfig)) {
+                        ipc.send('change-DistributedSystem', dsConfig);
+                    }
                     ipc.send('change-datagen', obj);
 
                 }else{
@@ -284,11 +287,19 @@
                     $(".webService input[type=number]").attr("disabled","disabled").css("opacity","0.5");
                     wsConfig['wsActive'] = false;
                 }
-                console.log(wsConfig);
             });
 
             $("#wsPort").change(function () {
                 wsConfig['wsPort'] = Number($(this).val());
+            });
+
+            $("#dsIpAddress").change(function () {
+                dsConfig['dsIpAddress'] = String($(this).val());
+            });
+
+            $("#dsPort").change(function () {
+                console.log(Number($(this).val()))
+                dsConfig['dsPort'] = Number($(this).val());
             });
 
             $(".parameterIt").on("drop",function(evt){
@@ -342,7 +353,8 @@
             <!--<h5 class="nav-group-title">Favorites</h5>-->
             <span class="nav-group-item active">General</span>
             <span class="nav-group-item">Parameter Iterator</span>
-            <span class="nav-group-item">WebService</span>
+            <span class="nav-group-item">Web Service</span>
+            <span class="nav-group-item">Distributed System</span>
         </nav>
     </div>
         <div class="conteudo general">
@@ -433,7 +445,21 @@
                 </tr>
 
             </table>
-    </div>
+        </div>
+
+        <div class="conteudo distributedSystem">
+            <table>
+                <tr>
+                    <td><label for="dsIpAddress">Ip Address</label></td>
+                    <td><input id="dsIpAddress" type="text" class="form-control" onkeypress="return event.charCode >= 48 && event.charCode <= 57"></td>
+                </tr>
+                <tr>
+                    <td><label for="dsPort">Port</label></td>
+                    <td><input id="dsPort" type="number" class="form-control" onkeypress="return event.charCode >= 48 && event.charCode <= 57"></td>
+                </tr>
+
+            </table>
+        </div>
     </div>
     <button id="btnCancel" class="btn btn-negative">Cancel</button>
     <button id="btnConfirm" class="btn btn-primary">Confirm</button>
