@@ -3340,7 +3340,7 @@ class DataGen {
         this.save_as = "csv";
         this.header = true;
         this.header_type = true;
-        let column = new Column("Dimension 1");
+        const column = new Column("Dimension 1");
         this.columns = [column];
         this.iterator = {hasIt:false};
         this.ID = "MODEL_"+uniqueID();
@@ -3350,7 +3350,9 @@ class DataGen {
         this.memento = {
             index: 0,
             snapshot: [this.exportModel()]
-        }
+        };
+        this.dd_ipAddress = "";
+        this.dd_port;
     }
 
     get configs(){

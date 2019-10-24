@@ -1,12 +1,13 @@
 
-let fs = require('fs');
-let { promisify } = require('util');
+const fs = require('fs');
+const net = require('net');
+const { promisify } = require('util');
 const electron = require('electron').remote;
 const dialog = electron.dialog;
 const path = require('path');
 const BrowserWindow = electron.BrowserWindow;
 
-let DataGen = require("./datagen/datagen.js");
+const DataGen = require("./datagen/datagen.js");
 let UniformGenerator = DataGen.listOfGens['Uniform Generator'];
 let datagen = [new DataGen()];
 
@@ -31,6 +32,8 @@ const appendFile = promisify(fs.appendFile);
 let generatorEspecialPaste;
 let especialPasteState = 0; //0-Desativado, 1-Cola uma vez, 2-Cola até clicar de voltano botão, 3-Magic
 
+let generating = false;
+
 
 let ipc = require('electron').ipcRenderer;
 
@@ -48,7 +51,8 @@ const Json2csvParser = require('json2csv').Parser;
 let stopGeneration = false; // Stop Data Generation.
 let itFiles = []; //Save the index and paths of Iterator Files.
 
-const platformASpath = process.platform === "darwin" || process.platform === "linux" ? "/var/tmp/B_DataGen_AS/" : process.platform === "win32" ? String(process.env.temp+"\\B_DataGen_AS\\") : false;
+const tmpDir = process.platform === "darwin" || process.platform === "linux" ? "/var/tmp" : process.platform === "win32" ? String(process.env.temp) : false;
+const platformASpath = tmp === false ? false : tmpDir + "/B_DataGen_AS/"
 
 (async () => {
     if ( platformASpath !== false && !await access(platformASpath) )
@@ -418,8 +422,6 @@ function propsConfigs(generator,coluna, new_place){
     }
     tippy('.tooltip-label');
 }
-
-console.log(platformASpath);
 
 $("html").ready(function() {
 
@@ -1006,7 +1008,6 @@ function setModalPadrao(title, content, style="", buttons=[]) {
 
 }
 
-
 function deleteCollumn(){
     if (lastCollumnSelected){
         datagen[currentDataGen].removeColumn(parseInt(lastCollumnSelected.find(".tdIndex").text()) - 1);
@@ -1036,7 +1037,12 @@ async function verifyBackupModels() {
 
 let modal = document.getElementById('myModal');
 
+// =========== Data Generation ==================
 function generateDatas(){
+    if(generating) {
+        setModalPadrao('Error!', 'The system is already generating!', "error");
+        return;
+    }
     try {
         modal.style.display = "block";
         let saveas = datagen[currentDataGen].save_as;
@@ -1056,7 +1062,7 @@ function generateDatas(){
                     $("#percentageGDMessage").text("Error!");
                     return ;
                 }
-
+                generating = true
                 stopGeneration = false; //Não impedir que a geração pare quando usuário tenha parado por algum erro.
                 $("#percentageGDMessage").text("Starting...");
                 $("#percentageCancelIcon").css("display", `block`);
@@ -1069,8 +1075,10 @@ function generateDatas(){
                             $("#percentageGDBar").css("display", `none`);
                             $("#percentageCancelIcon").css("display", `none`);
                             setModalPadrao('Success!', 'Data Saved!', "success");
+                            generating = false
                         }).catch((err) => {
                             catchs(err.message)
+                            generating = false
                         })
                 }
             }
@@ -1135,10 +1143,12 @@ async function generateDataIt(targetPath) {
             $("#percentageGDBar").css("display", `none`);
             datagen[currentDataGen].configs.iterator.generator[datagen[currentDataGen].configs.iterator.parameterIt] = prevValue;
             setModalPadrao('Success!', 'All Files Saved!', "success");
+            generating = false
             itFiles = [];
         })
         .catch( (err) => {
             catchs(err.message);
+            generating = false
         });
 }
 
@@ -1287,6 +1297,205 @@ function sizeFormatter(size, hasUnit) {
         if(hasUnit) size += " TB";
     }
     return size;
+}
+// ========== End Data Generation ===============
+
+// ========== Distribuited System ===============
+
+async function createServerSocket() {
+    let clients = {};
+
+    const model = datagen[currentDataGen].exportModel(); console.log(model)
+    const dd_datagen = new datagen()
+
+    dd_datagen.columns = []
+    dd_datagen.importModel(model)
+
+    clients["id"] = dd_datagen.ID
+
+    const chunksNumber = dd_datagen.n_lines/dd_datagen.n_sample_lines
+    let chunksCounter = 0
+    
+    const server = net.createServer(function (socket) {
+    
+        const name = socket.remoteAddress + ":" + socket.remotePort 
+    
+        if(!client.hasOwnProperty(name))
+            clients[name] = socket;
+    
+        socket.on('data', function (data) {
+            jdata = JSON.parse(data)
+            if(!jdata.hasOwnProperty("code")) return 
+            const code = jdata['code'];
+    
+            switch(code) {
+                case 1:
+                    clients[name]["sentChunk"] = []
+                    clients[name]["receivedChunk"] = []
+    
+                    const chunk = getChunkInteration()
+    
+                    if(!!chunk) {
+                        socket.write(JSON.stringify({code: 5}))
+                        server.close()
+                    } else {
+                        clients[name]["sentChunk"].push(chunk)
+    
+                        socket.write(JSON.stringify(
+                            {
+                                code: 2,
+                                "ID": dd_datagen.ID,
+                                "model": model,
+                                "chunk": chunk
+                            }
+                        ))
+                    }
+                    break;
+                case 4: //TODO: receber o chunk e salvar que este foi concluído com sucesso.
+                    clients[name]["receivedChunk"].push(jdata["chunk"])
+                    const chunk = getChunkInteration()
+    
+                    if(!!chunk) {
+                        socket.write(JSON.stringify({code: 5}))
+                        server.close()
+                    } else {
+                        clients[name]["chunks"].push(chunk)
+    
+                        socket.write(JSON.stringify(
+                            {
+                                code: 3,
+                                "chunk": chunk
+                            }
+                        ))
+                    }
+                    break;
+                case 7:
+                    //TODO: Verificar formas de recuperação dos arquivos.
+                    break;
+            }
+        });
+    
+    }).listen(5000);
+
+    // Enviar clients para mostrar ao usuário e criar json.
+
+    function getChunkInteration() {
+        if (chunksCounter === chunksNumber)
+            return true // codigo 5
+        
+        chunksCounter++
+        return chunksCounter
+    }
+}
+
+async function createClientSocket() {
+
+    // Arquivo para salvar o servidor que está enviando solicitação,
+    // Os chunks gerados
+
+    const ipAddress = datagen[currentDataGen]["dd_ipAddress"]
+    const port = datagen[currentDataGen]["dd_port"]
+
+    const clientLog = {
+        server: `${ipAddress}_${port}`,
+        chunks: []
+    }
+
+    let model = new DataGen()
+    model.columns = []
+
+    const pathToChunks = ""
+    
+    const client = new net.Socket(); // Todo: tornar global para melhor controle. Associar à variável generating!
+    try {
+        client.connect(port, ipAddress, function() {
+            client.write(JSON.stringify({
+                "code" : 1,
+                "username": username
+            }))
+        });
+    } catch(e) {
+        console.error(e)
+        console.trace("error ao se conectar com servidor de Sistema Distribuído.")
+        //avisar ao cliente
+        return
+    }
+    
+    client.on('data', await function (data) {
+        jdata = JSON.parse(data)
+        if(!jdata.hasOwnProperty("code")) return 
+        const code = jdata['code'];
+    
+        switch(code) {
+            case 2:
+                model.importModel(jdata['model'])
+                pathToChunks = tmpDir+"/"+jdata['id']
+
+                if(!await access(pathToChunks))
+                    await mk(pathToChunks)
+                
+                try{
+                    await dd_generate(jdata['chunk'])
+                    clientLog['chunks'].push(jdata['chunk'])
+                    client.write(JSON.stringify({"code": 4, "chunk": jdata['chunk']}))
+                } catch(e) {
+                    console.log(e)
+                    console.error("Houve erro ao gerar esse chunk")
+                }
+                
+                break;
+            case 3:
+                try{
+                    await dd_generate(jdata['chunk'])
+                    clientLog['chunks'].push(jdata['chunk'])
+                    client.write(JSON.stringify({"code": 4, "chunk": jdata['chunk']}))
+                } catch(e) {
+                    console.log(e)
+                    console.error("Houve erro ao gerar esse chunk")
+                }
+                break;
+            case 5:
+                // Encerrar client
+                //client.destroy()
+                break;
+            case 6:
+                //TODO: Verificar formas de recuperação dos arquivos.
+                break;
+        }
+    });
+}
+
+client.on('close', function() {
+	console.log('Connection closed');
+});
+
+async function dd_generate(chunk) {
+    // TODO: Verificar cada coluna e modificar o begin de cada gerador sequencial.
+    const targetPath = `${pathToChunks}/${chunk}.${model.save_as}`
+    switch(model.save_as) {
+        case 'json':
+            await writeFile(
+                targetPath,
+                JSON.stringify(
+                    model.generate(model.step_lines)
+                ),
+                "utf8"
+            )
+            break;
+        case 'csv':
+        case 'tsv':
+            const parser = new Json2csvParser (
+                {
+                    fields: model.getDisplayedColumnsNames(),
+                    header: chunk > 0 ? false : true,
+                    delimiter: 
+                        model.save_as === 'csv' ? ',' : '\t'
+                }
+            );
+            const csv = parser.parse(model.generate(model.step_lines));  
+            await writeFile(targetPath, csv, "utf8");
+            break;
+    }
 }
 
 function addGenerator(){
