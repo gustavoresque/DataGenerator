@@ -1,4 +1,5 @@
 let ctrlKey = false;
+let shiftKey = false;
 
 $(document).keydown(function(e){
     if (e.ctrlKey)
@@ -6,6 +7,12 @@ $(document).keydown(function(e){
         ctrlKey = true;
     }
     else ctrlKey = false;
+
+    if (e.shiftKey)
+    {
+        shiftKey = true;
+    }
+    else shiftKey = false;
 });
 
 $(document).keyup(function(e){
@@ -13,6 +20,11 @@ $(document).keyup(function(e){
     if (ctrlKey)
     {
         ctrlKey = false;
+    }
+
+    if (shiftKey)
+    {
+        shiftKey = false;
     }
 });
 
@@ -60,12 +72,28 @@ class Line extends Drawing{
 }
 
 class Circle extends Drawing{
-    constructor(_points, _id, _globalUpdate, _getAllPath){
-        super(_points, _id, _globalUpdate, _getAllPath);
-        this.radius = Math.sqrt(Math.pow((this.points[1].x - this.points[0].x),2) + Math.pow((this.points[1].y - this.points[0].y),2));;
+    constructor(options){
+        super(options._points, options._id, options._globalUpdate, options._getAllPath);
+        if (options._radius)
+            this.radius = options._radius;
+        else
+            this.radius = Math.sqrt(Math.pow((this.points[1].x - this.points[0].x),2) + Math.pow((this.points[1].y - this.points[0].y),2));;
+
     }
 
     drawPath (){
+        let g = d3.select('g').insert('g');
+        $(g).get(0).__node__ = this;
+        let thisDrawingProperties = $(g).get(0).__node__;
+
+        g.append('path').attr("class", "definitive").attr("id", this.id).attr("d",this.getPath())
+            .style("fill","none").style("stroke","black").style("stroke-width","3px");
+
+        g.attr('class', 'drawing');
+        return g.node();
+    }
+
+    getPath(){
         /*<circle cx="100" cy="100" r="75" />
 
     <path d="
@@ -74,27 +102,17 @@ class Circle extends Drawing{
         a 75,75 0 1,0 150,0
         a 75,75 0 1,0 -150,0
     "/>*/
-    /*<path d="
-        M cx, cy
-        m -r, 0
-        a r,r 0 1,0 (r * 2),0
-        a r,r 0 1,0 -(r * 2),0
-    "/>*/
-        let g = d3.select('g').insert('g');
-        $(g).get(0).__node__ = this;
-        let thisDrawingProperties = $(g).get(0).__node__;
-        let str = '';
-
-        str = "M " + this.points[0].x + ", " + this.points[0].y +
-            " m -" + this.radius + ", 0 " +
-            "a " + this.radius + ", " + this.radius + " 0 1,0 " + this.radius* 2 + ",0 " +
-            "a " + this.radius + ", " + this.radius + " 0 1,0 -" + this.radius* 2 + ",0 ";
-
-        console.log(str);
-
-        g.append('path').attr("class", "definitive").attr("id", this.id).attr("d",str)
-            .style("fill","none").style("stroke","black").style("stroke-width","3px");
-
+        /*<path d="
+            M cx, cy
+            m -r, 0
+            a r,r 0 1,0 (r * 2),0
+            a r,r 0 1,0 -(r * 2),0
+        "/>*/
+        let str =  "M " + this.points[0].x + ", " + this.points[0].y +
+            " M " + (this.points[0].x-this.radius) + ", " + this.points[0].y +
+            " A " + this.radius + ", " + this.radius + " 0 1,0 " + (this.points[0].x+(this.radius)) + ", " + this.points[0].y +
+            " A " + this.radius + ", " + this.radius + " 0 1,0 " + (this.points[0].x-(this.radius)) + ", " + this.points[0].y;
+        return str;
     }
 }
 
@@ -150,11 +168,13 @@ class Bezier extends Drawing{
 
         g.selectAll("circle.control")
             .data(this.points)
-            .enter().append("svg:circle")
-            .attr("fill", "blue")
-            .attr("r", 6)
-            .attr("cx", function (d) { return d.x; })
-            .attr("cy", function (d) { return d.y; })
+            .enter().append(function(d,i){
+                if (i % 3 === 0){
+                    return document.createElementNS('http://www.w3.org/2000/svg', "circle");
+                } else {
+                    return document.createElementNS('http://www.w3.org/2000/svg', "rect");
+                }
+            })
             .call(d3.drag()
                 .on("start", function(d,i) {
                     let delta_x = 0;
@@ -172,13 +192,9 @@ class Bezier extends Drawing{
                         delta_y = thisDrawingProperties.points[i].y - thisDrawingProperties.points[i+1].y;
                     }
                     theta_radians = Math.atan2(delta_y, delta_x);
-
-                    console.log(ctrlKey);
                 })
                 .on("drag", function(d,i) {
                     g.selectAll(".lineGuide").remove();
-
-                    console.log(ctrlKey);
 
                     if(distance < 1 && !ctrlKey){
                         let t = i;
@@ -198,19 +214,21 @@ class Bezier extends Drawing{
                     }else{
                         thisDrawingProperties.points[i].x = d3.mouse(document.getElementById("canvas"))[0];
                         thisDrawingProperties.points[i].y = d3.mouse(document.getElementById("canvas"))[1];
-                        let j = 0;
-                        if(i % 3 === 1){
-                            j = i-1;
-                            thisDrawingProperties.points[j-1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[j].x, thisDrawingProperties.points[j].y, thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y);
-                        }else if(i % 3 === 2){
-                            j = i+1;
-                            if(j+1 < thisDrawingProperties.points.length) thisDrawingProperties.points[j+1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[j].x, thisDrawingProperties.points[j].y, thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y);
-                        }else{
+                        if (shiftKey) {
+                            let j = 0;
+                            if (i % 3 === 1) {
+                                j = i - 1;
+                                thisDrawingProperties.points[j - 1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[j].x, thisDrawingProperties.points[j].y, thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y);
+                            } else if (i % 3 === 2) {
+                                j = i + 1;
+                                if (j + 1 < thisDrawingProperties.points.length) thisDrawingProperties.points[j + 1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[j].x, thisDrawingProperties.points[j].y, thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y);
+                            }
+                        } else if (i % 3 === 0) {
                             let x3 = thisDrawingProperties.points[i].x + (distance * Math.cos(theta_radians));
                             let y3 = thisDrawingProperties.points[i].y + (distance * Math.sin(theta_radians));
-                            thisDrawingProperties.points[i-1] = new Point(x3,y3);
+                            thisDrawingProperties.points[i - 1] = new Point(x3, y3);
 
-                            if(i+1 < thisDrawingProperties.points.length) thisDrawingProperties.points[i+1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y, thisDrawingProperties.points[i-1].x, thisDrawingProperties.points[i-1].y);
+                            if (i + 1 < thisDrawingProperties.points.length) thisDrawingProperties.points[i + 1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y, thisDrawingProperties.points[i - 1].x, thisDrawingProperties.points[i - 1].y);
                         }
                     }
 
@@ -229,7 +247,7 @@ class Bezier extends Drawing{
                     else{
                         distance = Math.sqrt(Math.pow((thisDrawingProperties.points[t].x - thisDrawingProperties.points[t+1].x),2) + Math.pow((thisDrawingProperties.points[t].y - thisDrawingProperties.points[t+1].y),2));
                     }
-                    console.log(distance);
+
                     if (distance <= 5){
                         if (thisDrawingProperties.points[t-1]) thisDrawingProperties.points[t-1] = thisDrawingProperties.points[t];
                         if (thisDrawingProperties.points[t+1]) thisDrawingProperties.points[t+1] = thisDrawingProperties.points[t];
@@ -239,6 +257,19 @@ class Bezier extends Drawing{
                     thisDrawingProperties.pointsInDomain[i] = new Point(xScale.invert(thisDrawingProperties.points[i].x),yScale.invert(thisDrawingProperties.points[i].y));
                     ipc.send('get-path2', thisDrawingProperties.getAllPath());
                 }));
+
+        g.selectAll("circle")
+            .attr("fill", "black")
+            .attr("cx",  function (d) { return d.x; })
+            .attr("cy",  function (d) { return d.y; })
+            .attr("r", 6);
+
+        g.selectAll("rect")
+            .attr("fill", "blue")
+            .attr("x", function (d) { return (d.x-4); })
+            .attr("y", function (d) { return (d.y-4); })
+            .attr("width", 8)
+            .attr("height", 8);
 
         g.attr('class', 'drawing');
         return g.node();
