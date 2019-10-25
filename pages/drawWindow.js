@@ -195,7 +195,6 @@ class Bezier extends Drawing{
                 })
                 .on("drag", function(d,i) {
                     g.selectAll(".lineGuide").remove();
-
                     if(distance < 1 && !ctrlKey){
                         let t = i;
                         if(i % 3 === 1){
@@ -212,6 +211,7 @@ class Bezier extends Drawing{
 
                         if(t+1 < thisDrawingProperties.points.length) thisDrawingProperties.points[t+1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[t].x, thisDrawingProperties.points[t].y, thisDrawingProperties.points[t-1].x, thisDrawingProperties.points[t-1].y);
                     }else{
+                        console.log((distance < 1) + " | " + !ctrlKey + " | " + i + " | " + (distance < 1 && !ctrlKey));
                         thisDrawingProperties.points[i].x = d3.mouse(document.getElementById("canvas"))[0];
                         thisDrawingProperties.points[i].y = d3.mouse(document.getElementById("canvas"))[1];
                         if (shiftKey) {
@@ -223,7 +223,8 @@ class Bezier extends Drawing{
                                 j = i + 1;
                                 if (j + 1 < thisDrawingProperties.points.length) thisDrawingProperties.points[j + 1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[j].x, thisDrawingProperties.points[j].y, thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y);
                             }
-                        } else if (i % 3 === 0) {
+                        }
+                        if (i % 3 === 0) {
                             let x3 = thisDrawingProperties.points[i].x + (distance * Math.cos(theta_radians));
                             let y3 = thisDrawingProperties.points[i].y + (distance * Math.sin(theta_radians));
                             thisDrawingProperties.points[i - 1] = new Point(x3, y3);

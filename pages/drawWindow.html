@@ -376,13 +376,18 @@
                 element.getPoints = false;
                 previewPath = [];
                 selectingPath = [];
-                document.body.classList.remove('busy-cursor');
+                //document.body.classList.remove('busy-cursor');
                 update();
             }else if (keycode == '46'){//DEL
                 if (selectedPath >= 0){
-                    drawings.splice(selectedPath, 1);
+                    drawings.forEach(function(e,i,o){
+                        if(e.id === selectedPath){
+                            o.splice(i,1);
+                        }
+                    });
                     selectedPath = -1;
                     update();
+                    ipc.send('get-path2', getAllPath());
                 }
             }else{
                 Drawing.listOfDrawings['Bezier'].eventKey = event;
