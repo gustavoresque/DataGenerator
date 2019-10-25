@@ -1777,22 +1777,19 @@ function reloadModelsIcon () {
 
 function renameModel(i=currentDataGen) {
 
-    const id = datagen[i].name.toLowerCase().replace(' ','')
+    const id = datagen[i].ID.toLowerCase().replace("_", "").replace(".","")
     let title = $(`#${id}`).text();
+    console.log(id)
+    console.log(title)
     $(`#${id}`).empty();
     $(`#${id}`).append($("<input/>").attr("type", "text").blur(function(){
         const name = $(this).val();
 
         if(!name || name === datagen[i].name) return showModels()
-
-        if(!uniqueModelName(i, name)) {
-            setModalPadrao("Error!", "A model already have this name!", "error")
-            renameModel(i)
-        } else {
-            datagen[i].name = $(this).val();
-            showModels();
-            hasChanged();
-        }
+        
+        datagen[i].name = $(this).val();
+        showModels();
+        hasChanged();
     }))
     $(`#${id}`).find("input").focus()
     $(`#${id}`).find("input").val(title)
@@ -1923,7 +1920,7 @@ function showModels(){
     $("#tabs").empty();
 
     for(let i = 0; i < datagen.length; i++){
-        let idNameModel = datagen[i].name.toLowerCase().replace(' ','');
+        let idNameModel = datagen[i].ID.toLowerCase().replace("_", "").replace(".","");
 
         let tabButton = $("<li/>").attr('id', idNameModel).text(datagen[i].name).append(
             $("<span/>").addClass("icon")).append(
@@ -1982,29 +1979,11 @@ function showModels(){
     reloadModelsIcon();
 }
 
-function uniqueModelName(curIndex, name) {
-    let nameok = true
-    for (let i = 0; i < datagen.length; i++) {
-        if(datagen[i].name === name && i !== curIndex) {
-            nameok = false
-            break;
-        }   
-    }
-    return nameok
-}
-
 function createNewModel () {
     datagen.push(new DataGen());
 
     currentDataGen = datagen.length-1;
     let name = datagen[currentDataGen].name + " " + datagen.length;
-    let nameNumber = 2
-    //Necessary because the model tab id depends on the model name.
-    if(datagen.length !== 1) {
-        while(!uniqueModelName(currentDataGen)) {
-            name = datagen[currentDataGen].name + " " + nameNumber++
-        }
-    }
     datagen[currentDataGen].name = name
 
     $("#leftSideBar").empty();
