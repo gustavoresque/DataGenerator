@@ -1266,6 +1266,8 @@ function sizeFormatter(size, hasUnit) {
 
 async function createServerSocket() {
 
+    console.log("server!")
+
     //TODO: Mostrar no progressBar que o há um server ativo [S]
 
     if(generating) {
@@ -1300,7 +1302,9 @@ async function createServerSocket() {
     
     distributedSystemSocket = net.createServer(function (socket) {
     
-        const name = socket.remoteAddress + ":" + socket.remotePort 
+        const name = socket.remoteAddress + ":" + socket.remotePort
+        
+        console.log(name)
     
         if(!client.hasOwnProperty(name))
             clients[name] = socket;
@@ -1312,15 +1316,18 @@ async function createServerSocket() {
     
             switch(code) {
                 case 1:
+                    console.log("case 1")
                     clients[name]["sentChunk"] = []
                     clients[name]["receivedChunk"] = []
     
                     const chunk = getChunkInteration()
     
                     if(!!chunk) {
+                        console.log("case 1: 1")
                         socket.write(JSON.stringify({code: 5}))
                         server.close()
                     } else {
+                        console.log("case 1: 2")
                         clients[name]["sentChunk"].push(chunk)
     
                         socket.write(JSON.stringify(
@@ -1334,13 +1341,16 @@ async function createServerSocket() {
                     }
                     break;
                 case 4: //TODO: receber o chunk e salvar que este foi concluído com sucesso.
+                    console.log("case 4")
                     clients[name]["receivedChunk"].push(jdata["chunk"])
                     const chunk = getChunkInteration()
     
                     if(!!chunk) {
+                        console.log("case 4: 1")
                         socket.write(JSON.stringify({code: 5}))
                         server.close()
                     } else {
+                        console.log("case 4: 2")
                         clients[name]["chunks"].push(chunk)
     
                         socket.write(JSON.stringify(
@@ -1371,6 +1381,8 @@ async function createServerSocket() {
 }
 
 async function createClientSocket() {
+
+    console.log("client")
 
     //TODO: Mostrar no progressBar que o há um cliente ativo [C]
 
@@ -1411,9 +1423,10 @@ async function createClientSocket() {
                 throw err
     
             distributedSystemSocket.write(JSON.stringify({
-                "code" : 1,
-                "username": username
+                "code" : 1
             }))
+
+            console.log("connect")
         })
 
         distributedSystemSocket.on("error", function(e) {
@@ -1435,12 +1448,15 @@ async function createClientSocket() {
                 case 2:
                     model.importModel(jdata['model'])
                     pathToChunks = path.join(tmpDir, jdata['id'])
+                    console.log(model)
+                    console.log(pathToChunks)
     
                     if(!await access(pathToChunks))
                         await mk(pathToChunks)
                     
                     try{
                         await dd_generate(jdata['chunk'])
+                        console.log("gerou: ", jdata['chunk'])
                         clientLog['chunks'].push(jdata['chunk'])
                         distributedSystemSocket.write(JSON.stringify({"code": 4, "chunk": jdata['chunk']}))
                     } catch(e) {
