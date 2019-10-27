@@ -275,7 +275,7 @@ ipc.on('change-DistributedSystem', function(event, arg){
         datagen[currentDataGen].dsPort = arg["dsPort"]
     }
     if(arg.hasOwnProperty("dsIpAddress")) {
-        datagen[currentDataGen].ddIpAddress = arg["dsIpAddress"]
+        datagen[currentDataGen].dsIpAddress = arg["dsIpAddress"]
     }
 });
 
