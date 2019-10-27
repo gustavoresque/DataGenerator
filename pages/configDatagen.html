@@ -450,8 +450,8 @@
         <div class="conteudo distributedSystem">
             <table>
                 <tr>
-                    <td><label for="dsIpAddress">Ip Address</label></td>
-                    <td><input id="dsIpAddress" type="text" class="form-control"></td>
+                    <td><label for="dsIpAddress">IP Address</label></td>
+                    <td><input id="dsIpAddress" type="text" class="form-control" onkeypress="return event.charCode >= 48 && event.charCode <= 57 || event.charCode === 46"></td>
                 </tr>
                 <tr>
                     <td><label for="dsPort">Port</label></td>
