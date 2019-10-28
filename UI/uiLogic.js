@@ -1295,7 +1295,7 @@ async function startServerSocket() {
     ds_datagen.columns = []
     ds_datagen.importModel(model)
 
-    const chunksNumber = Math.ceil(ds_datagen.n_lines/ds_datagen.n_sample_lines)
+    const chunksNumber = Math.ceil(ds_datagen.n_lines/ds_datagen.step_lines)
 
     ipc.send('startServerSocket', [dsPort, ds_datagen.ID, model, chunksNumber]);
 }
@@ -1303,6 +1303,10 @@ async function startServerSocket() {
 // ipc.on('delete-model',() => {
     
 // })
+
+ipc.on('dsGenerationDone', function (event, arg) {
+    console.log("clients", arg)
+})
 
 let dsClientLog;
 let pathToDsChunks = ""
@@ -1351,17 +1355,17 @@ ipc.on("dsData", async function(event, arg) {
     switch(code) {
         case 2:
             dsmodel.importModel(arg['model'])
-            pathToChunks = path.join(tmpDir, arg['id'])
-            console.log(pathToChunks)
+            pathToDsChunks = path.join(tmpDir, arg['ID'])
+            console.log(pathToDsChunks)
 
-            if(!await access(pathToChunks))
-                await mk(pathToChunks)
+            if(!await access(pathToDsChunks))
+                await mk(pathToDsChunks)
             
             try{
                 await dd_generate(arg['chunk'])
                 console.log("gerou: ", arg['chunk'])
-                clientLog['chunks'].push(arg['chunk'])
-                ipc.send("chunkgenerated", arg['chunk'])
+                dsClientLog['chunks'].push(arg['chunk'])
+                ipc.send("chunkGenerated", arg['chunk'])
                 
             } catch(e) {
                 console.log(e)
@@ -1371,8 +1375,8 @@ ipc.on("dsData", async function(event, arg) {
         case 3:
             try{
                 await dd_generate(arg['chunk'])
-                clientLog['chunks'].push(arg['chunk'])
-                ipc.send("chunkgenerated", arg['chunk'])
+                dsClientLog['chunks'].push(arg['chunk'])
+                ipc.send("chunkGenerated", arg['chunk'])
             } catch(e) {
                 console.log(e)
                 console.error("Failed to generate chunk "+arg['chunk'])
@@ -1389,13 +1393,13 @@ ipc.on("dsData", async function(event, arg) {
 
     async function dd_generate(chunk) {
         // TODO: Verificar cada coluna e modificar o begin de cada gerador sequencial.
-        const targetPath = path.join(pathToChunks, `${chunk}.${model.save_as}`)
-        switch(model.save_as) {
+        const targetPath = path.join(pathToDsChunks, `${chunk}.${dsmodel.save_as}`)
+        switch(dsmodel.save_as) {
             case 'json':
                 await writeFile(
                     targetPath,
                     JSON.stringify(
-                        model.generate(model.step_lines)
+                        dsmodel.generate(dsmodel.step_lines)
                     ),
                     "utf8"
                 )
@@ -1404,13 +1408,13 @@ ipc.on("dsData", async function(event, arg) {
             case 'tsv':
                 const parser = new Json2csvParser (
                     {
-                        fields: model.getDisplayedColumnsNames(),
+                        fields: dsmodel.getDisplayedColumnsNames(),
                         header: chunk > 0 ? false : true,
                         delimiter: 
-                            model.save_as === 'csv' ? ',' : '\t'
+                            dsmodel.save_as === 'csv' ? ',' : '\t'
                     }
                 );
-                const csv = parser.parse(model.generate(model.step_lines));  
+                const csv = parser.parse(dsmodel.generate(dsmodel.step_lines));  
                 await writeFile(targetPath, csv, "utf8");
                 break;
         }

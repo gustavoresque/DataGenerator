@@ -764,8 +764,11 @@ function serverSocket(port, id, model, chunksNumber) {
         
         console.log(name)
     
-        if(!clients.hasOwnProperty(name))
-            clients[name] = socket;
+        if(!clients.hasOwnProperty(name)) {
+            clients[name] = {};
+            clients[name]["socket"] = socket;
+        }
+            
     
         socket.on('data', function (data) {
             jdata = JSON.parse(data)
@@ -790,6 +793,7 @@ function serverSocket(port, id, model, chunksNumber) {
                         console.log("case 1: 1")
                         socket.write(JSON.stringify({code: 5}))
                         closeSocket("server")
+                        mainWindow.webContents.send('dsGenerationDone', clients);
                     } else {
                         console.log("case 1: 2")
                         clients[name]["sentChunk"].push(chunk)
@@ -797,7 +801,7 @@ function serverSocket(port, id, model, chunksNumber) {
                         socket.write(JSON.stringify(
                             {
                                 code: 2,
-                                "ID": id,
+                                "id": id,
                                 "model": model,
                                 "chunk": chunk
                             }
@@ -813,9 +817,10 @@ function serverSocket(port, id, model, chunksNumber) {
                         console.log("case 4: 1")
                         socket.write(JSON.stringify({code: 5}))
                         closeSocket("server")
+                        mainWindow.webContents.send('dsGenerationDone', clients);
                     } else {
                         console.log("case 4: 2")
-                        clients[name]["chunks"].push(chunk)
+                        clients[name]["sentChunk"].push(chunk)
     
                         socket.write(JSON.stringify(
                             {
@@ -894,7 +899,7 @@ function clientSocket(port, ipAddress) {
 }
 
 ipcMain.on("chunkGenerated", function (event, chunk) {
-    distributedSystemSocket.write(JSON.stringify({"code": 4, "chunk": arg['chunk']}))
+    distributedSystemSocket.write(JSON.stringify({"code": 4, "chunk": chunk}))
 })
 
 // This method will be called when Electron has finished
