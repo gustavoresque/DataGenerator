@@ -1295,7 +1295,7 @@ async function startServerSocket() {
     ds_datagen.columns = []
     ds_datagen.importModel(model)
 
-    const chunksNumber = ds_datagen.n_lines/ds_datagen.n_sample_lines
+    const chunksNumber = Math.ceil(ds_datagen.n_lines/ds_datagen.n_sample_lines)
 
     ipc.send('startServerSocket', [dsPort, ds_datagen.ID, model, chunksNumber]);
 }

@@ -728,7 +728,29 @@ ipcMain.on("startClientSocket", function (event, arg) {
     clientSocket(...arg)
 });
 
+function closeSocket(socket) {
+    try {
+        if(socket === "server") {
+            distributedSystemSocket.close()
+        } else if(socket === "client"){
+            try {
+                distributedSystemSocket.destroy()
+            } catch(e) {
+                //Provavelmente o distributedSystemSocket é undefined
+                console.error(e)
+            }
+        }
+        distributedSystemSocket = undefined
+        mainWindow.webContents.send('socketClosed');
+    } catch(e) {
+        throw e
+    }
+    
+}
+
 function serverSocket(port, id, model, chunksNumber) {
+
+    console.log(chunksNumber)
 
     let chunksCounter = 0
 
@@ -764,10 +786,10 @@ function serverSocket(port, id, model, chunksNumber) {
     
                     chunk = getChunkInteration()
     
-                    if(!!chunk) {
+                    if(chunk === "done") {
                         console.log("case 1: 1")
                         socket.write(JSON.stringify({code: 5}))
-                        server.close()
+                        closeSocket("server")
                     } else {
                         console.log("case 1: 2")
                         clients[name]["sentChunk"].push(chunk)
@@ -787,10 +809,10 @@ function serverSocket(port, id, model, chunksNumber) {
                     clients[name]["receivedChunk"].push(jdata["chunk"])
                     chunk = getChunkInteration()
     
-                    if(!!chunk) {
+                    if(chunk === "done") {
                         console.log("case 4: 1")
                         socket.write(JSON.stringify({code: 5}))
-                        server.close()
+                        closeSocket("server")
                     } else {
                         console.log("case 4: 2")
                         clients[name]["chunks"].push(chunk)
@@ -811,35 +833,12 @@ function serverSocket(port, id, model, chunksNumber) {
     
     }).listen(port);
 
-    console.log(distributedSystemSocket)
-
     function getChunkInteration() {
         if (chunksCounter === chunksNumber)
-            return true // codigo 5
+            return "done" // codigo 5
         
-        chunksCounter++
-        return chunksCounter
+        return chunksCounter++
     }
-}
-
-function closeSocket(socket) {
-    try {
-        if(socket === "server") {
-            distributedSystemSocket.close()
-        } else if(socket === "client"){
-            try {
-                distributedSystemSocket.destroy()
-            } catch(e) {
-                //Provavelmente o distributedSystemSocket é undefined
-                console.error(e)
-            }
-        }
-        distributedSystemSocket = undefined
-        mainWindow.webContents.send('socketClosed');
-    } catch(e) {
-        throw e
-    }
-    
 }
 
 ipcMain.on("closeSocket", function (event, arg) {
@@ -874,7 +873,8 @@ function clientSocket(port, ipAddress) {
         
         distributedSystemSocket.on('data', async function (data) {
             jdata = JSON.parse(data)
-            if(!jdata.hasOwnProperty("code")) return 
+            if(!jdata.hasOwnProperty("code")) return
+            mainWindow.webContents.send('dsData', jdata);
         });
     
         distributedSystemSocket.on('close', function() {
