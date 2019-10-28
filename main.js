@@ -14,6 +14,7 @@ const BrowserWindow = electron.BrowserWindow;
 
 const path = require('path');
 const url = require('url');
+const net = require('net')
 
 const menu = new Menu();
 
@@ -368,13 +369,13 @@ function createWindow () {
                 {
                     label: 'Toggle Server Distributed System',
                     click () {
-                        mainWindow.webContents.executeJavaScript('createServerSocket();');
+                        mainWindow.webContents.executeJavaScript('startServerSocket();');
                     }
                 },
                 {
                     label: 'Toggle Client Distributed System',
                     click () {
-                        mainWindow.webContents.executeJavaScript('createClientSocket();');
+                        mainWindow.webContents.executeJavaScript('startClientSocket();');
                     }
                 },
                 { type: 'separator' },
@@ -709,7 +710,192 @@ function initServerWebSocket() {
     });
 
 }
+/*
 
+ipcMain.on("get-path2", function (event, arg) {
+    mainWindow.webContents.send('get-path', arg);
+});
+
+*/
+
+let distributedSystemSocket;
+
+ipcMain.on("startServerSocket", function (event, arg) {
+    serverSocket(...arg)
+});
+
+ipcMain.on("startClientSocket", function (event, arg) {
+    clientSocket(...arg)
+});
+
+function serverSocket(port, id, model, chunksNumber) {
+
+    let chunksCounter = 0
+
+    let clients = {};
+
+    clients["id"] = id
+
+    distributedSystemSocket = net.createServer(function (socket) {
+    
+        const name = socket.remoteAddress + ":" + socket.remotePort
+        
+        console.log(name)
+    
+        if(!clients.hasOwnProperty(name))
+            clients[name] = socket;
+    
+        socket.on('data', function (data) {
+            jdata = JSON.parse(data)
+            if(!jdata.hasOwnProperty("code")) {
+                delete clients[name]
+                return
+            }
+
+            const code = jdata['code'];
+
+            let chunk;
+    
+            switch(code) {
+                case 1:
+                    console.log("case 1")
+                    clients[name]["sentChunk"] = []
+                    clients[name]["receivedChunk"] = []
+    
+                    chunk = getChunkInteration()
+    
+                    if(!!chunk) {
+                        console.log("case 1: 1")
+                        socket.write(JSON.stringify({code: 5}))
+                        server.close()
+                    } else {
+                        console.log("case 1: 2")
+                        clients[name]["sentChunk"].push(chunk)
+    
+                        socket.write(JSON.stringify(
+                            {
+                                code: 2,
+                                "ID": id,
+                                "model": model,
+                                "chunk": chunk
+                            }
+                        ))
+                    }
+                    break;
+                case 4: //TODO: receber o chunk e salvar que este foi concluído com sucesso.
+                    console.log("case 4")
+                    clients[name]["receivedChunk"].push(jdata["chunk"])
+                    chunk = getChunkInteration()
+    
+                    if(!!chunk) {
+                        console.log("case 4: 1")
+                        socket.write(JSON.stringify({code: 5}))
+                        server.close()
+                    } else {
+                        console.log("case 4: 2")
+                        clients[name]["chunks"].push(chunk)
+    
+                        socket.write(JSON.stringify(
+                            {
+                                code: 3,
+                                "chunk": chunk
+                            }
+                        ))
+                    }
+                    break;
+                case 7:
+                    //TODO: Verificar formas de recuperação dos arquivos.
+                    break;
+            }
+        });
+    
+    }).listen(port);
+
+    console.log(distributedSystemSocket)
+
+    function getChunkInteration() {
+        if (chunksCounter === chunksNumber)
+            return true // codigo 5
+        
+        chunksCounter++
+        return chunksCounter
+    }
+}
+
+function closeSocket(socket) {
+    try {
+        if(socket === "server") {
+            distributedSystemSocket.close()
+        } else if(socket === "client"){
+            try {
+                distributedSystemSocket.destroy()
+            } catch(e) {
+                //Provavelmente o distributedSystemSocket é undefined
+                console.error(e)
+            }
+        }
+        distributedSystemSocket = undefined
+        mainWindow.webContents.send('socketClosed');
+    } catch(e) {
+        throw e
+    }
+    
+}
+
+ipcMain.on("closeSocket", function (event, arg) {
+    closeSocket(arg)
+});
+
+function clientSocket(port, ipAddress) {
+
+    distributedSystemSocket = new net.Socket(); // Todo: tornar global para melhor controle. Associar à variável generating!
+
+    try {
+        distributedSystemSocket.connect(port, ipAddress, function (err) {
+            if(err) 
+                throw err
+    
+            distributedSystemSocket.write(JSON.stringify({
+                "code" : 1
+            }))
+
+            console.log("connect")
+        })
+
+        distributedSystemSocket.on("error", function(e) {
+            if(e.message.includes("ECONNREFUSED")) {
+                console.error("was not possible to connect")
+                mainWindow.webContents.send('dsErrorConnect');
+            } else {
+                throw e
+            }
+            closeSocket("client")
+        })
+        
+        distributedSystemSocket.on('data', async function (data) {
+            jdata = JSON.parse(data)
+            if(!jdata.hasOwnProperty("code")) return 
+        });
+    
+        distributedSystemSocket.on('close', function() {
+            //TODO: Avisar que o servidor caiu.
+            //TODO: Avisar a todos os clients que a geração acabou, se não via ser um erro aqui.
+            //Escrever no progress bar
+            closeSocket("client")
+            console.log('DS Connection closed');
+        });
+    }
+    catch(e) {
+        console.error(e)
+        //avisar ao cliente
+        return
+    }
+
+}
+
+ipcMain.on("chunkGenerated", function (event, chunk) {
+    distributedSystemSocket.write(JSON.stringify({"code": 4, "chunk": arg['chunk']}))
+})
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
