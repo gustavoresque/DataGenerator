@@ -1497,7 +1497,7 @@ ipc.on("dsData", async function(event, arg) {
             break;
         case 5:
             // Encerrar client
-            const log, text = showDsLog("client", log)
+            const [log, text] = showDsLog("client", log)
             setModalPadrao("Success!", text, "success", [{
                 id:"btn_save_log",
                 color: "primary",
