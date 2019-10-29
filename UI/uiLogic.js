@@ -1444,9 +1444,6 @@ function startClientSocket() {
                 name: "Yes",
                 func: () => {
                     closeReason = "user"
-                    $("#percentageGDMessage").text(`Client Connection Lost`)
-                    closeDSClient()
-                    setModalPadrao("Success!", "You close the Client connection successfully!", "success")
                 }
             }
         ])
@@ -1483,6 +1480,12 @@ function closeDSClient() {
         $("#percentageGDMessage").text(`Failed`)
 }
 
+function userCloseConnection() {
+    $("#percentageGDMessage").text(`Client Connection Lost`)
+    closeDSClient()
+    setModalPadrao("Success!", "You close the Client connection successfully!", "success")
+}
+
 ipc.on("dsData", async function(event, arg) {
     const code = arg['code'];
     let { log, model } = dsClientSocket
@@ -1502,12 +1505,12 @@ ipc.on("dsData", async function(event, arg) {
                 await mk(log.path)
             
             try{
-                if(closeReason) break
                 await dd_generate(arg['chunk'])
-                if(closeReason) break
                 $("#percentageGDMessage").html(`Chunk: ${arg.chunk}Chunks: ${log.chunks.length}`)
                 log['chunks'].push(arg['chunk'])
                 ipc.send("chunkGenerated", arg['chunk'])
+                if(closeReason === "user")
+                    userCloseConnection()
                 
             } catch(e) {
                 console.log(e)
@@ -1516,12 +1519,13 @@ ipc.on("dsData", async function(event, arg) {
             break;
         case 3:
             try{
-                if(closeReason) break
+                
                 await dd_generate(arg['chunk'])
                 log['chunks'].push(arg['chunk'])
-                if(closeReason) break
                 $("#percentageGDMessage").text(`Chunk: ${arg.chunk}\n Chunks: ${log.chunks.length}`)
                 ipc.send("chunkGenerated", arg['chunk'])
+                if(closeReason === "user")
+                    userCloseConnection()
             } catch(e) {
                 console.log(e)
                 console.error("Failed to generate chunk "+arg['chunk'])
