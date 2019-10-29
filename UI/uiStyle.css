@@ -333,6 +333,7 @@ button.btn[disabled] > img {
 .fixed-window-content{
     display: inline-block;
     text-align: initial;
+    overflow-y: scroll;
 }
 .fixed-window-content > .content{
     width: 300px;
@@ -372,5 +373,6 @@ button.btn[disabled] > img {
     font-size: 1.3em;
     font-weight: 400;
     text-align: justify;
+    overflow-y: scroll;
 }
 /*-------------------------------------*/

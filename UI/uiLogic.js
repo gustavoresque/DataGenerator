@@ -1327,7 +1327,9 @@ function startServerSocket() {
 
     const chunksNumber = Math.ceil(ds_datagen.n_lines/ds_datagen.step_lines)
 
-    ipc.send('startServerSocket', [dsServerSocket.port, ds_datagen.ID, model, chunksNumber]);
+    const id = ds_datagen.ID.replace(".","")
+
+    ipc.send('startServerSocket', [dsServerSocket.port, id, model, chunksNumber]);
 }
 
 // ipc.on('delete-model',() => {
@@ -1336,6 +1338,7 @@ function startServerSocket() {
 
 ipc.on('dsGenerationDone', function (event, arg) {
     console.log("clients", arg)
+    $("#turnOffServer").remove()
     dsServerSocket.on = false
     setModalPadrao("Success!", `The DS generation was completed!<br><br>See the statistics below:<br><br>${showDsLog("server", arg)}`)
 })
@@ -1355,18 +1358,18 @@ function showDsLog(type, log) {
         
         for(client of Object.keys(log)) {
             delete log[client][socket]
-            text += "&emsp"
+            text += "&emsp; "
             text += "Server name: "+client
             
-            text += "<br><br>&emsp&emsp"
+            text += "<br><br> &emsp; &emsp;"
             text += "Sent Chunks:"
             for(let i of log[client]["sentChunks"]) {text += ` ${i}`}
 
-            text += "<br><br>&emsp&emsp"
+            text += "<br><br> &emsp; &emsp;"
             text += "Received Chunks:"
             for(let i of log[client]["receivedChunk"]) {text += ` ${i}`}
 
-            text += "<br><br>&emsp&emsp"
+            text += "<br><br> &emsp; &emsp; "
             text += "Undone Chunks:"
             const diff = _.difference( log[client]["sentChunks"], log[client]["receivedChunk"] )
             if(diff.length === 0) text += " None"
@@ -1374,18 +1377,17 @@ function showDsLog(type, log) {
     
         }
     } else if (type === "client") {
-        text += "&emsp"
         text += "Server name: "+log["server"]
 
-        text += "<br><br>&emsp"
+        text += "<br><br>"
         text += "ID: "
         text += log["id"]
 
-        text += "<br><br>&emsp"
+        text += "<br><br>"
         text += "Path: "
         text += log["path"]
             
-        text += "<br><br>&emsp"
+        text += "<br><br>"
         text += "Chunks:"
         for(let i of log["chunks"]) {text += ` ${i}`}
 
@@ -1503,7 +1505,7 @@ ipc.on("dsData", async function(event, arg) {
                 color: "primary",
                 name: "Save Log",
                 func: async () => {
-                    await writeFile(path.join(path.dirname(log.path), "log_"+log.id))
+                    await writeFile(path.join(log.path, "log_"+log.id+".json"), JSON.stringify(statsLog))
                     setModalPadrao("Success!", "File saved successfully!", "success")
                 }
             }])
@@ -1556,8 +1558,6 @@ ipc.on("dsClientClose", function() {
     setModalPadrao("Error!", "The Client Connection was closed for some unknown reason.", "error")
     console.error(arg)
 })
-
-
 
 function addGenerator(){
     datagen[currentDataGen].addColumn("Dimension "+(++datagen[currentDataGen].columnsCounter));
