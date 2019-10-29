@@ -792,8 +792,8 @@ function serverSocket(port, id, model, chunksNumber) {
     
                     if(chunk === "done") {
 
-                        for(let client of clients.keys()) {
-                            client.socket.write(JSON.stringify({code: 5}))
+                        for(let client of Object.keys(clients)) {
+                            clients[client].socket.write(JSON.stringify({code: 5}))
                         }
                         closeSocket("server")
                         mainWindow.webContents.send('dsGenerationDone', clients);
@@ -821,8 +821,8 @@ function serverSocket(port, id, model, chunksNumber) {
     
                     if(chunk === "done") {
 
-                        for(let client of clients.keys()) {
-                            client.socket.write(JSON.stringify({code: 5}))
+                        for(let client of Object.keys(clients)) {
+                            clients[client].socket.write(JSON.stringify({code: 5}))
                         }
                         closeSocket("server")
                         mainWindow.webContents.send('dsGenerationDone', clients);

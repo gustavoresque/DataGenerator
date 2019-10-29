@@ -1343,7 +1343,7 @@ ipc.on('dsGenerationDone', function (event, arg) {
 let dsClientSocket = {
     on: false,
     mode: "generating", // generating ou recovering
-    ipAddress: "127.0.0.1",
+    ipAddress: "192.168.0.3",
     port: 5000,
     log: {},
     model: new DataGen(),
@@ -1422,7 +1422,13 @@ ipc.on("dsData", async function(event, arg) {
         case 2:
             model.importModel(arg['model'], true)
             log.id = arg['id']
-            log.path = path.join(tmpDir, "dsFolder", arg['id'])
+
+            const dsFolder = path.join(tmpDir, "dsFolder")
+            if(!await access(dsFolder))
+                await mk(dsFolder)
+           
+
+            log.path = path.join(dsFolder, arg['id'])
             console.log(log.path)
 
             if(!await access(log.path))
@@ -1462,8 +1468,9 @@ ipc.on("dsData", async function(event, arg) {
 
     async function dd_generate(chunk) {
         // TODO: Verificar cada coluna e modificar o begin de cada gerador sequencial.
-        const targetPath = path.join(dsClientSocket.log.path, `${chunk}.${dsmodel.save_as}`)
         let {model} = dsClientSocket
+        const targetPath = path.join(dsClientSocket.log.path, `${chunk}.${model.save_as}`)
+        
         switch(model.save_as) {
             case 'json':
                 await writeFile(
