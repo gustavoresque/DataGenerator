@@ -3349,8 +3349,6 @@ class DataGen {
             index: 0,
             snapshot: [this.exportModel()]
         };
-        this.dsIpAddress = "127.0.0.1";
-        this.dsPort = 5000;
     }
 
     get configs(){

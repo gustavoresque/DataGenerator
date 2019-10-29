@@ -159,6 +159,7 @@
 
     <script>
         let ipc = require('electron').ipcRenderer;
+        const { clipboard } = require('electron')
         let DataGen = require("../datagen/datagen.js");
 
         let obj = {};
@@ -175,9 +176,15 @@
             // WebService
             $("#wsActive").prop('checked',obj.wsActive);
             $("#wsPort").val(obj.wsPort);
-            console.log(obj.dsIpAddress, obj.dsPort)
-            $("#dsIpAddress").val(obj.dsIpAddress);
-            $("#dsPort").val(obj.dsPort);
+
+            $("#dsServerIpAddress").val(obj.dsServerIpAddress);
+            $("#dsServerPort").val(obj.dsServerPort);
+            $("#dsServerMode").val(obj.dsServerMode).change();
+            
+            $("#dsClientIpAddress").val(obj.dsClientIpAddress);
+            $("#dsClientPort").val(obj.dsClientPort);
+            $("#dsClientMode").val(obj.dsClientMode).change();
+
             if(!obj.wsActive)
                 $(".webService input[type=number]").attr("disabled","disabled").css("opacity","0.5");
 
@@ -293,13 +300,33 @@
                 wsConfig['wsPort'] = Number($(this).val());
             });
 
-            $("#dsIpAddress").change(function () {
-                dsConfig['dsIpAddress'] = String($(this).val());
+            $("#dsServerIpAddress").click(function () {
+                if(process.platform === 'darwin') {
+                    clipboard.writeText(obj.dsServerIpAddress,'selection');
+                }else {
+                    clipboard.writeText(obj.dsServerIpAddress);
+                }
+                alert("IP Address copied!")
             });
 
-            $("#dsPort").change(function () {
-                console.log(Number($(this).val()))
-                dsConfig['dsPort'] = Number($(this).val());
+            $("#dsServerPort").change(function () {
+                dsConfig['dsServerPort'] = Number($(this).val());
+            });
+
+            $("#dsServerMode").change(function () {
+                dsConfig['dsServerMode'] = String($(this).val());
+            });
+
+            $("#dsClientIpAddress").change(function () {
+                dsConfig['dsClientIpAddress'] = String($(this).val());
+            });
+
+            $("#dsClientPort").change(function () {
+                dsConfig['dsClientPort'] = Number($(this).val());
+            });
+
+            $("#dsClientMode").change(function () {
+                dsConfig['dsClientMode'] = String($(this).val());
             });
 
             $(".parameterIt").on("drop",function(evt){
@@ -354,7 +381,8 @@
             <span class="nav-group-item active">General</span>
             <span class="nav-group-item">Parameter Iterator</span>
             <span class="nav-group-item">Web Service</span>
-            <span class="nav-group-item">Distributed System</span>
+            <span class="nav-group-item">Server DS</span>
+            <span class="nav-group-item">Client DS</span>
         </nav>
     </div>
         <div class="conteudo general">
@@ -447,19 +475,51 @@
             </table>
         </div>
 
-        <div class="conteudo distributedSystem">
+        <div class="conteudo distributedSystem server">
             <table>
                 <tr>
-                    <td><label for="dsIpAddress">IP Address</label></td>
-                    <td><input id="dsIpAddress" type="text" class="form-control" onkeypress="return event.charCode >= 48 && event.charCode <= 57 || event.charCode === 46"></td>
+                    <td><label for="dsServerIpAddress">IP Address</label></td>
+                    <td><textarea id="dsServerIpAddress" readonly></textarea></td>
                 </tr>
                 <tr>
-                    <td><label for="dsPort">Port</label></td>
-                    <td><input id="dsPort" type="number" class="form-control" onkeypress="return event.charCode >= 48 && event.charCode <= 57"></td>
+                    <td><label for="dsServerPort">Port</label></td>
+                    <td><input id="dsServerPort" type="number" class="form-control" onkeypress="return event.charCode >= 48 && event.charCode <= 57"></td>
+                </tr>
+                <tr>
+                    <td><label for="dsServerMode">Mode</label></td>
+                    <td>
+                        <select name="dsServerMode" id="dsServerMode">
+                            <option value="generating">Generating</option>
+                            <option value="recovering">Recovering</option>
+                        </select>>
+                    </td>
                 </tr>
 
             </table>
         </div>
+
+        <div class="conteudo distributedSystem client">
+                <table>
+                    <tr>
+                        <td><label for="dsClientIpAddress">IP Address</label></td>
+                        <td><input id="dsClientIpAddress" type="text" class="form-control" onkeypress="return event.charCode >= 48 && event.charCode <= 57 || event.charCode === 46"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="dsClientPort">Port</label></td>
+                        <td><input id="dsClientPort" type="number" class="form-control" onkeypress="return event.charCode >= 48 && event.charCode <= 57"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="dsClientMode">Mode</label></td>
+                        <td>
+                            <select name="dsClientMode" id="dsClientMode">
+                                <option value="generating">Generating</option>
+                                <option value="recovering">Recovering</option>
+                            </select>>
+                        </td>
+                    </tr>
+    
+                </table>
+            </div>
     </div>
     <button id="btnCancel" class="btn btn-negative">Cancel</button>
     <button id="btnConfirm" class="btn btn-primary">Confirm</button>

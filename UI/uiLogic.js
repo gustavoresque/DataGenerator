@@ -46,8 +46,6 @@ let wsActive = false;
 let wsPort = 8000;
 let WSMA = {};//Note: It must be out of DataGen library! It stores the models that is avaliable to web server (Web Server Model Available). It receives the model id, the boolean and the currentDatagen. Model is the Key.
 
-let distributedSystemSocket;
-
 const Json2csvParser = require('json2csv').Parser;
 
 let stopGeneration = false; // Stop Data Generation.
@@ -269,12 +267,25 @@ ipc.on('change-WebService', function(event, arg){
 });
 
 ipc.on('change-DistributedSystem', function(event, arg){
-    console.log(arg)
-    if(arg.hasOwnProperty("dsPort")) {
-        datagen[currentDataGen].dsPort = arg["dsPort"]
+
+    if(arg.hasOwnProperty("dsServerIpAddress")) {
+        dsServerSocket.ipAddress = arg["dsServerIpAddress"]
     }
-    if(arg.hasOwnProperty("dsIpAddress")) {
-        datagen[currentDataGen].dsIpAddress = arg["dsIpAddress"]
+    if(arg.hasOwnProperty("dsServerPort")) {
+        dsServerSocket.port = arg["dsServerPort"]
+    }
+    if(arg.hasOwnProperty("dsServerMode")) {
+        dsServerSocket.mode = arg["dsServerMode"]
+    }
+
+    if(arg.hasOwnProperty("dsClientIpAddress")) {
+        dsClientSocket.ipAddress = arg["dsClientIpAddress"]
+    }
+    if(arg.hasOwnProperty("dsClientPort")) {
+        dsClientSocket.port = arg["dsClientPort"]
+    }
+    if(arg.hasOwnProperty("dsClientMode")) {
+        dsClientSocket.mode = arg["dsClientMode"]
     }
 });
 
@@ -958,7 +969,9 @@ function setModalPadrao(title, content, style="", buttons=[]) {
             if(style) {
                 modalTitle.classList.remove(`title-modal-${style}`)
             }
-            button.func();
+            if(button.func)
+                button.func();
+            $("#windowModalPadrao").hide();
         });
     }
     modalTitle.innerText = title;
@@ -1263,33 +1276,50 @@ function sizeFormatter(size, hasUnit) {
 
 // ========== Distribuited System ===============
 
-async function startServerSocket() {
+let dsServerSocket = {
+    on: false,
+    mode: "generating", // generating ou recovering
+    port: 5000
+}
 
-    console.log("server!")
-
-    //TODO: Mostrar no progressBar que o há um server ativo [S]
+function startServerSocket() {    
 
     if(generating) {
         setModalPadrao("Error!", "You already have a generation running!", "error")
         return;
     }
 
-    if(distributedSystemSocket !== undefined) {
-        if(distributedSystemSocket === "server") { //close server
-            //TODO: Are You Sure...
-            ipc.send("closeSocket", "server")
-            distributedSystemSocket = undefined
-            setModalPadrao("Success!", "You close the Server successfully!", "success")
-        } else {
-            setModalPadrao("Error!", "You have a Client Distributed System running.", "error")
-        }
+    if(dsServerSocket.on) { //close server
+        setModalPadrao("Tell me", "Are you sure you want turn off the DS Server?", "warning", [
+            {
+                id:"btn_da_cancel",
+                color: "negative",
+                name: "Cancel"
+            },
+            {
+                id:"btn_mp_ok",
+                color: "primary",
+                name: "Yes",
+                func: () => {
+                    ipc.send("closeSocket", "server")
+                    dsServerSocket.on = false
+                    $("#turnOffServer").remove()
+                    setModalPadrao("Success!", "You close the Server successfully!", "success")
+                }
+            }
+        ])
         return
     }
 
-    distributedSystemSocket = "server"
+    dsServerSocket.on = true
+
+    $("#percentageGD").append(`<button id="turnOffServer" class="btn btn-primary"><strong>[S]</strong></button>`)
+
+    $("#percentageGD").on("click", "#turnOffServer", function() {
+        startServerSocket()
+    })
 
     const model = datagen[currentDataGen].exportModel();
-    const {dsPort} = datagen[currentDataGen]
     const ds_datagen = new DataGen()
 
     ds_datagen.columns = []
@@ -1297,7 +1327,7 @@ async function startServerSocket() {
 
     const chunksNumber = Math.ceil(ds_datagen.n_lines/ds_datagen.step_lines)
 
-    ipc.send('startServerSocket', [dsPort, ds_datagen.ID, model, chunksNumber]);
+    ipc.send('startServerSocket', [dsServerSocket.port, ds_datagen.ID, model, chunksNumber]);
 }
 
 // ipc.on('delete-model',() => {
@@ -1306,65 +1336,102 @@ async function startServerSocket() {
 
 ipc.on('dsGenerationDone', function (event, arg) {
     console.log("clients", arg)
+    dsServerSocket.on = false
+    // setModalPadrao("Success!", `The DS generation was completed!<br><br>See the statistics below:<br><br>${showDsLog("server", arg)}`)
 })
 
-let dsClientLog;
-let pathToDsChunks = ""
-let dsmodel = new DataGen()
-    dsmodel.columns = []
+let dsClientSocket = {
+    on: false,
+    mode: "generating", // generating ou recovering
+    ipAddress: "127.0.0.1",
+    port: 5000,
+    log: {},
+    model: new DataGen(),
+}
+
+function showDsLog(type, log) {
+    let text = ""
+    if(type === "server") {
+        
+        for(client of clients.keys()) {
+            text += "&emsp"
+            text += "server name: "
+    
+        }
+    } else if (type === "client") {
+
+    }
+    return text
+}
 
 async function startClientSocket() {
-
-    console.log("client")
-
-    //TODO: Mostrar no progressBar que o há um cliente ativo [C]
 
     if(generating) {
         setModalPadrao("Error!", "You already have a generation running!", "error")
         return;
     }
 
-    if(distributedSystemSocket !== undefined) {
-        if(distributedSystemSocket === "client") { //close client
-            //TODO: Are You Sure...
-            closeDsClientConnection()
-            distributedSystemSocket = undefined
-            setModalPadrao("Success!", "You close the Client connection successfully!", "success")
-        } else {
-            setModalPadrao("Error!", "You have a Server Distributed System running.", "error")
-        }
+    if(dsClientSocket.on) { //close client
+        setModalPadrao("Tell me", "Are you sure you want close the DS Client connection?", "warning", [
+            {
+                id:"btn_ds_cancel",
+                color: "danger",
+                name: "Cancel"
+            },
+            {
+                id:"btn_ds_ok",
+                color: "primary",
+                name: "Yes",
+                func: () => {
+                    ipc.send("closeSocket", "client")
+                    dsClientSocket.on = false
+                    $("#turnOffClient").remove()
+                    setModalPadrao("Success!", "You close the Client connection successfully!", "success")
+                }
+            }
+        ])
         return
     }
 
-    distributedSystemSocket = "client"
+    dsClientSocket.on = true
 
-    const ipAddress = datagen[currentDataGen]["dsIpAddress"]
-    const port = datagen[currentDataGen]["dsPort"]
+    $("#percentageGD").append(`<button id="turnOffClient" class="btn btn-primary"><strong>[C]</strong></button>`)
 
-    dsClientLog = {
+    $("#percentageGD").on("click", "#turnOffClient", function() {
+        startClientSocket()
+    })
+
+    const { ipAddress, port } = dsClientSocket
+
+    dsClientSocket.log = {
         server: `${ipAddress}_${port}`,
+        id: "",
+        path: "",
         chunks: []
     }
 
     ipc.send('startClientSocket', [port, ipAddress]);
+    $("#percentageGDMessage").css("display", "block")
 }
 
 ipc.on("dsData", async function(event, arg) {
     const code = arg['code'];
+    let { log, model } = dsClientSocket
         
     switch(code) {
         case 2:
-            dsmodel.importModel(arg['model'])
-            pathToDsChunks = path.join(tmpDir, arg['ID'])
-            console.log(pathToDsChunks)
+            model.importModel(arg['model'], true)
+            log.id = arg['id']
+            log.path = path.join(tmpDir, "dsFolder", arg['id'])
+            console.log(log.path)
 
-            if(!await access(pathToDsChunks))
-                await mk(pathToDsChunks)
+            if(!await access(log.path))
+                await mk(log.path)
             
             try{
                 await dd_generate(arg['chunk'])
-                console.log("gerou: ", arg['chunk'])
-                dsClientLog['chunks'].push(arg['chunk'])
+                $("#percentageGDMessage").text(`Chunk: ${arg.chunk}\nNº Chunks: ${log.chunks.length}`)
+                log['chunks'].push(arg['chunk'])
                 ipc.send("chunkGenerated", arg['chunk'])
                 
             } catch(e) {
@@ -1375,7 +1442,8 @@ ipc.on("dsData", async function(event, arg) {
         case 3:
             try{
                 await dd_generate(arg['chunk'])
-                dsClientLog['chunks'].push(arg['chunk'])
+                log['chunks'].push(arg['chunk'])
+                $("#percentageGDMessage").text(`Chunk: ${arg.chunk}\nNº Chunks: ${log.chunks.length}`)
                 ipc.send("chunkGenerated", arg['chunk'])
             } catch(e) {
                 console.log(e)
@@ -1384,22 +1452,24 @@ ipc.on("dsData", async function(event, arg) {
             break;
         case 5:
             // Encerrar client
-            closeDsClientConnection()
-            break;
-        case 6:
-            //TODO: Verificar formas de recuperação dos arquivos.
+            console.log(log)
+            // showDsLog("client", log)
+            $("#percentageGDMessage").text(`Finished!`)
+            ipc.send("closeSocket", "client")
+            dsClientSocket.on = false
             break;
     }
 
     async function dd_generate(chunk) {
         // TODO: Verificar cada coluna e modificar o begin de cada gerador sequencial.
-        const targetPath = path.join(pathToDsChunks, `${chunk}.${dsmodel.save_as}`)
-        switch(dsmodel.save_as) {
+        const targetPath = path.join(dsClientSocket.log.path, `${chunk}.${dsmodel.save_as}`)
+        let {model} = dsClientSocket
+        switch(model.save_as) {
             case 'json':
                 await writeFile(
                     targetPath,
                     JSON.stringify(
-                        dsmodel.generate(dsmodel.step_lines)
+                        model.generate(model.step_lines)
                     ),
                     "utf8"
                 )
@@ -1408,27 +1478,29 @@ ipc.on("dsData", async function(event, arg) {
             case 'tsv':
                 const parser = new Json2csvParser (
                     {
-                        fields: dsmodel.getDisplayedColumnsNames(),
+                        fields: model.getDisplayedColumnsNames(),
                         header: chunk > 0 ? false : true,
                         delimiter: 
-                            dsmodel.save_as === 'csv' ? ',' : '\t'
+                            model.save_as === 'csv' ? ',' : '\t'
                     }
                 );
-                const csv = parser.parse(dsmodel.generate(dsmodel.step_lines));  
+                const csv = parser.parse(model.generate(model.step_lines));  
                 await writeFile(targetPath, csv, "utf8");
                 break;
         }
     }
 })
 
-function closeDsClientConnection() {
-    ipc.send("closeSocket", "client")
-    distributedSystemSocket = undefined
-}
-
 ipc.on("dsErrorConnect", function() {
     setModalPadrao("Error!", "It was not possible to connect. Please, verify the Ip Address and Port if those are correct.", "error")
 })
+
+ipc.on("dsClientClose", function(event, arg) {
+    setModalPadrao("Error!", "The Client Connection was closed for some unknown reason.", "error")
+    console.error(arg)
+})
+
+
 
 function addGenerator(){
     datagen[currentDataGen].addColumn("Dimension "+(++datagen[currentDataGen].columnsCounter));
@@ -1818,6 +1890,28 @@ function uriWS(i=currentDataGen) {
     }
 }
 
+function getMyIPAddress() {
+    const os = require('os');
+    const ifaces = os.networkInterfaces();
+    let address;
+
+    Object.keys(ifaces).forEach(function (ifname) {
+
+        ifaces[ifname].forEach(function (iface) {
+            if ('IPv4' !== iface.family || iface.internal !== false) {
+            // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
+            return;
+            }
+
+            if(ifname.includes("VirtualBox")) return
+
+            console.log(ifname, iface.address);
+            address = iface.address
+        });
+    });
+    return address;
+}
+
 function configGeneration() {
     
     let configs = datagen[currentDataGen].configs;
@@ -1825,8 +1919,14 @@ function configGeneration() {
     configs.modelName = datagen[currentDataGen].name;
     configs.wsActive = wsActive;
     configs.wsPort = wsPort;
-    configs.dsIpAddress = datagen[currentDataGen].dsIpAddress
-    configs.dsPort = datagen[currentDataGen].dsPort
+
+    configs.dsServerIpAddress = getMyIPAddress()
+    configs.dsServerPort = dsServerSocket.port
+    configs.dsServerMode = dsServerSocket.mode
+
+    configs.dsClientIpAddress = dsClientSocket.ipAddress
+    configs.dsClientPort = dsClientSocket.port
+    configs.dsClientMode = dsClientSocket.mode
     ipc.send('open-config-datagen-window', configs);
 }
 
