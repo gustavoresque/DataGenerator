@@ -1304,6 +1304,7 @@ function startServerSocket() {
                     ipc.send("closeSocket", "server")
                     dsServerSocket.on = false
                     $("#turnOffServer").remove()
+                    $("#percentageGDMessage").text(`Server Closed`)
                     setModalPadrao("Success!", "You close the Server successfully!", "success")
                 }
             }
@@ -1312,6 +1313,7 @@ function startServerSocket() {
     }
 
     dsServerSocket.on = true
+    $("#percentageGDMessage").text(``)
 
     $("#percentageGD").append(`<button id="turnOffServer" class="btn btn-primary"><strong>[S]</strong></button>`)
 
@@ -1422,7 +1424,7 @@ function showDsLog(type, log) {
 
 let closeReason = undefined
 
-async function startClientSocket() {
+function startClientSocket() {
 
     if(generating) {
         setModalPadrao("Error!", "You already have a generation running!", "error")
@@ -1442,6 +1444,7 @@ async function startClientSocket() {
                 name: "Yes",
                 func: () => {
                     closeReason = "user"
+                    $("#percentageGDMessage").text(`Client Connection Lost`)
                     closeDSClient()
                     setModalPadrao("Success!", "You close the Client connection successfully!", "success")
                 }
@@ -1451,6 +1454,7 @@ async function startClientSocket() {
     }
 
     dsClientSocket.on = true
+    $("#percentageGDMessage").text(``)
 
     $("#percentageGD").append(`<button id="turnOffClient" class="btn btn-primary"><strong>[C]</strong></button>`)
 
@@ -1492,16 +1496,16 @@ ipc.on("dsData", async function(event, arg) {
             if(!await access(dsFolder))
                 await mk(dsFolder)
            
-
             log.path = path.join(dsFolder, arg['id'])
-            console.log(log.path)
 
             if(!await access(log.path))
                 await mk(log.path)
             
             try{
+                if(closeReason) break
                 await dd_generate(arg['chunk'])
-                $("#percentageGDMessage").text(`Chunk: ${arg.chunk}\nNº Chunks: ${log.chunks.length}`)
+                if(closeReason) break
+                $("#percentageGDMessage").html(`Chunk: ${arg.chunk}Chunks: ${log.chunks.length}`)
                 log['chunks'].push(arg['chunk'])
                 ipc.send("chunkGenerated", arg['chunk'])
                 
@@ -1512,9 +1516,11 @@ ipc.on("dsData", async function(event, arg) {
             break;
         case 3:
             try{
+                if(closeReason) break
                 await dd_generate(arg['chunk'])
                 log['chunks'].push(arg['chunk'])
-                $("#percentageGDMessage").text(`Chunk: ${arg.chunk}\nNº Chunks: ${log.chunks.length}`)
+                if(closeReason) break
+                $("#percentageGDMessage").text(`Chunk: ${arg.chunk}\n Chunks: ${log.chunks.length}`)
                 ipc.send("chunkGenerated", arg['chunk'])
             } catch(e) {
                 console.log(e)
@@ -1574,6 +1580,7 @@ ipc.on("dsData", async function(event, arg) {
 ipc.on("dsErrorConnect", function() {
     setModalPadrao("Error!", "It was not possible to connect. Please, verify the Ip Address and Port if those are correct.", "error")
     closeReason = "ErrorConnect"
+    $("#percentageGDMessage").text(`Connection Error`)
     closeDSClient()
 })
 

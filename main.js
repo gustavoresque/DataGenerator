@@ -827,12 +827,15 @@ function serverSocket(port, id, model, chunksNumber) {
                     chunk = getChunkInteration()
     
                     if(chunk === "done") {
+                        let asyncWriteArr = []
                         for(let client of Object.keys(clients)) {
-                            clients[client]["socket"].write(JSON.stringify({code: 5}))
+                            asyncWriteArr.push(clients[client]["socket"].write(JSON.stringify({code: 5}))) 
                         }
-                        closeSocket("server")
-                        mainWindow.webContents.send('dsGenerationDone', [clients, id]);
-                        
+                        Promise.all(asyncWriteArr)
+                            .then(() => {
+                                closeSocket("server")
+                                mainWindow.webContents.send('dsGenerationDone', [clients, id]);
+                            })
                     } else {
 
                         clients[name]["sentChunk"].push(chunk)
@@ -903,6 +906,7 @@ function clientSocket(port, ipAddress) {
 }
 
 ipcMain.on("chunkGenerated", function (event, chunk) {
+    if(!dsClient) return
     dsClient.write(JSON.stringify({"code": 4, "chunk": chunk}))
 })
 
