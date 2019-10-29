@@ -803,7 +803,7 @@ function serverSocket(port, id, model, chunksNumber) {
                             }
                         }
                         closeSocket("server")
-                        mainWindow.webContents.send('dsGenerationDone', clients);
+                        mainWindow.webContents.send('dsGenerationDone', [clients, id]);
                     } else {
 
                         clients[name]["sentChunk"].push(chunk)
@@ -831,7 +831,7 @@ function serverSocket(port, id, model, chunksNumber) {
                             clients[client]["socket"].write(JSON.stringify({code: 5}))
                         }
                         closeSocket("server")
-                        mainWindow.webContents.send('dsGenerationDone', clients);
+                        mainWindow.webContents.send('dsGenerationDone', [clients, id]);
                         
                     } else {
 

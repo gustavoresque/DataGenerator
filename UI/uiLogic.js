@@ -1336,11 +1336,29 @@ function startServerSocket() {
     
 // })
 
-ipc.on('dsGenerationDone', function (event, arg) {
-    console.log("clients", arg)
+ipc.on('dsGenerationDone', function (event, args) {
+    
+    const [clients, id] = args
+
     $("#turnOffServer").remove()
     dsServerSocket.on = false
-    setModalPadrao("Success!", `The DS generation was completed!<br><br>See the statistics below:<br><br>${showDsLog("server", arg)}`)
+
+    const targetPath = path.join(tmpDir, "dsFolder", id)
+
+    let [statsLog, text] = showDsLog("server", clients, targetPath) 
+    text += "<br><br> <em>If you save the log, it goes to this path:</em> "+ targetPath;
+
+    setModalPadrao("Success!", `The DS generation was completed!<br><br>See the Log below:<br><br>${text}`, "success", [{
+        id:"btn_save_log",
+        color: "primary",
+        name: "Save Log",
+        func: async () => {
+            if(!await access(targetPath))
+                await mk(targetPath)
+            await writeFile(path.join(targetPath, "log_"+id+".json"), JSON.stringify(statsLog))
+            setModalPadrao("Success!", "File saved successfully!<br><br> path:"+ targetPath, "success")
+        }
+    }])
 })
 
 let dsClientSocket = {
@@ -1357,13 +1375,13 @@ function showDsLog(type, log) {
     if(type === "server") {
         
         for(client of Object.keys(log)) {
-            delete log[client][socket]
+            delete log[client]["socket"]
             text += "&emsp; "
             text += "Server name: "+client
             
             text += "<br><br> &emsp; &emsp;"
             text += "Sent Chunks:"
-            for(let i of log[client]["sentChunks"]) {text += ` ${i}`}
+            for(let i of log[client]["sentChunk"]) {text += ` ${i}`}
 
             text += "<br><br> &emsp; &emsp;"
             text += "Received Chunks:"
@@ -1371,12 +1389,16 @@ function showDsLog(type, log) {
 
             text += "<br><br> &emsp; &emsp; "
             text += "Undone Chunks:"
-            const diff = _.difference( log[client]["sentChunks"], log[client]["receivedChunk"] )
+            const diff = _.difference( log[client]["sentChunk"], log[client]["receivedChunk"] )
             if(diff.length === 0) text += " None"
             for(let i of diff) {text += ` ${i}`}
-    
+        
         }
-    } else if (type === "client") {
+
+        return [log, text]
+    }
+
+    if (type === "client") {
         text += "Server name: "+log["server"]
 
         text += "<br><br>"
@@ -1391,9 +1413,11 @@ function showDsLog(type, log) {
         text += "Chunks:"
         for(let i of log["chunks"]) {text += ` ${i}`}
 
+        return [log,text]
+
     }
 
-    return [log,text]
+    
 }
 
 let closeReason = undefined
@@ -1423,7 +1447,7 @@ async function startClientSocket() {
                 }
             }
         ])
-        return
+        return 
     }
 
     dsClientSocket.on = true
