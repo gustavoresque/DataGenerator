@@ -796,7 +796,11 @@ function serverSocket(port, id, model, chunksNumber) {
                     if(chunk === "done") {
 
                         for(let client of Object.keys(clients)) {
-                            clients[client]["socket"].write(JSON.stringify({code: 5}))
+                            try {
+                                clients[client]["socket"].write(JSON.stringify({code: 5}))
+                            } catch(e) {
+                                console.error(e)
+                            }
                         }
                         closeSocket("server")
                         mainWindow.webContents.send('dsGenerationDone', clients);
