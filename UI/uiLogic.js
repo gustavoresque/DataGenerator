@@ -1337,7 +1337,7 @@ function startServerSocket() {
 ipc.on('dsGenerationDone', function (event, arg) {
     console.log("clients", arg)
     dsServerSocket.on = false
-    // setModalPadrao("Success!", `The DS generation was completed!<br><br>See the statistics below:<br><br>${showDsLog("server", arg)}`)
+    setModalPadrao("Success!", `The DS generation was completed!<br><br>See the statistics below:<br><br>${showDsLog("server", arg)}`)
 })
 
 let dsClientSocket = {
@@ -1353,16 +1353,48 @@ function showDsLog(type, log) {
     let text = ""
     if(type === "server") {
         
-        for(client of clients.keys()) {
+        for(client of Object.keys(log)) {
+            delete log[client][socket]
             text += "&emsp"
-            text += "server name: "
+            text += "Server name: "+client
+            
+            text += "<br><br>&emsp&emsp"
+            text += "Sent Chunks:"
+            for(let i of log[client]["sentChunks"]) {text += ` ${i}`}
+
+            text += "<br><br>&emsp&emsp"
+            text += "Received Chunks:"
+            for(let i of log[client]["receivedChunk"]) {text += ` ${i}`}
+
+            text += "<br><br>&emsp&emsp"
+            text += "Undone Chunks:"
+            const diff = _.difference( log[client]["sentChunks"], log[client]["receivedChunk"] )
+            if(diff.length === 0) text += " None"
+            for(let i of diff) {text += ` ${i}`}
     
         }
     } else if (type === "client") {
+        text += "&emsp"
+        text += "Server name: "+log["server"]
+
+        text += "<br><br>&emsp"
+        text += "ID: "
+        text += log["id"]
+
+        text += "<br><br>&emsp"
+        text += "Path: "
+        text += log["path"]
+            
+        text += "<br><br>&emsp"
+        text += "Chunks:"
+        for(let i of log["chunks"]) {text += ` ${i}`}
 
     }
-    return text
+
+    return [log,text]
 }
+
+let closeReason = undefined
 
 async function startClientSocket() {
 
@@ -1383,9 +1415,8 @@ async function startClientSocket() {
                 color: "primary",
                 name: "Yes",
                 func: () => {
-                    ipc.send("closeSocket", "client")
-                    dsClientSocket.on = false
-                    $("#turnOffClient").remove()
+                    closeReason = "user"
+                    closeDSClient()
                     setModalPadrao("Success!", "You close the Client connection successfully!", "success")
                 }
             }
@@ -1412,6 +1443,14 @@ async function startClientSocket() {
 
     ipc.send('startClientSocket', [port, ipAddress]);
     $("#percentageGDMessage").css("display", "block")
+}
+
+function closeDSClient() {
+    dsClientSocket.on = false
+    $("#turnOffClient").remove()
+    ipc.send("closeSocket", "client")
+    if(!closeReason)
+        $("#percentageGDMessage").text(`Failed`)
 }
 
 ipc.on("dsData", async function(event, arg) {
@@ -1458,11 +1497,19 @@ ipc.on("dsData", async function(event, arg) {
             break;
         case 5:
             // Encerrar client
-            console.log(log)
-            // showDsLog("client", log)
+            const log, text = showDsLog("client", log)
+            setModalPadrao("Success!", text, "success", [{
+                id:"btn_save_log",
+                color: "primary",
+                name: "Save Log",
+                func: async () => {
+                    await writeFile(path.join(path.dirname(log.path), "log_"+log.id))
+                    setModalPadrao("Success!", "File saved successfully!", "success")
+                }
+            }])
             $("#percentageGDMessage").text(`Finished!`)
-            ipc.send("closeSocket", "client")
-            dsClientSocket.on = false
+            closeReason = "generationDone"
+            closeDSClient()
             break;
     }
 
@@ -1500,9 +1547,12 @@ ipc.on("dsData", async function(event, arg) {
 
 ipc.on("dsErrorConnect", function() {
     setModalPadrao("Error!", "It was not possible to connect. Please, verify the Ip Address and Port if those are correct.", "error")
+    closeReason = "ErrorConnect"
+    closeDSClient()
 })
 
-ipc.on("dsClientClose", function(event, arg) {
+ipc.on("dsClientClose", function() {
+    if(closeReason) { closeReason = undefined; return }
     setModalPadrao("Error!", "The Client Connection was closed for some unknown reason.", "error")
     console.error(arg)
 })

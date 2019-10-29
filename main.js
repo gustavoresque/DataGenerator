@@ -758,7 +758,6 @@ function serverSocket(port, id, model, chunksNumber) {
 
     let clients = {};
 
-    clients["id"] = id
 
     dsServer = net.createServer(function (socket) {
     
@@ -770,6 +769,10 @@ function serverSocket(port, id, model, chunksNumber) {
             clients[name] = {};
             clients[name]["socket"] = socket;
         }
+
+        socket.on("error", function(err) {
+            throw err
+        })
     
         socket.on('data', function (data) {
             jdata = JSON.parse(data)
@@ -793,7 +796,7 @@ function serverSocket(port, id, model, chunksNumber) {
                     if(chunk === "done") {
 
                         for(let client of Object.keys(clients)) {
-                            clients[client].socket.write(JSON.stringify({code: 5}))
+                            clients[client]["socket"].write(JSON.stringify({code: 5}))
                         }
                         closeSocket("server")
                         mainWindow.webContents.send('dsGenerationDone', clients);
@@ -820,9 +823,8 @@ function serverSocket(port, id, model, chunksNumber) {
                     chunk = getChunkInteration()
     
                     if(chunk === "done") {
-
                         for(let client of Object.keys(clients)) {
-                            clients[client].socket.write(JSON.stringify({code: 5}))
+                            clients[client]["socket"].write(JSON.stringify({code: 5}))
                         }
                         closeSocket("server")
                         mainWindow.webContents.send('dsGenerationDone', clients);
