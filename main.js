@@ -770,11 +770,12 @@ function serverSocket(port, id, model, chunksNumber) {
             clients[name]["socket"] = socket;
         }
 
-        socket.on("error", function(err) {
-            throw err
+        socket.on("error", function(event, err) {
+            console.log(err)
         })
     
         socket.on('data', function (data) {
+            console.log(data)
             jdata = JSON.parse(data)
             if(!jdata.hasOwnProperty("code")) {
                 delete clients[name]
@@ -881,7 +882,7 @@ function clientSocket(port, ipAddress) {
                 console.error("was not possible to connect")
                 mainWindow.webContents.send('dsErrorConnect');
             } else {
-                throw e
+                console.log(e)
             }
             closeSocket("client")
         })

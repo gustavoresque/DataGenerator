@@ -1595,8 +1595,7 @@ ipc.on("dsErrorConnect", function() {
 
 ipc.on("dsClientClose", function() {
     if(closeReason) { closeReason = undefined; return }
-    setModalPadrao("Error!", "The Client Connection was closed for some unknown reason.", "error")
-    console.error(arg)
+    setModalPadrao("Error!", "The Client connection was closed for some unknown reason.", "error")
 })
 
 function addGenerator(){
