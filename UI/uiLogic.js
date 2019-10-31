@@ -1509,7 +1509,12 @@ ipc.on("dsData", async function(event, arg) {
                 $("#percentageGDMessage").html(`Chunk: ${arg.chunk}Chunks: ${log.chunks.length}`)
                 log['chunks'].push(arg['chunk'])
                 ipc.send("chunkGenerated", arg['chunk'])
-                if(closeReason === "user")
+                if(closeReason === "user") {
+                    ipc.send("chunkGeneratedAndDie", arg['chunk'])
+                    userCloseConnection()
+                } else {
+                    ipc.send("chunkGenerated", arg['chunk'])
+                }
                     userCloseConnection()
                 
             } catch(e) {

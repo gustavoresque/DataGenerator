@@ -822,7 +822,6 @@ function serverSocket(port, id, model, chunksNumber) {
 
                     clients[name]["receivedChunk"].push(jdata["chunk"])
                     chunksRecCounter++
-                    mainWindow.webContents.send('dsGeneration', [name, chunksNumber, chunksRecCounter]);
 
                     chunk = getChunkInteration()
     
@@ -839,6 +838,10 @@ function serverSocket(port, id, model, chunksNumber) {
                         clients[name]["sentChunk"].push(chunk)
                         socket.write(JSON.stringify({code: 3,"chunk": chunk}))
                     }
+                    break;
+                case 6:
+                        clients[name]["receivedChunk"].push(jdata["chunk"])
+                        chunksRecCounter++
                     break;
             }
         });
@@ -906,6 +909,11 @@ function clientSocket(port, ipAddress) {
 ipcMain.on("chunkGenerated", function (event, chunk) {
     if(!dsClient) return
     dsClient.write(JSON.stringify({"code": 4, "chunk": chunk}))
+})
+
+ipcMain.on("chunkGeneratedAndDie", function (event, chunk) {
+    if(!dsClient) return
+    dsClient.write(JSON.stringify({"code": 6, "chunk": chunk}))
 })
 
 // This method will be called when Electron has finished
