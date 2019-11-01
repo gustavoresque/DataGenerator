@@ -1527,7 +1527,7 @@ ipc.on("dsData", async function(event, arg) {
                 
                 await dd_generate(arg['chunk'])
                 log['chunks'].push(arg['chunk'])
-                $("#percentageGDMessage").text(`Chunk: ${arg.chunk}\n Chunks: ${log.chunks.length}`)
+                $("#percentageGDMessage").text(`Chunk: ${arg.chunk < 10 ? "0"+arg.chunk : arg.chunk}\n Chunks: ${log.chunks.length}`)
                 ipc.send("chunkGenerated", arg['chunk'])
                 if(closeReason === "user")
                     userCloseConnection()
@@ -1538,6 +1538,7 @@ ipc.on("dsData", async function(event, arg) {
             break;
         case 5:
             // Encerrar client
+            console.log("cabou")
             const [statsLog, text] = showDsLog("client", log)
             setModalPadrao("Success!", text, "success", [{
                 id:"btn_save_log",

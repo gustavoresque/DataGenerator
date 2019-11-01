@@ -775,8 +775,8 @@ function serverSocket(port, id, model, chunksNumber) {
         })
     
         socket.on('data', function (data) {
-            console.log(data)
-            jdata = JSON.parse(data)
+            console.log(data.toString("utf-8"))
+            jdata = JSON.parse(data.toString("utf-8"))
             if(!jdata.hasOwnProperty("code")) {
                 delete clients[name]
                 return
@@ -798,11 +798,14 @@ function serverSocket(port, id, model, chunksNumber) {
 
                         for(let client of Object.keys(clients)) {
                             try {
-                                clients[client]["socket"].write(JSON.stringify({code: 5}))
+                                if(!clients[client]["socket"].destroyed)
+                                    clients[client]["socket"].write(JSON.stringify({code: 5}))
+                                console.log(1)
                             } catch(e) {
                                 console.error(e)
                             }
                         }
+                        console.log(2)
                         closeSocket("server")
                         mainWindow.webContents.send('dsGenerationDone', [clients, id]);
                     } else {
@@ -828,9 +831,15 @@ function serverSocket(port, id, model, chunksNumber) {
     
                     if(chunk === "done") {
                         for(let client of Object.keys(clients)) {
-                            if(!clients[client]["socket"].destroyed)
-                                clients[client]["socket"].write(JSON.stringify({code: 5}))
+                            try {
+                                if(!clients[client]["socket"].destroyed)
+                                    clients[client]["socket"].write(JSON.stringify({code: 5}))
+                                console.log(3)
+                            } catch(e) {
+                                console.error(e)
+                            }
                         }
+                        console.log(4)
                         closeSocket("server")
                         mainWindow.webContents.send('dsGenerationDone', [clients, id]);
                         
