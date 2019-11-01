@@ -1481,9 +1481,13 @@ function startClientSocket() {
     $("#percentageGDMessage").css("display", "block")
 }
 
-function closeDSClient() {
+function removeClientUI() {
     dsClientSocket.on = false
     $("#turnOffClient").remove()
+}
+
+function closeDSClient() {
+    removeClientUI()
     ipc.send("closeSocket", "client")
     if(!closeReason)
         $("#percentageGDMessage").text(`Failed`)
@@ -1610,6 +1614,7 @@ ipc.on("dsErrorConnect", function() {
 ipc.on("dsClientClose", function() {
     if(closeReason) { closeReason = undefined; return }
     setModalPadrao("Error!", "The Client connection was closed for some unknown reason.", "error")
+    removeClientUI()
 })
 
 function addGenerator(){

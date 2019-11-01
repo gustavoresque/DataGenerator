@@ -843,6 +843,22 @@ function serverSocket(port, id, model, chunksNumber) {
                     clientCounter()
                     break;
             }
+            function generationDone() {
+                closeSocket("server")
+                mainWindow.webContents.send('dsGenerationDone', [ds_clients, id]);
+            }
+            function sentCounter() {
+                ds_clients[name]["sentChunk"].push(chunk)
+                chunksSentCounter++
+            }
+            async function clientCounter() {
+                clientsCounter = await dsServerGetConn()
+                mainWindow.webContents.send('dsGeneration', [clientsCounter, chunksNumber, chunksSentCounter,chunksRecCounter]);    
+            }
+            function receivedCounter() {
+                ds_clients[name]["receivedChunk"].push(jdata["chunk"])
+                chunksRecCounter++
+            }
         });
     
     }).listen(port);
@@ -852,22 +868,6 @@ function serverSocket(port, id, model, chunksNumber) {
             return "done" // codigo 5
         
         return chunksCounter++
-    }
-    function generationDone() {
-        closeSocket("server")
-        mainWindow.webContents.send('dsGenerationDone', [ds_clients, id]);
-    }
-    function sentCounter() {
-        ds_clients[name]["sentChunk"].push(chunk)
-        chunksSentCounter++
-    }
-    function clientCounter() {
-        clientsCounter = await dsServerGetConn()
-        mainWindow.webContents.send('dsGeneration', [clientsCounter, chunksNumber, chunksSentCounter,chunksRecCounter]);    
-    }
-    function receivedCounter() {
-        ds_clients[name]["receivedChunk"].push(jdata["chunk"])
-        chunksRecCounter++
     }
 }
 
