@@ -950,15 +950,41 @@ $("html").ready(function() {
     dragAndDropGens();
     $("#windowModalPadrao").click( () => {
         $("#windowModalPadrao").hide();
+        queuedModal();
     })
+
     $("#windowModalPadrao-box").click( (event) => { event.stopPropagation();})
 });
+
+let modalQueue = []
+
+function queuedModal() {
+    if(modalQueue.length === 0) return
+    const currentModal = modalQueue.shift()
+    setModalPadrao(
+        currentModal[0],
+        currentModal[1],
+        currentModal[2] ? currentModal[2] : undefined,
+        currentModal[3] ? currentModal[3] : undefined
+    )
+}
 
 function setModalPadrao(title, content, style="", buttons=[]) {
     const modalTitle = document.getElementById("windowModalPadrao-title");
     const modalContent = document.getElementById("windowModalPadrao-content");
     const modalFooter = document.getElementById("windowModalPadrao-footer");
 
+    const modalTitleColors = ['error', 'success', 'warning', 'info']
+
+    if($("#windowModalPadrao").css("display") === "block") {
+        modalQueue.push([title, content, style, buttons])
+        return
+    }
+
+    for(color of modalTitleColors) {
+        modalTitle.classList.remove(`title-modal-${color}`)
+    }
+    
     if(style) {
         modalTitle.classList.add(`title-modal-${style}`)
     }
@@ -966,12 +992,10 @@ function setModalPadrao(title, content, style="", buttons=[]) {
     for (const button of buttons) {
         setFooter += `<button id="${button.id}" class="btn btn-${button.color}">${button.name}</button>`;
         $(`#windowModalPadrao-footer`).on('click', `#${button.id}`, () => {
-            if(style) {
-                modalTitle.classList.remove(`title-modal-${style}`)
-            }
             if(button.func)
                 button.func();
             $("#windowModalPadrao").hide();
+            queuedModal()
         });
     }
     modalTitle.innerText = title;
@@ -1347,7 +1371,7 @@ ipc.on('dsGeneration', function(event, args) {
     `)
 })
 
-ipc.on('dsGenerationDone', function (event, args) {
+ipc.on('dsGenerationDone', async function (event, args) {
     
     const [clients, id] = args
 
@@ -1359,14 +1383,18 @@ ipc.on('dsGenerationDone', function (event, args) {
     let [statsLog, text] = showDsLog("server", clients, targetPath) 
     text += "<br><br> <em>If you save the log, it goes to this path:</em> "+ targetPath;
 
+    await writeFile(path.join(targetPath, "log_server_"+id+".json"), JSON.stringify(statsLog))
+
     setModalPadrao("Success!", `The DS generation was completed!<br><br>See the Log below:<br><br>${text}`, "success", [{
         id:"btn_save_log",
         color: "primary",
         name: "Save Log",
         func: async () => {
-            if(!await access(targetPath))
-                await mk(targetPath)
-            await writeFile(path.join(targetPath, "log_"+id+".json"), JSON.stringify(statsLog))
+            dialog.showSaveDialog({title:"Save Log", filters:[{name:"log_server",extensions:["json"]}]}, function(givenPath) {
+                if(givenPath){
+                    writeFile(givenPath, JSON.stringify(statsLog));
+                }
+            });
             setModalPadrao("Success!", "File saved successfully!<br><br> path:"+ targetPath, "success")
         }
     }])
@@ -1493,6 +1521,8 @@ function closeDSClient() {
         $("#percentageGDMessage").text(`Failed`)
 }
 
+
+
 function userCloseConnection() {
     $("#percentageGDMessage").text(`Client Connection Lost`)
     closeDSClient()
@@ -1555,15 +1585,20 @@ ipc.on("dsData", async function(event, arg) {
             break;
         case 5:
             // Encerrar client
-            console.log("cabou")
             const [statsLog, text] = showDsLog("client", log)
+            await writeFile(path.join(log.path, "log_client_"+log.id+".json"), JSON.stringify(statsLog))
+
             setModalPadrao("Success!", text, "success", [{
                 id:"btn_save_log",
                 color: "primary",
                 name: "Save Log",
                 func: async () => {
-                    await writeFile(path.join(log.path, "log_"+log.id+".json"), JSON.stringify(statsLog))
-                    setModalPadrao("Success!", "File saved successfully!", "success")
+                    dialog.showSaveDialog({title:"Save Log", filters:[{name:"log_client",extensions:["json"]}]}, async function(givenPath) {
+                        if(givenPath){
+                           await writeFile(givenPath, JSON.stringify(statsLog));
+                        }
+                    });
+                    setModalPadrao("Success!", "File saved successfully!<br><br> path:"+ targetPath, "success")
                 }
             }])
             $("#percentageGDMessage").text(`Finished!`)
@@ -1615,6 +1650,7 @@ ipc.on("dsClientClose", function() {
     if(closeReason) { closeReason = undefined; return }
     setModalPadrao("Error!", "The Client connection was closed for some unknown reason.", "error")
     removeClientUI()
+
 })
 
 function addGenerator(){
