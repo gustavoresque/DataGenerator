@@ -1338,6 +1338,15 @@ function startServerSocket() {
     
 // })
 
+ipc.on('dsGeneration', function(event, args) {
+    const {totalChunks, sentChunks, receivedChunks} = args
+    $("#percentageGDMessage").html(
+        `<p>Chunks: ${totalChunks}</p>
+        <p>=> ${sentChunks}</p>
+        <p><= ${receivedChunks}</p>
+    `)
+})
+
 ipc.on('dsGenerationDone', function (event, args) {
     
     const [clients, id] = args
@@ -1505,17 +1514,17 @@ ipc.on("dsData", async function(event, arg) {
                 await mk(log.path)
             
             try{
+                
                 await dd_generate(arg['chunk'])
                 $("#percentageGDMessage").html(`Chunk: ${arg.chunk}Chunks: ${log.chunks.length}`)
                 log['chunks'].push(arg['chunk'])
-                ipc.send("chunkGenerated", arg['chunk'])
+
                 if(closeReason === "user") {
                     ipc.send("chunkGeneratedAndDie", arg['chunk'])
                     userCloseConnection()
                 } else {
                     ipc.send("chunkGenerated", arg['chunk'])
                 }
-                    userCloseConnection()
                 
             } catch(e) {
                 console.log(e)
@@ -1528,9 +1537,13 @@ ipc.on("dsData", async function(event, arg) {
                 await dd_generate(arg['chunk'])
                 log['chunks'].push(arg['chunk'])
                 $("#percentageGDMessage").text(`Chunk: ${arg.chunk < 10 ? "0"+arg.chunk : arg.chunk}\n Chunks: ${log.chunks.length}`)
-                ipc.send("chunkGenerated", arg['chunk'])
-                if(closeReason === "user")
+
+                if(closeReason === "user") {
+                    ipc.send("chunkGeneratedAndDie", arg['chunk'])
                     userCloseConnection()
+                } else {
+                    ipc.send("chunkGenerated", arg['chunk'])
+                }
             } catch(e) {
                 console.log(e)
                 console.error("Failed to generate chunk "+arg['chunk'])

@@ -15,6 +15,7 @@ const BrowserWindow = electron.BrowserWindow;
 const path = require('path');
 const url = require('url');
 const net = require('net')
+const { promisify } = require('util')
 
 const menu = new Menu();
 
@@ -728,16 +729,28 @@ ipcMain.on("startClientSocket", function (event, arg) {
     clientSocket(...arg)
 });
 
-function closeSocket(socket) {
+let ds_clients = {};
+
+async function closeSocket(socket) {
     try {
         if(socket === "server") {
             if(dsServer === undefined) return
-            dsServer.close()
+
+            for(let client of Object.keys(ds_clients)) {
+                try {
+                    if(!ds_clients[client]["socket"].destroyed)
+                        ds_clients[client]["socket"].write(JSON.stringify({code: 5}))
+                } catch(e) {
+                    console.error(e)
+                }
+            }
+
+            await dsServer.close()
             dsServer = undefined
         } else if(socket === "client"){
             try {
                 if(dsClient === undefined) return
-                dsClient.destroy()
+                await dsClient.destroy()
                 dsClient = undefined
             } catch(e) {
                 //Provavelmente o distributedSystemSocket é undefined
@@ -756,18 +769,22 @@ function serverSocket(port, id, model, chunksNumber) {
 
     let chunksRecCounter = 0
 
-    let clients = {};
+    let chunksSentCounter = 0
+
+    let dsServerGetConn
+    let clientsCounter
 
 
     dsServer = net.createServer(function (socket) {
     
         const name = socket.remoteAddress + "--" + socket.remotePort
         
+        dsServerGetConn = promisify(dsServer.getConnections)
         console.log(name)
     
-        if(!clients.hasOwnProperty(name)) {
-            clients[name] = {};
-            clients[name]["socket"] = socket;
+        if(!ds_clients.hasOwnProperty(name)) {
+            ds_clients[name] = {};
+            ds_clients[name]["socket"] = socket;
         }
 
         socket.on("error", function(event, err) {
@@ -775,10 +792,9 @@ function serverSocket(port, id, model, chunksNumber) {
         })
     
         socket.on('data', function (data) {
-            console.log(data.toString("utf-8"))
             jdata = JSON.parse(data.toString("utf-8"))
             if(!jdata.hasOwnProperty("code")) {
-                delete clients[name]
+                delete ds_clients[name]
                 return
             }
 
@@ -789,29 +805,15 @@ function serverSocket(port, id, model, chunksNumber) {
             switch(code) {
                 case 1:
  
-                    clients[name]["sentChunk"] = []
-                    clients[name]["receivedChunk"] = []
+                    ds_clients[name]["sentChunk"] = []
+                    ds_clients[name]["receivedChunk"] = []
     
                     chunk = getChunkInteration()
     
-                    if(chunk === "done") {
+                    if(chunk === "done") {generationDone()} 
+                    else {
+                        sentCounter()
 
-                        for(let client of Object.keys(clients)) {
-                            try {
-                                if(!clients[client]["socket"].destroyed)
-                                    clients[client]["socket"].write(JSON.stringify({code: 5}))
-                                console.log(1)
-                            } catch(e) {
-                                console.error(e)
-                            }
-                        }
-                        console.log(2)
-                        closeSocket("server")
-                        mainWindow.webContents.send('dsGenerationDone', [clients, id]);
-                    } else {
-
-                        clients[name]["sentChunk"].push(chunk)
-    
                         socket.write(JSON.stringify(
                             {
                                 code: 2,
@@ -820,38 +822,25 @@ function serverSocket(port, id, model, chunksNumber) {
                                 "chunk": chunk
                             }
                         ))
+
+                        clientCounter()
                     }
                     break;
                 case 4:
-
-                    clients[name]["receivedChunk"].push(jdata["chunk"])
-                    chunksRecCounter++
+                    receivedCounter()
 
                     chunk = getChunkInteration()
     
-                    if(chunk === "done") {
-                        for(let client of Object.keys(clients)) {
-                            try {
-                                if(!clients[client]["socket"].destroyed)
-                                    clients[client]["socket"].write(JSON.stringify({code: 5}))
-                                console.log(3)
-                            } catch(e) {
-                                console.error(e)
-                            }
-                        }
-                        console.log(4)
-                        closeSocket("server")
-                        mainWindow.webContents.send('dsGenerationDone', [clients, id]);
-                        
-                    } else {
-
-                        clients[name]["sentChunk"].push(chunk)
+                    if(chunk === "done") {generationDone()} 
+                    else {
+                        sentCounter()
                         socket.write(JSON.stringify({code: 3,"chunk": chunk}))
+                        clientCounter()
                     }
                     break;
                 case 6:
-                        clients[name]["receivedChunk"].push(jdata["chunk"])
-                        chunksRecCounter++
+                    receivedCounter()
+                    clientCounter()
                     break;
             }
         });
@@ -863,6 +852,22 @@ function serverSocket(port, id, model, chunksNumber) {
             return "done" // codigo 5
         
         return chunksCounter++
+    }
+    function generationDone() {
+        closeSocket("server")
+        mainWindow.webContents.send('dsGenerationDone', [ds_clients, id]);
+    }
+    function sentCounter() {
+        ds_clients[name]["sentChunk"].push(chunk)
+        chunksSentCounter++
+    }
+    function clientCounter() {
+        clientsCounter = await dsServerGetConn()
+        mainWindow.webContents.send('dsGeneration', [clientsCounter, chunksNumber, chunksSentCounter,chunksRecCounter]);    
+    }
+    function receivedCounter() {
+        ds_clients[name]["receivedChunk"].push(jdata["chunk"])
+        chunksRecCounter++
     }
 }
 
