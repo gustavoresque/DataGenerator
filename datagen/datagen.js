@@ -3332,7 +3332,7 @@ class DataGen {
 
     constructor () {
         this.name = "Model";
-        this.n_lines = 100; // Quantidade de linhas na geração
+        this.n_lines = 1000000; // Quantidade de linhas na geração
         this.step_lines = 10000;
         this.n_sample_lines = 100;
         this.save_as = "csv";

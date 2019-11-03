@@ -180,10 +180,10 @@
             $("#dsServerIpAddress").val(obj.dsServerIpAddress);
             $("#dsServerPort").val(obj.dsServerPort);
             $("#dsServerMode").val(obj.dsServerMode).change();
-            
+            $("#dsServerRecoveringModelID").val(obj.dsServerRecoveringModelID);
+
             $("#dsClientIpAddress").val(obj.dsClientIpAddress);
             $("#dsClientPort").val(obj.dsClientPort);
-            $("#dsClientMode").val(obj.dsClientMode).change();
 
             if(!obj.wsActive)
                 $(".webService input[type=number]").attr("disabled","disabled").css("opacity","0.5");
@@ -315,6 +315,16 @@
 
             $("#dsServerMode").change(function () {
                 dsConfig['dsServerMode'] = String($(this).val());
+                if(String($(this).val()) === "generating") {
+                    $("#dsServerRecoveringModelID").attr("disabled","disabled").css("opacity","0.5");
+                } else 
+                if(String($(this).val()) === "recovering") {
+                    $("#dsServerRecoveringModelID").removeAttr("disabled").css("opacity","1");
+                }
+            });
+
+            $("#dsServerRecoveringModelID").change(function () {
+                dsConfig['dsServerRecoveringModelID'] = String($(this).val());
             });
 
             $("#dsClientIpAddress").change(function () {
@@ -323,10 +333,6 @@
 
             $("#dsClientPort").change(function () {
                 dsConfig['dsClientPort'] = Number($(this).val());
-            });
-
-            $("#dsClientMode").change(function () {
-                dsConfig['dsClientMode'] = String($(this).val());
             });
 
             $(".parameterIt").on("drop",function(evt){
@@ -494,6 +500,10 @@
                         </select>>
                     </td>
                 </tr>
+                <tr>
+                    <td><label for="dsServerRecoveringModelID">Model ID</label></td>
+                    <td><input id="dsServerRecoveringModelID" type="text" class="form-control"></td>
+                </tr>
 
             </table>
         </div>
@@ -507,15 +517,6 @@
                     <tr>
                         <td><label for="dsClientPort">Port</label></td>
                         <td><input id="dsClientPort" type="number" class="form-control" onkeypress="return event.charCode >= 48 && event.charCode <= 57"></td>
-                    </tr>
-                    <tr>
-                        <td><label for="dsClientMode">Mode</label></td>
-                        <td>
-                            <select name="dsClientMode" id="dsClientMode">
-                                <option value="generating">Generating</option>
-                                <option value="recovering">Recovering</option>
-                            </select>>
-                        </td>
                     </tr>
     
                 </table>

@@ -102,7 +102,6 @@ ipc.on('get-path', function(event, allPath){
         showGenerators();
     }
 });
-
 ipc.on('open-datagen', function(event, path){openModel(path); showModels(); showGenerators();});
 
 async function openModel (path, backup=false) {
@@ -276,6 +275,9 @@ ipc.on('change-DistributedSystem', function(event, arg){
     }
     if(arg.hasOwnProperty("dsServerMode")) {
         dsServerSocket.mode = arg["dsServerMode"]
+    }
+    if(arg.hasOwnProperty("dsServerRecoveringModelID")) {
+        dsServerSocket.recoveringModelID = arg["dsServerRecoveringModelID"]
     }
 
     if(arg.hasOwnProperty("dsClientIpAddress")) {
@@ -466,6 +468,8 @@ $("html").ready(function() {
 
     $("#reloadPreview").on("click", "", function(e){
         showGenerators();
+        $("#percentageGDMessage").text("");
+        $("#percentageGDBar").css("display", "none");
     });
 
     //The color lines became gray on resizing, so the reload solve the problem.
@@ -1303,6 +1307,7 @@ function sizeFormatter(size, hasUnit) {
 let dsServerSocket = {
     on: false,
     mode: "generating", // generating ou recovering
+    recoveringModelID: "",
     port: 5000
 }
 
@@ -1328,6 +1333,7 @@ function startServerSocket() {
                     ipc.send("closeSocket", "server")
                     dsServerSocket.on = false
                     $("#turnOffServer").remove()
+                    $("#percentageGDBar").css("display","none")
                     $("#percentageGDMessage").text(`Server Closed`)
                     setModalPadrao("Success!", "You close the Server successfully!", "success")
                 }
@@ -1338,6 +1344,9 @@ function startServerSocket() {
 
     dsServerSocket.on = true
     $("#percentageGDMessage").text(``)
+    $("#percentageGDBar").css("display", `block`);
+    $("#percentageGDprogressBar").css("width", `0`)
+    $("#percentageGDlabelBar").text(``)
 
     $("#percentageGD").append(`<button id="turnOffServer" class="btn btn-primary"><strong>[S]</strong></button>`)
 
@@ -1353,9 +1362,12 @@ function startServerSocket() {
 
     const chunksNumber = Math.ceil(ds_datagen.n_lines/ds_datagen.step_lines)
 
-    const id = ds_datagen.ID.replace(".","")
+    const id = 
+        dsServerSocket.mode === "generating" ? 
+            ds_datagen.ID.replace(".","") : 
+            dsServerSocket.recoveringModelID.replace(".","")
 
-    ipc.send('startServerSocket', [dsServerSocket.port, id, model, chunksNumber]);
+    ipc.send('startServerSocket', [dsServerSocket.port, id, model, dsServerSocket.mode, chunksNumber]);
 }
 
 // ipc.on('delete-model',() => {
@@ -1363,11 +1375,21 @@ function startServerSocket() {
 // })
 
 ipc.on('dsGeneration', function(event, args) {
-    const {totalChunks, sentChunks, receivedChunks} = args
-    $("#percentageGDMessage").html(
-        `<p>Chunks: ${totalChunks}</p>
-        <p>=> ${sentChunks}</p>
-        <p><= ${receivedChunks}</p>
+    const {clientsCounter, chunksNumber, chunksSentCounter, chunksRecCounter} = args
+
+    console.log(args)
+
+    const value = chunksRecCounter/chunksNumber
+
+    $("#percentageGDprogressBar").css("width", `${Math.fround(value*100)}%`)
+    $("#percentageGDlabelBar").text(`${Math.round(value*10000)/100}%`)
+
+    if(dsClientSocket.on) return
+    $("#percentageGDMessage").html(`
+        <p>[${clientsCounter}]</p>
+        <p>Chunks: ${chunksNumber}</p>
+        <p>=> ${chunksSentCounter}</p>
+        <p><= ${chunksRecCounter}</p>
     `)
 })
 
@@ -1377,6 +1399,7 @@ ipc.on('dsGenerationDone', async function (event, args) {
 
     $("#turnOffServer").remove()
     dsServerSocket.on = false
+    $("#percentageGDprogressBar").css("display","none")
 
     const targetPath = path.join(tmpDir, "dsFolder", id)
 
@@ -1390,7 +1413,7 @@ ipc.on('dsGenerationDone', async function (event, args) {
         color: "primary",
         name: "Save Log",
         func: async () => {
-            dialog.showSaveDialog({title:"Save Log", filters:[{name:"log_server",extensions:["json"]}]}, function(givenPath) {
+            dialog.showSaveDialog({title:"Save Server Log", filters:[{name:"json",extensions:["json"]}]}, function(givenPath) {
                 if(givenPath){
                     writeFile(givenPath, JSON.stringify(statsLog));
                 }
@@ -1400,10 +1423,34 @@ ipc.on('dsGenerationDone', async function (event, args) {
     }])
 })
 
+ipc.on('saveRecoveringFileUpdateClient', async function (event, args) {
+    const { filename, file, clientsCounter } = args
+    await saveRecoveringFile(filename, file)
+    $("#percentageGDMessage").text(`[${clientsCounter}]`);
+
+})
+
+ipc.on('saveRecoveringFile', async function (event, args) {
+    const { filename, file } = args
+    await saveRecoveringFile(filename, file)
+})
+
+async function saveRecoveringFile(filename, file) {
+    const id = dsServerSocket.recoveringModelID
+
+    const idPath = path.join(tmpDir, "dsFolder", id)
+    if(!await access(idPath))
+        await mk(idPath)
+
+    const filePath = path.join(idPath, filename)   
+    if(!await access(filePath))
+        await writeFile(filePath, file)
+
+}
+
 let dsClientSocket = {
     on: false,
-    mode: "generating", // generating ou recovering
-    ipAddress: "192.168.0.3",
+    ipAddress: "192.168.0.4",
     port: 5000,
     log: {},
     model: new DataGen(),
@@ -1481,6 +1528,7 @@ function startClientSocket() {
                 name: "Yes",
                 func: () => {
                     closeReason = "user"
+                    removeClientUI()
                 }
             }
         ])
@@ -1520,8 +1568,6 @@ function closeDSClient() {
     if(!closeReason)
         $("#percentageGDMessage").text(`Failed`)
 }
-
-
 
 function userCloseConnection() {
     $("#percentageGDMessage").text(`Client Connection Lost`)
@@ -1593,7 +1639,7 @@ ipc.on("dsData", async function(event, arg) {
                 color: "primary",
                 name: "Save Log",
                 func: async () => {
-                    dialog.showSaveDialog({title:"Save Log", filters:[{name:"log_client",extensions:["json"]}]}, async function(givenPath) {
+                    dialog.showSaveDialog({title:"Save Client Log", filters:[{name:"json",extensions:["json"]}]}, async function(givenPath) {
                         if(givenPath){
                            await writeFile(givenPath, JSON.stringify(statsLog));
                         }
@@ -1647,10 +1693,9 @@ ipc.on("dsErrorConnect", function() {
 })
 
 ipc.on("dsClientClose", function() {
+    removeClientUI()
     if(closeReason) { closeReason = undefined; return }
     setModalPadrao("Error!", "The Client connection was closed for some unknown reason.", "error")
-    removeClientUI()
-
 })
 
 function addGenerator(){
@@ -2074,10 +2119,10 @@ function configGeneration() {
     configs.dsServerIpAddress = getMyIPAddress()
     configs.dsServerPort = dsServerSocket.port
     configs.dsServerMode = dsServerSocket.mode
+    configs.dsServerRecoveringModelID = dsServerSocket.recoveringModelID
 
     configs.dsClientIpAddress = dsClientSocket.ipAddress
     configs.dsClientPort = dsClientSocket.port
-    configs.dsClientMode = dsClientSocket.mode
     ipc.send('open-config-datagen-window', configs);
 }
 

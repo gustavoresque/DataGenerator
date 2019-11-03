@@ -763,7 +763,9 @@ async function closeSocket(socket) {
     
 }
 
-function serverSocket(port, id, model, chunksNumber) {
+function serverSocket(port, id, model, mode, chunksNumber) {
+
+    ds_clients = {}
 
     let chunksCounter = 0
 
@@ -771,15 +773,12 @@ function serverSocket(port, id, model, chunksNumber) {
 
     let chunksSentCounter = 0
 
-    let dsServerGetConn
-    let clientsCounter
-
+    let clientsCounter = 0
 
     dsServer = net.createServer(function (socket) {
     
         const name = socket.remoteAddress + "--" + socket.remotePort
-        
-        dsServerGetConn = promisify(dsServer.getConnections)
+        clientsCounter++
         console.log(name)
     
         if(!ds_clients.hasOwnProperty(name)) {
@@ -790,6 +789,14 @@ function serverSocket(port, id, model, chunksNumber) {
         socket.on("error", function(event, err) {
             console.log(err)
         })
+
+        socket.on("close", function() {
+            if(mode === "generating") {
+                clientsCounter--
+                mainWindow.webContents.send('dsGeneration', {clientsCounter, chunksNumber, chunksSentCounter,chunksRecCounter});
+            }
+            
+        })
     
         socket.on('data', function (data) {
             jdata = JSON.parse(data.toString("utf-8"))
@@ -798,7 +805,18 @@ function serverSocket(port, id, model, chunksNumber) {
                 return
             }
 
-            const code = jdata['code'];
+            if(mode === "generating") {
+                generatingMode(socket, jdata, name)
+            } else 
+            if(mode === "recovering") {
+                recoveringMode(socket, jdata)
+            }
+        });
+    
+    }).listen(port);
+
+    function generatingMode(socket, jdata, name) {
+        const code = jdata['code'];
 
             let chunk;
     
@@ -823,7 +841,7 @@ function serverSocket(port, id, model, chunksNumber) {
                             }
                         ))
 
-                        clientCounter()
+                        mainWindow.webContents.send('dsGeneration', {clientsCounter, chunksNumber, chunksSentCounter,chunksRecCounter});
                     }
                     break;
                 case 4:
@@ -835,12 +853,12 @@ function serverSocket(port, id, model, chunksNumber) {
                     else {
                         sentCounter()
                         socket.write(JSON.stringify({code: 3,"chunk": chunk}))
-                        clientCounter()
+                        mainWindow.webContents.send('dsGeneration', {clientsCounter, chunksNumber, chunksSentCounter,chunksRecCounter});
                     }
                     break;
                 case 6:
                     receivedCounter()
-                    clientCounter()
+                    mainWindow.webContents.send('dsGeneration', {clientsCounter, chunksNumber, chunksSentCounter,chunksRecCounter});
                     break;
             }
             function generationDone() {
@@ -851,17 +869,57 @@ function serverSocket(port, id, model, chunksNumber) {
                 ds_clients[name]["sentChunk"].push(chunk)
                 chunksSentCounter++
             }
-            async function clientCounter() {
-                clientsCounter = await dsServerGetConn()
-                mainWindow.webContents.send('dsGeneration', [clientsCounter, chunksNumber, chunksSentCounter,chunksRecCounter]);    
-            }
             function receivedCounter() {
                 ds_clients[name]["receivedChunk"].push(jdata["chunk"])
                 chunksRecCounter++
             }
-        });
-    
-    }).listen(port);
+    }
+
+    function recoveringMode(socket, jdata, name) {
+        const { code } = jdata;
+
+        switch(code) {
+            case 1:
+                socket.write(JSON.stringify(
+                    {
+                        code: 12,
+                        "id": id
+                    }
+                ))
+                break
+            case 13:
+                //Don't have the required model
+                socket.destroy()
+                clientsCounter--
+                break
+            case 14:
+                //Have the required model
+                //Receive the number of chunks
+                //Receive the first chunk
+                const { chunks, filename, file } = jdata
+                dsClient[name]["chunks"] = chunks
+                dsClient[name]["receivedChunks"] = 1
+                //Send to UILogic to save the chunk
+                mainWindow.webContents.send('saveRecoveringFileUpdateClient', {filename, file, clientsCounter});
+                break
+            case 15:
+                //receive another chunk
+                const { chunks, filename, file } = jdata
+                dsClient[name]["receivedChunks"]++
+                if(dsClient[name]["chunks"] !== dsClient[name]["receivedChunks"]) {
+                    mainWindow.webContents.send('saveRecoveringFile', {filename, file});
+                }
+                else {
+                    clientsCounter--
+                    mainWindow.webContents.send('saveRecoveringFileUpdateClient', {filename, file, clientsCounter});
+                    socket.destroy()
+                }
+                //Send to UILogic to save the chunk
+                //verify if end.
+
+                break
+        }
+    }
 
     function getChunkInteration() {
         if (chunksCounter === chunksNumber)
