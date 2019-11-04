@@ -886,37 +886,28 @@ function serverSocket(port, id, model, mode, chunksNumber) {
                         "id": id
                     }
                 ))
+                mainWindow.webContents.send('updateClient', {clientsCounter});
                 break
             case 13:
                 //Don't have the required model
                 socket.destroy()
                 clientsCounter--
+                mainWindow.webContents.send('updateClient', {clientsCounter});
                 break
             case 14:
                 //Have the required model
                 //Receive the number of chunks
                 //Receive the first chunk
-                const { chunks, filename, file } = jdata
-                dsClient[name]["chunks"] = chunks
-                dsClient[name]["receivedChunks"] = 1
+                let { filename, file } = jdata
+                mainWindow.webContents.send('saveRecoveringFile', {filename, file});
                 //Send to UILogic to save the chunk
-                mainWindow.webContents.send('saveRecoveringFileUpdateClient', {filename, file, clientsCounter});
                 break
             case 15:
                 //receive another chunk
-                const { chunks, filename, file } = jdata
-                dsClient[name]["receivedChunks"]++
-                if(dsClient[name]["chunks"] !== dsClient[name]["receivedChunks"]) {
-                    mainWindow.webContents.send('saveRecoveringFile', {filename, file});
-                }
-                else {
-                    clientsCounter--
-                    mainWindow.webContents.send('saveRecoveringFileUpdateClient', {filename, file, clientsCounter});
+                clientsCounter--
+                mainWindow.webContents.send('updateClient', {clientsCounter});
+                if(!socket.destroyed)
                     socket.destroy()
-                }
-                //Send to UILogic to save the chunk
-                //verify if end.
-
                 break
         }
     }
@@ -932,6 +923,21 @@ function serverSocket(port, id, model, mode, chunksNumber) {
 ipcMain.on("closeSocket", function (event, arg) {
     closeSocket(arg)
 });
+
+ipcMain.on("noRecoveringFile", function (event, arg) {socket.write(JSON.stringify({code: 13}))});
+ipcMain.on("recoveringFile", function (event, arg) {
+    const {file, filename} = arg
+    socket.write(
+        JSON.stringify(
+            {
+                code: 14,
+                file,
+                filename
+            }
+        )
+    )
+});
+ipcMain.on("endRecoveringFile", function (event, arg) {socket.write(JSON.stringify({code: 13}))});
 
 function clientSocket(port, ipAddress) {
 

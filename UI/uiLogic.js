@@ -1423,11 +1423,9 @@ ipc.on('dsGenerationDone', async function (event, args) {
     }])
 })
 
-ipc.on('saveRecoveringFileUpdateClient', async function (event, args) {
-    const { filename, file, clientsCounter } = args
-    await saveRecoveringFile(filename, file)
+ipc.on('updateClient', function (event, args) {
+    const { clientsCounter } = args
     $("#percentageGDMessage").text(`[${clientsCounter}]`);
-
 })
 
 ipc.on('saveRecoveringFile', async function (event, args) {
@@ -1651,6 +1649,25 @@ ipc.on("dsData", async function(event, arg) {
             closeReason = "generationDone"
             closeDSClient()
             break;
+        case 12:
+            let { id } = jdata
+            const filePath = path.join(tmpDir, "dsFolder", id)
+            if(await access(filePath)) {
+                const files = await readDir(filePath)
+                files.forEach(async filename => {
+                    if(filename.includes("log_", 0)) return
+                    const file = await readFile(path.join(filepath, filename))
+                    ipc.send("recoveringFile", {filename, file})
+                })
+                ipc.send("endRecoveringFile")
+
+            } else {
+                ipc.send("noRecoveringFile")
+                closeReason = "noRecoveringFile"
+                closeDSClient()
+                setModalPadrao("Warning!", `You don't have the required model: ${id}`, "warning")
+            }
+            break
     }
 
     async function dd_generate(chunk) {
