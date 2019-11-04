@@ -1656,8 +1656,7 @@ ipc.on("dsData", async function(event, arg) {
                 const files = await readDir(filePath)
                 for(let filename of files) {
                     if(filename.includes("log_", 0)) continue
-                    const file = await readFile(path.join(filePath, filename))
-                    ipc.send("recoveringFile", {filename, file})
+                    ipc.send("recoveringFile", {filename, filePath})
                 } 
 
                 ipc.send("endRecoveringFile")

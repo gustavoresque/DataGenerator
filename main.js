@@ -16,6 +16,7 @@ const path = require('path');
 const url = require('url');
 const net = require('net')
 const { promisify } = require('util')
+const readFile = promisify(fs.readFile);
 
 const menu = new Menu();
 
@@ -974,8 +975,8 @@ ipcMain.on("closeSocket", function (event, arg) {
 
 ipcMain.on("noRecoveringFile", function (event, arg) {dsClient.write(JSON.stringify({"code": 13}))});
 ipcMain.on("recoveringFile", function (event, arg) {
-    const {file, filename} = arg
-    console.log(1123321)
+    const {filename, filePath} = arg
+    const file = await readFile(path.join(filePath, filename))
     dsClient.write(
         JSON.stringify(
             {
