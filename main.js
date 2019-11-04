@@ -890,7 +890,9 @@ function serverSocket(port, id, model, mode, chunksNumber) {
                 break
             case 13:
                 //Don't have the required model
-                socket.destroy()
+
+                if(!socket.destroyed)
+                    socket.destroy()
                 clientsCounter--
                 mainWindow.webContents.send('updateClient', {clientsCounter});
                 break
@@ -919,25 +921,6 @@ function serverSocket(port, id, model, mode, chunksNumber) {
         return chunksCounter++
     }
 }
-
-ipcMain.on("closeSocket", function (event, arg) {
-    closeSocket(arg)
-});
-
-ipcMain.on("noRecoveringFile", function (event, arg) {socket.write(JSON.stringify({code: 13}))});
-ipcMain.on("recoveringFile", function (event, arg) {
-    const {file, filename} = arg
-    socket.write(
-        JSON.stringify(
-            {
-                code: 14,
-                file,
-                filename
-            }
-        )
-    )
-});
-ipcMain.on("endRecoveringFile", function (event, arg) {socket.write(JSON.stringify({code: 13}))});
 
 function clientSocket(port, ipAddress) {
 
@@ -974,7 +957,7 @@ function clientSocket(port, ipAddress) {
         dsClient.on('close', function(event) {
             closeSocket("client")
             mainWindow.webContents.send('dsClientClose', event);
-            console.log('DS Connection closed');
+            console.trace('DS Connection closed');
         });
     }
     catch(e) {
@@ -984,6 +967,26 @@ function clientSocket(port, ipAddress) {
     }
 
 }
+
+ipcMain.on("closeSocket", function (event, arg) {
+    closeSocket(arg)
+});
+
+ipcMain.on("noRecoveringFile", function (event, arg) {dsClient.write(JSON.stringify({"code": 13}))});
+ipcMain.on("recoveringFile", function (event, arg) {
+    const {file, filename} = arg
+    console.log(1123321)
+    dsClient.write(
+        JSON.stringify(
+            {
+                "code": 14,
+                "file": file,
+                "filename": filename
+            }
+        )
+    )
+});
+ipcMain.on("endRecoveringFile", function (event, arg) {dsClient.write(JSON.stringify({"code": 15}))});
 
 ipcMain.on("chunkGenerated", function (event, chunk) {
     if(!dsClient) return

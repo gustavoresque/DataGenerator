@@ -1448,7 +1448,7 @@ async function saveRecoveringFile(filename, file) {
 
 let dsClientSocket = {
     on: false,
-    ipAddress: "192.168.0.4",
+    ipAddress: "192.168.0.3",
     port: 5000,
     log: {},
     model: new DataGen(),
@@ -1650,15 +1650,16 @@ ipc.on("dsData", async function(event, arg) {
             closeDSClient()
             break;
         case 12:
-            let { id } = jdata
+            let { id } = arg
             const filePath = path.join(tmpDir, "dsFolder", id)
             if(await access(filePath)) {
                 const files = await readDir(filePath)
-                files.forEach(async filename => {
-                    if(filename.includes("log_", 0)) return
-                    const file = await readFile(path.join(filepath, filename))
+                for(let filename of files) {
+                    if(filename.includes("log_", 0)) continue
+                    const file = await readFile(path.join(filePath, filename))
                     ipc.send("recoveringFile", {filename, file})
-                })
+                } 
+
                 ipc.send("endRecoveringFile")
 
             } else {
