@@ -36,6 +36,7 @@ let generating = false; //Avoid more then 1 generation at a time, include local 
 
 
 let ipc = require('electron').ipcRenderer;
+const ipcSend = promisify(ipc.send);
 
 let vis = require("@labvis-ufpa/vistechlib");
 
@@ -1306,12 +1307,12 @@ function sizeFormatter(size, hasUnit) {
 
 let dsServerSocket = {
     on: false,
-    mode: "generating", // generating ou recovering
-    recoveringModelID: "",
+    mode: "recovering", // generating ou recovering
+    recoveringModelID: "MODEL_1dd6mmctykrd",
     port: 5000
 }
 
-function startServerSocket() {    
+async function startServerSocket() {    
 
     if(generating) {
         setModalPadrao("Error!", "You already have a generation running!", "error")
@@ -1366,6 +1367,12 @@ function startServerSocket() {
         dsServerSocket.mode === "generating" ? 
             ds_datagen.ID.replace(".","") : 
             dsServerSocket.recoveringModelID.replace(".","")
+    
+    if(dsServerSocket.mode === "recovering") {
+        const idPath = path.join(tmpDir, "dsFolder", dsServerSocket.recoveringModelID)
+        if(!await access(idPath))
+            await mk(idPath)
+    }
 
     ipc.send('startServerSocket', [dsServerSocket.port, id, model, dsServerSocket.mode, chunksNumber]);
 }
@@ -1374,10 +1381,10 @@ function startServerSocket() {
     
 // })
 
+//================ Generating Mode ================
+
 ipc.on('dsGeneration', function(event, args) {
     const {clientsCounter, chunksNumber, chunksSentCounter, chunksRecCounter} = args
-
-    console.log(args)
 
     const value = chunksRecCounter/chunksNumber
 
@@ -1423,24 +1430,27 @@ ipc.on('dsGenerationDone', async function (event, args) {
     }])
 })
 
+//================ Recovering Mode ================
+
 ipc.on('updateClient', function (event, args) {
     const { clientsCounter } = args
     $("#percentageGDMessage").text(`[${clientsCounter}]`);
 })
 
-ipc.on('saveRecoveringFile', async function (event, args) {
+ipc.on('uiRecoveringFile', function (event, args) {
+    console.log('uiRecoveringFile')
     const { filename, file } = args
-    await saveRecoveringFile(filename, file)
+    dsClientRecoveringFiles[filename] += file
+})
+
+ipc.on('saveRecoveringFile', async function () {
+    console.log('saveRecoveringFile')
+    await saveRecoveringFile(filename, dsClientRecoveringFiles[filename])
 })
 
 async function saveRecoveringFile(filename, file) {
-    const id = dsServerSocket.recoveringModelID
 
-    const idPath = path.join(tmpDir, "dsFolder", id)
-    if(!await access(idPath))
-        await mk(idPath)
-
-    const filePath = path.join(idPath, filename)   
+    const filePath = path.join(tmpDir, "dsFolder", dsServerSocket.recoveringModelID, filename)   
     if(!await access(filePath))
         await writeFile(filePath, file)
 
@@ -1448,11 +1458,13 @@ async function saveRecoveringFile(filename, file) {
 
 let dsClientSocket = {
     on: false,
-    ipAddress: "192.168.0.3",
+    ipAddress: "192.168.0.4",
     port: 5000,
     log: {},
     model: new DataGen(),
 }
+
+let dsClientRecoveringFiles = {}
 
 function showDsLog(type, log) {
     let text = ""
@@ -1649,17 +1661,55 @@ ipc.on("dsData", async function(event, arg) {
             closeReason = "generationDone"
             closeDSClient()
             break;
+        case 11:
+            closeReason = "recoveringDone"
+            setModalPadrao('Success!', "The recovering was finished! Thank you!", "success")
+            break
         case 12:
             let { id } = arg
             const filePath = path.join(tmpDir, "dsFolder", id)
+            let waiter = 500
+            console.log(filePath)
             if(await access(filePath)) {
                 const files = await readDir(filePath)
-                for(let filename of files) {
+                for (let filename of files) {
                     if(filename.includes("log_", 0)) continue
-                    ipc.send("recoveringFile", {filename, filePath})
-                } 
+                    let readerStream = fs.createReadStream(path.join(filePath, filename), { encoding: 'utf8', highWaterMark: 512 });
 
-                ipc.send("endRecoveringFile")
+                    //for await not working here :(
+
+                    readerStream.on('data', async function(chunk) {
+                        waiter += 10
+                        console.log('send','mainRecoveringFile')
+                        console.log('chunk', chunk)
+                        setTimeout(async () => {
+                            await ipcSend("mainRecoveringFile", {filename, "file": chunk})
+                        }, waiter);
+                       
+                    })
+
+                    readerStream.on('end', async function() {
+                        waiter += 10
+
+                        console.log('send','endRecoveringFile')
+                        setTimeout(async () => {
+                            await ipcSend("endRecoveringFile")
+                        }, waiter);
+                        
+                        
+                        if(filename === files[files.length -1]) {
+                            waiter += 10
+
+                            console.log('send','endRecoveringFiles')
+                            setTimeout(async () => {
+                                await ipcSend("endRecoveringFiles")
+                            }, waiter);
+                        }
+                    })
+                    readerStream.on('error', function(err) { 
+                        console.log(err.stack);
+                    });
+                }
 
             } else {
                 ipc.send("noRecoveringFile")

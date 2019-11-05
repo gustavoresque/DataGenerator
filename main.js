@@ -15,6 +15,7 @@ const BrowserWindow = electron.BrowserWindow;
 const path = require('path');
 const url = require('url');
 const net = require('net')
+const fs = require('fs')
 const { promisify } = require('util')
 const readFile = promisify(fs.readFile);
 
@@ -720,7 +721,7 @@ ipcMain.on("get-path2", function (event, arg) {
 
 */
 
-let dsServer, dsClient;
+let dsServer, dsClient
 
 ipcMain.on("startServerSocket", function (event, arg) {
     serverSocket(...arg)
@@ -787,6 +788,8 @@ function serverSocket(port, id, model, mode, chunksNumber) {
             ds_clients[name]["socket"] = socket;
         }
 
+        socket.setNoDelay(true)
+
         socket.on("error", function(event, err) {
             console.log(err)
         })
@@ -800,6 +803,8 @@ function serverSocket(port, id, model, mode, chunksNumber) {
         })
     
         socket.on('data', function (data) {
+            console.log(data.toString("utf-8"))
+            console.log('------')
             jdata = JSON.parse(data.toString("utf-8"))
             if(!jdata.hasOwnProperty("code")) {
                 delete ds_clients[name]
@@ -901,12 +906,18 @@ function serverSocket(port, id, model, mode, chunksNumber) {
                 //Have the required model
                 //Receive the number of chunks
                 //Receive the first chunk
-                let { filename, file } = jdata
-                mainWindow.webContents.send('saveRecoveringFile', {filename, file});
+                console.log('send','uiRecoveringFile')
+                mainWindow.webContents.send('uiRecoveringFile', jdata);
                 //Send to UILogic to save the chunk
                 break
             case 15:
+                    console.log('send','saveRecoveringFile')
+                    mainWindow.webContents.send('saveRecoveringFile');
+                break;
+            case 16:
+                    console.log('case 16')
                 //receive another chunk
+                socket.write({code: 11})
                 clientsCounter--
                 mainWindow.webContents.send('updateClient', {clientsCounter});
                 if(!socket.destroyed)
@@ -974,9 +985,8 @@ ipcMain.on("closeSocket", function (event, arg) {
 });
 
 ipcMain.on("noRecoveringFile", function (event, arg) {dsClient.write(JSON.stringify({"code": 13}))});
-ipcMain.on("recoveringFile", function (event, arg) {
-    const {filename, filePath} = arg
-    const file = await readFile(path.join(filePath, filename))
+ipcMain.on("mainRecoveringFile", async function (event, arg) {
+    const {filename, file} = arg
     dsClient.write(
         JSON.stringify(
             {
@@ -988,6 +998,7 @@ ipcMain.on("recoveringFile", function (event, arg) {
     )
 });
 ipcMain.on("endRecoveringFile", function (event, arg) {dsClient.write(JSON.stringify({"code": 15}))});
+ipcMain.on("endRecoveringFiles", function (event, arg) {dsClient.write(JSON.stringify({"code": 16}))});
 
 ipcMain.on("chunkGenerated", function (event, chunk) {
     if(!dsClient) return
