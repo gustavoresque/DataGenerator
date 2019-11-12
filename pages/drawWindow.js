@@ -117,8 +117,9 @@ class Circle extends Drawing{
 }
 
 class Bezier extends Drawing{
-    constructor(_points, _id, _globalUpdate, _getAllPath){
+    constructor(_points, _id, _cycle, _globalUpdate, _getAllPath){
         super(_points, _id, _globalUpdate, _getAllPath);
+        this.cycle = _cycle;
     }
 
     drawPath(){
@@ -177,6 +178,7 @@ class Bezier extends Drawing{
             })
             .call(d3.drag()
                 .on("start", function(d,i) {
+                    console.log(i);
                     let delta_x = 0;
                     let delta_y = 0;
                     if (thisDrawingProperties.points[i-1]){
@@ -211,12 +213,21 @@ class Bezier extends Drawing{
 
                         if(t+1 < thisDrawingProperties.points.length) thisDrawingProperties.points[t+1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[t].x, thisDrawingProperties.points[t].y, thisDrawingProperties.points[t-1].x, thisDrawingProperties.points[t-1].y);
                     }else{
-                        console.log((distance < 1) + " | " + !ctrlKey + " | " + i + " | " + (distance < 1 && !ctrlKey));
                         thisDrawingProperties.points[i].x = d3.mouse(document.getElementById("canvas"))[0];
                         thisDrawingProperties.points[i].y = d3.mouse(document.getElementById("canvas"))[1];
+                        if (thisDrawingProperties.cycle && i === thisDrawingProperties.points.length-1){
+                            thisDrawingProperties.points[0].x = d3.mouse(document.getElementById("canvas"))[0];
+                            thisDrawingProperties.points[0].y = d3.mouse(document.getElementById("canvas"))[1];
+                        }
+
                         if (shiftKey) {
                             let j = 0;
-                            if (i % 3 === 1) {
+                            if (thisDrawingProperties.cycle && i === thisDrawingProperties.points.length - 2){
+                                thisDrawingProperties.points[j + 1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[j].x, thisDrawingProperties.points[j].y, thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y);
+                            }else if (thisDrawingProperties.cycle && i === 1){
+                                j = thisDrawingProperties.points.length - 1;
+                                thisDrawingProperties.points[j - 1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[j].x, thisDrawingProperties.points[j].y, thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y);
+                            }else if (i % 3 === 1) {
                                 j = i - 1;
                                 thisDrawingProperties.points[j - 1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[j].x, thisDrawingProperties.points[j].y, thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y);
                             } else if (i % 3 === 2) {
@@ -229,7 +240,12 @@ class Bezier extends Drawing{
                             let y3 = thisDrawingProperties.points[i].y + (distance * Math.sin(theta_radians));
                             thisDrawingProperties.points[i - 1] = new Point(x3, y3);
 
-                            if (i + 1 < thisDrawingProperties.points.length) thisDrawingProperties.points[i + 1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y, thisDrawingProperties.points[i - 1].x, thisDrawingProperties.points[i - 1].y);
+                            if (i+1 < thisDrawingProperties.points.length){
+                                thisDrawingProperties.points[i + 1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y, thisDrawingProperties.points[i - 1].x, thisDrawingProperties.points[i - 1].y);
+                            }
+                            else if (thisDrawingProperties.cycle){
+                                thisDrawingProperties.points[1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[i].x, thisDrawingProperties.points[i].y, thisDrawingProperties.points[i - 1].x, thisDrawingProperties.points[i - 1].y);
+                            }
                         }
                     }
 

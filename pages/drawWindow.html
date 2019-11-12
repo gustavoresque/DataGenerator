@@ -343,8 +343,15 @@
                 let b;
                 switch(element.type){
                     case 'Bezier':
-                        previewPath.pop();
-                        b = new Drawing.listOfDrawings['Bezier'](previewPath,drawings.length,function(){
+                        let cycle = false;
+                        if (cycle){
+                            previewPath.push(pontoOposto(previewPath[0][0],previewPath[0][1],previewPath[1][0],previewPath[1][1]));
+                            previewPath.push(previewPath[0]);
+                        }else{
+                            previewPath.pop();
+                        }
+
+                        b = new Drawing.listOfDrawings['Bezier'](previewPath,drawings.length,cycle,function(){
                             update();
                         },function(){
                             return getAllPath();
@@ -503,7 +510,7 @@
             svgObj.forEach((e,i) => {
                 for (let j = 0; j < e.params.length; j += 2){
                     if (e.command === "L"){
-                        let aux = new Drawing.listOfDrawings['Bezier'](output,drawings.length,function(){
+                        let aux = new Drawing.listOfDrawings['Bezier'](output,drawings.length,false,function(){
                             update();
                         },function(){
                             return getAllPath();
@@ -516,7 +523,7 @@
                 }
             });
 
-            let b = new Drawing.listOfDrawings['Bezier'](output,drawings.length,function(){
+            let b = new Drawing.listOfDrawings['Bezier'](output,drawings.length,false,function(){
                 update();
             },function(){
                 return getAllPath();
