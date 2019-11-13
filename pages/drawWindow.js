@@ -77,20 +77,39 @@ class Circle extends Drawing{
         if (options._radius)
             this.radius = options._radius;
         else
-            this.radius = Math.sqrt(Math.pow((this.points[1].x - this.points[0].x),2) + Math.pow((this.points[1].y - this.points[0].y),2));;
+            this.radius = Math.sqrt(Math.pow((this.points[1].x - this.points[0].x),2) + Math.pow((this.points[1].y - this.points[0].y),2));
+    }
 
+    circlePoints(){
+        let bezierPoints = [];
+        let center = this.points[0];
+        let aux = this.radius * 0.5;
+
+        bezierPoints.push([center.x - this.radius, center.y]);
+        bezierPoints.push([center.x - this.radius, center.y + aux]);
+
+        bezierPoints.push([center.x - aux, center.y + this.radius]);
+        bezierPoints.push([center.x, center.y + this.radius]);
+        bezierPoints.push([center.x + aux, center.y + this.radius]);
+
+        bezierPoints.push([center.x + this.radius, center.y + aux]);
+        bezierPoints.push([center.x + this.radius, center.y]);
+        bezierPoints.push([center.x + this.radius, center.y - aux]);
+
+        bezierPoints.push([center.x + aux, center.y - this.radius]);
+        bezierPoints.push([center.x, center.y - this.radius]);
+        bezierPoints.push([center.x - aux, center.y - this.radius]);
+
+        bezierPoints.push([center.x - this.radius, center.y - aux]);
+        bezierPoints.push([center.x - this.radius, center.y]);
+
+        return bezierPoints;
     }
 
     drawPath (){
-        let g = d3.select('g').insert('g');
-        $(g).get(0).__node__ = this;
-        let thisDrawingProperties = $(g).get(0).__node__;
-
-        g.append('path').attr("class", "definitive").attr("id", this.id).attr("d",this.getPath())
-            .style("fill","none").style("stroke","black").style("stroke-width","3px");
-
-        g.attr('class', 'drawing');
-        return g.node();
+        // let g = d3.select('g').insert('g');
+        // $(g).get(0).__node__ = this;
+        // let thisDrawingProperties = $(g).get(0).__node__;
     }
 
     getPath(){
@@ -204,12 +223,24 @@ class Bezier extends Drawing{
                         }else if(i % 3 === 2) {
                             t = i + 1;
                         }
-                        thisDrawingProperties.points[t].x = d3.mouse(document.getElementById("canvas"))[0];
-                        thisDrawingProperties.points[t].y = d3.mouse(document.getElementById("canvas"))[1];
+                        if (thisDrawingProperties.cycle && i === thisDrawingProperties.points.length - 1){
+                            console.log("Teste");
+                            thisDrawingProperties.points[thisDrawingProperties.points.length - 1].x = d3.mouse(document.getElementById("canvas"))[0];
+                            thisDrawingProperties.points[thisDrawingProperties.points.length - 1].y = d3.mouse(document.getElementById("canvas"))[1];
+                            thisDrawingProperties.points[0].x = d3.mouse(document.getElementById("canvas"))[0];
+                            thisDrawingProperties.points[0].y = d3.mouse(document.getElementById("canvas"))[1];
 
-                        let x3 = thisDrawingProperties.points[t].x + (distance * Math.cos(theta_radians));
-                        let y3 = thisDrawingProperties.points[t].y + (distance * Math.sin(theta_radians));
-                        thisDrawingProperties.points[t-1] = new Point(x3,y3);
+                            let x3 = thisDrawingProperties.points[t].x + (distance * Math.cos(theta_radians));
+                            let y3 = thisDrawingProperties.points[t].y + (distance * Math.sin(theta_radians));
+                            thisDrawingProperties.points[t-1] = new Point(x3,y3);
+                        }else{
+                            thisDrawingProperties.points[t].x = d3.mouse(document.getElementById("canvas"))[0];
+                            thisDrawingProperties.points[t].y = d3.mouse(document.getElementById("canvas"))[1];
+
+                            let x3 = thisDrawingProperties.points[t].x + (distance * Math.cos(theta_radians));
+                            let y3 = thisDrawingProperties.points[t].y + (distance * Math.sin(theta_radians));
+                            thisDrawingProperties.points[t-1] = new Point(x3,y3);
+                        }
 
                         if(t+1 < thisDrawingProperties.points.length) thisDrawingProperties.points[t+1] = thisDrawingProperties.pontoOposto(thisDrawingProperties.points[t].x, thisDrawingProperties.points[t].y, thisDrawingProperties.points[t-1].x, thisDrawingProperties.points[t-1].y);
                     }else{

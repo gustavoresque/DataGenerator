@@ -343,7 +343,7 @@
                 let b;
                 switch(element.type){
                     case 'Bezier':
-                        let cycle = false;
+                        let cycle = true;
                         if (cycle){
                             previewPath.push(pontoOposto(previewPath[0][0],previewPath[0][1],previewPath[1][0],previewPath[1][1]));
                             previewPath.push(previewPath[0]);
@@ -358,15 +358,14 @@
                         });
                         break;
                     case 'Circle':
-                        b = new Drawing.listOfDrawings['Circle']({
-                            _points: previewPath,
-                            _id: drawings.length,
-                            _globalUpdate: function(){
-                                update();
-                            },
-                            _getAllPath: function(){
-                                return getAllPath();
-                            }
+                        let temp = new Drawing.listOfDrawings['Circle']({
+                            _points: previewPath
+                        });
+
+                        b = new Drawing.listOfDrawings['Bezier'](temp.circlePoints(),drawings.length,true,function(){
+                            update();
+                        },function(){
+                            return getAllPath();
                         });
                         break;
                     default:
