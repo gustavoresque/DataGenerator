@@ -123,8 +123,6 @@ class Generator{
         }
     }
 
-
-
     removeLastGenerator(){
         if (!this.generator)
             return;
@@ -163,8 +161,6 @@ class Generator{
         return this.lastGenerated = sub_value;
     }
 
-
-
     getGenParams(){
         return [
             {
@@ -172,7 +168,7 @@ class Generator{
                 variableName: "accessOperator",
                 name: "The operator between this value and right generator value",
                 type: "options",
-                options: ["sum", "multiply", "modulus", "divide", "subtract", "none"]
+                options: ["sum", "multiply", "modulus", "divide", "subtract", "none", "xor"]
             }
         ];
     }
@@ -771,10 +767,63 @@ class Accessory extends Generator{
     }
 }
 
-class MissingValue extends Accessory{
+class MCAR extends Accessory{
 
     constructor(value, probability){
-        super("Missing Value");
+        super("MCAR");
+        this.value = value || "Miss";
+        this.probability = probability || 0.1;
+    }
+
+    generate(){
+        if(Math.random() < this.probability) {
+            this.lastGenerated = this.value;
+            return this.value;
+        }else{
+            console.log(this)
+            return super.generate(false);
+        }
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "Value",
+                variableName: "value",
+                name: "The Constant Value",
+                type: "auto"
+            },
+            {
+                shortName: "Prob",
+                variableName: "probability",
+                name: "Occurrence Probability\n Must be between 0 and 1",
+                type: "number"
+            }
+        );
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.value = this.value;
+        model.probability = this.probability;
+        return model;
+    }
+
+    copy(){
+        let newGen = new MCAR(this.value, this.probability);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+}
+
+class MAR extends Accessory{
+
+    constructor(value, probability){
+        super("MAR");
         this.value = value || "Miss";
         this.probability = probability || 0.1;
     }
@@ -815,7 +864,59 @@ class MissingValue extends Accessory{
     }
 
     copy(){
-        let newGen = new MissingValue(this.value, this.probability);
+        let newGen = new MAR(this.value, this.probability);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+}
+
+class MNAR extends Accessory{
+
+    constructor(value, probability){
+        super("MNAR");
+        this.value = value || "Miss";
+        this.probability = probability || 0.1;
+    }
+
+    generate(){
+        if(Math.random() < this.probability) {
+            this.lastGenerated = this.value;
+            return this.value;
+        }else{
+            return super.generate(0);
+        }
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "Value",
+                variableName: "value",
+                name: "The Constant Value",
+                type: "auto"
+            },
+            {
+                shortName: "Prob",
+                variableName: "probability",
+                name: "Occurrence Probability\n Must be between 0 and 1",
+                type: "number"
+            }
+        );
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.value = this.value;
+        model.probability = this.probability;
+        return model;
+    }
+
+    copy(){
+        let newGen = new MNAR(this.value, this.probability);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -1165,7 +1266,7 @@ class NoRepeat extends Accessory {
 
     generate() {
         let newValue = super.generate(0);
-        while(this.values.indexOf(newValue) >= 0)
+        while(this.values.includes(newValue))
             newValue = super.generate(0);
 
         this.values.push(newValue);
@@ -3258,7 +3359,8 @@ Generator.Operators = {
     "modulus": (a,b) => { return a%b; },
     "divide": (a,b) => { return a/b; },
     "subtract": (a,b) => { return a-b; },
-    "none": (a,b) => { return b; }
+    "none": (a,b) => {return b; },
+    "xor": (a,b) => {return b ? b : a}
 
 };
 
@@ -3268,6 +3370,7 @@ Generator.Operators.modulus.name = "modulus";
 Generator.Operators.divide.name = "divide";
 Generator.Operators.subtract.name = "subtract";
 Generator.Operators.none.name = "none";
+Generator.Operators.xor.name = "xor";
 
 
 
@@ -3334,7 +3437,7 @@ class DataGen {
         this.name = "Model";
         this.n_lines = 100; // Quantidade de linhas na geração
         this.step_lines = 10000;
-        this.n_sample_lines = 100;
+        this.n_sample_lines = 10;
         this.save_as = "csv";
         this.header = true;
         this.header_type = true;
@@ -3349,8 +3452,6 @@ class DataGen {
             index: 0,
             snapshot: [this.exportModel()]
         };
-        this.dsIpAddress = "127.0.0.1";
-        this.dsPort = 5000;
     }
 
     get configs(){
@@ -3721,7 +3822,9 @@ class DataGen {
 
 DataGen.listOfGens = {
     'Constant Value': ConstantValue,
-    'Missing Value': MissingValue,
+    'MCAR': MCAR,
+    'MAR': MAR,
+    'MNAR': MNAR,
     'Counter Generator': CounterGenerator,
     'Fixed Time Generator': FixedTimeGenerator,
     'Poisson Time Generator': PoissonTimeGenerator,
@@ -3759,7 +3862,9 @@ DataGen.listOfGens = {
 
 DataGen.listOfGensHelp = {
     'Constant Value': "Generate a sequence with only one constant number.",
-    'Missing Value': MissingValue,
+    'MCAR': "Introduce values Missing Completely At Random.",
+    'MAR': "Introduce values Missing At Random.",
+    'MNAR': "Introduce values Missing Not At Random.",
     'Counter Generator': "Generate a sequence counting Step by Step from Begin.",
     'Fixed Time Generator': FixedTimeGenerator,
     'Poisson Time Generator': PoissonTimeGenerator,
@@ -3772,26 +3877,27 @@ DataGen.listOfGensHelp = {
     'Constant Noise Generator': RandomConstantNoiseGenerator,
     'Range Filter': RangeFilter,
     'Linear Scale': LinearScale,
-    'No Repeat': NoRepeat,
+    'No Repeat': "Generate distinct values.",
     'MinMax': MinMax,
     'Low-Pass Filter': LowPassFilter,
-    'Weighted Categorical': RandomWeightedCategorical,
+    'Weighted Categorical': "Almost the same as Categorical, but the names have probability to appear.",
     'Categorical': "Generate random data using names.",
-    'Categorical Quantity': RandomCategoricalQtt,
+    'Categorical Quantity': "Almost the same as Categorical, but each name have a fixed quantity.",
     'Linear Function': LinearFunction,
     'Quadratic Function': QuadraticFunction,
     'Polynomial Function': PolynomialFunction,
     'Exponential Function': ExponentialFunction,
     'Logarithm Function': LogarithmFunction,
     'Sinusoidal Function': SinusoidalFunction,
-    'Categorical Function': CategoricalFunction,
+    'Categorical Function': "Using categorical inputs to generate values.",
     'Piecewise Function': PiecewiseFunction,
     'TimeLaps Function': TimeLapsFunction,
-    'Sinusoidal Sequence': SinusoidalSequence,
-    'Custom Sequence': CustomSequence,
+    'Sinusoidal Sequence': "Generate values in a sinusoidal sequence.",
+    'Custom Sequence': "Generate values using a custom sequence.",
     'CubicBezier Generator': CubicBezierGenerator,
     'Path2D Stroke Generator': Path2DStrokeGenerator,
-    'Get Extra Value': GetExtraValue
+    'Get Extra Value': "Useful for generators the return multidimensional values.",
+    'Real Data Wrapper' : "Generator to receice data from real dataset."
 };
 
 DataGen.listOfGensForNoise = {
