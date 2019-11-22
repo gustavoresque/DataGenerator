@@ -6,6 +6,7 @@ const electron = require('electron').remote;
 const {clipboard} = require('electron');
 const dialog = electron.dialog;
 const path = require('path');
+const _ = require('lodash');
 const BrowserWindow = electron.BrowserWindow;
 
 const DataGen = require("./datagen/datagen.js");
@@ -106,7 +107,7 @@ ipc.on('get-path', function(event, allPath){
     }
 });
 
-ipc.on('open-datagen', function(event, path){openModel(path); showModels(); showGenerators();});
+ipc.on('open-datagen', async function(event, path){await openModel(path); showModels(); showGenerators();});
 
 async function openModel (path, backup=false) {
     const file = await readFile(path.toString(), 'utf8')
@@ -786,8 +787,7 @@ $("html").ready(function() {
     $.contextMenu({
         selector: '#selectGeneratorType',
         trigger: 'none',
-        callback: function (key) {
-            let nameNewGenerator = key;
+        callback: function (nameNewGenerator) {
             let newGen = new (DataGen.listOfGens[nameNewGenerator])();
             //substitui o gerador na estrutura.
             this[0].__node__.changeGenerator(newGen);
@@ -1068,6 +1068,7 @@ function catchs(message) {
             $("#percentageCancelIcon").css("display", `none`);
             break;
         default:
+            console.trace(message)
             setModalPadrao('Error!', 'Something bad happened!', "error");
             $("#percentageCancelIcon").css("display", `none`);
             $("#percentageGDMessage").text("Failed!");
@@ -1159,9 +1160,7 @@ async function displayMessage(file, value) {
 
 async function dataGeneration(targetPath) {
     try {
-        const dt = new DataGen();
-        dt.columns = []
-        dt.importModel(datagen[currentDataGen].exportModel());
+        const dt = _.cloneDeep(datagen[currentDataGen])
         switch(dt.save_as) {
             case 'json':
                 await writeFile(
@@ -2173,7 +2172,7 @@ function createModelFromDataSet(path) {
     })
 }
 
-$("body").on("change", "#input_genType", () => {
+$("body").on("change", "#input_genType, #input_columnType", () => {
     propsConfigs(activeGenerator[currentDataGen], activeGenerator[currentDataGen].getRootGenerator().parent)
 })
 

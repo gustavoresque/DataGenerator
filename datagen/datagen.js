@@ -168,7 +168,7 @@ class Generator{
                 variableName: "accessOperator",
                 name: "The operator between this value and right generator value",
                 type: "options",
-                options: ["sum", "multiply", "modulus", "divide", "subtract", "none", "xor"]
+                options: ["sum", "multiply", "modulus", "divide", "subtract", "none"]
             }
         ];
     }
@@ -456,14 +456,14 @@ class RandomCategorical extends Random {
     }
 
     generate() {
-        let result =  this.generator ? parseInt(super.generate(0)) : -1;
-        if(isNaN(result) || result >= this.array.length || result < 0){
-            this.lastGenerated = this.array[Math.floor(Math.random() * this.array.length)];
-            return this.lastGenerated;
-        } else{
-            this.lastGenerated = this.array[result];
-            return this.lastGenerated;
-        }
+        //Por que isso existe?
+        //let result =  this.generator ? parseInt(super.generate(0)) : -1;
+        // console.trace(result)
+        // if(isNaN(result) || result >= this.array.length || result < 0)
+        //     return this.lastGenerated = this.array[result];
+
+        return this.lastGenerated = this.array[Math.floor(Math.random() * this.array.length)];
+        
     }
 
     getGenParams() {
@@ -759,8 +759,6 @@ class PoissonTimeGenerator extends Random{
     }
 }
 
-
-
 class Accessory extends Generator{
     constructor(name){
         super(name);
@@ -776,13 +774,9 @@ class MCAR extends Accessory{
     }
 
     generate(){
-        if(Math.random() < this.probability) {
-            this.lastGenerated = this.value;
-            return this.value;
-        }else{
-            console.log(this)
-            return super.generate(false);
-        }
+        if(Math.random() > this.probability) return super.generate(0);
+        
+        return this.lastGenerated = this.value;
     }
 
     getGenParams(){
@@ -822,24 +816,53 @@ class MCAR extends Accessory{
 
 class MAR extends Accessory{
 
-    constructor(value, probability){
+    constructor(columnType, inputGenerator, value, probability){
         super("MAR");
+        this.inputGenerator = inputGenerator;
+        this.columnType = columnType || "Numeric"
+        //this.inputGenIndex = inputGenIndex;
         this.value = value || "Miss";
         this.probability = probability || 0.1;
     }
 
     generate(){
-        if(Math.random() < this.probability) {
-            this.lastGenerated = this.value;
-            return this.value;
-        }else{
-            return super.generate(0);
-        }
+        console.log(this.inputGenerator)
+        const oie = this.inputGenerator.generate(0);
+        console.log(oie)
+        if(Math.random() > this.probability) return oie
+        
+        return this.lastGenerated = this.value;
     }
 
     getGenParams(){
         let params = super.getGenParams();
+        // console.log(this.inputGenerator.getReturnedType())
+        // let inputType;
+        // switch(this.inputGenerator.getReturnedType()) {
+        //     case "Numeric":
+        //         inputType = "NumericColumn"
+        //         break
+        //     case "Categorical":
+        //         inputType = "CategoricalColumn"
+        //         break
+        //     case "Time":
+        //         inputType = "TimeColumn"
+        //         break
+        // }
         params.push(
+            {
+                shortName: "ColType",
+                variableName: "columnType",
+                name: "For dimension selecting.",
+                type: "options",
+                options: ["Numeric", "Categorical", "Time"]
+            },
+            {
+                shortName: "Input",
+                variableName: "inputGenerator",
+                name: "Input Column (Previous one)",
+                type: this.columnType + "Column"
+            },
             {
                 shortName: "Value",
                 variableName: "value",
@@ -856,15 +879,21 @@ class MAR extends Accessory{
         return params;
     }
 
+    getReturnedType() {
+        return this.columnType
+    }
+
     getModel(){
         let model = super.getModel();
         model.value = this.value;
         model.probability = this.probability;
+        model.columnType = this.columnType;
+        model.inputGenerator = this.inputGenerator;
         return model;
     }
 
     copy(){
-        let newGen = new MAR(this.value, this.probability);
+        let newGen = new MAR(this.value, this.probability, this.inputGenerator);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -881,12 +910,12 @@ class MNAR extends Accessory{
     }
 
     generate(){
-        if(Math.random() < this.probability) {
-            this.lastGenerated = this.value;
-            return this.value;
-        }else{
-            return super.generate(0);
-        }
+        const value = super.generate(false)
+        if(Math.random() > this.probability) return value;
+
+        this.lastGenerated = this.value;
+        return this.value;
+        
     }
 
     getGenParams(){
@@ -2625,18 +2654,15 @@ class SwitchCaseFunction extends Function{
 
     getReturnedType(){
         let outType;
+        console.trace(this.listOfGenerators)
         for(let genName in this.listOfGenerators){
-            if(this.listOfGenerators.hasOwnProperty(genName)) {
-                if(outType && outType !== this.listOfGenerators[genName].getReturnedType()){
-                    return "Mixed";
-                }
-                outType = this.listOfGenerators[genName].getReturnedType();
-            }
+            console.log(2623, genName)
+            //if(this.listOfGenerators.hasOwnProperty(genName)) continue //Faz sentido essa linha?
+            if(outType && outType !== this.listOfGenerators[genName].getReturnedType()) return "Mixed";
+            outType = this.listOfGenerators[genName].getReturnedType(); //Get last generator type
         }
-        if(outType){
-            return outType;
-        }
-        return "Numeric";
+
+        return outType ? outType :"Numeric";
     }
 
     copy(){
@@ -3360,7 +3386,6 @@ Generator.Operators = {
     "divide": (a,b) => { return a/b; },
     "subtract": (a,b) => { return a-b; },
     "none": (a,b) => {return b; },
-    "xor": (a,b) => {return b ? b : a}
 
 };
 
@@ -3370,7 +3395,6 @@ Generator.Operators.modulus.name = "modulus";
 Generator.Operators.divide.name = "divide";
 Generator.Operators.subtract.name = "subtract";
 Generator.Operators.none.name = "none";
-Generator.Operators.xor.name = "xor";
 
 
 
@@ -3862,9 +3886,9 @@ DataGen.listOfGens = {
 
 DataGen.listOfGensHelp = {
     'Constant Value': "Generate a sequence with only one constant number.",
-    'MCAR': "Introduce values Missing Completely At Random.",
-    'MAR': "Introduce values Missing At Random.",
-    'MNAR': "Introduce values Missing Not At Random.",
+    'MCAR': "[Use at left] Introduce values Missing Completely At Random.",
+    'MAR': "[Use at left] Introduce values Missing At Random.",
+    'MNAR': "[Use at left] Introduce values Missing Not At Random.",
     'Counter Generator': "Generate a sequence counting Step by Step from Begin.",
     'Fixed Time Generator': FixedTimeGenerator,
     'Poisson Time Generator': PoissonTimeGenerator,

@@ -246,12 +246,13 @@ function createWindow () {
                 },
                 {
                     label: 'Open Model',
+                    accelerator: process.platform === "darwin" ? 'Cmd+O' : 'Ctrl+O',
                     click () {
                         let pathFile = dialog.showOpenDialog(mainWindow, {
                             properties: ['openFile']
                         });
-                    if(!pathFile) return;
-                    mainWindow.webContents.send('open-datagen', pathFile.toString());
+                        if(!pathFile) return;
+                        mainWindow.webContents.send('open-datagen', pathFile.toString());
                     }
                 },
                 {
