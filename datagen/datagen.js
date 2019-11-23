@@ -836,19 +836,6 @@ class MAR extends Accessory{
 
     getGenParams(){
         let params = super.getGenParams();
-        // console.log(this.inputGenerator.getReturnedType())
-        // let inputType;
-        // switch(this.inputGenerator.getReturnedType()) {
-        //     case "Numeric":
-        //         inputType = "NumericColumn"
-        //         break
-        //     case "Categorical":
-        //         inputType = "CategoricalColumn"
-        //         break
-        //     case "Time":
-        //         inputType = "TimeColumn"
-        //         break
-        // }
         params.push(
             {
                 shortName: "ColType",
@@ -903,18 +890,55 @@ class MAR extends Accessory{
 
 class MNAR extends Accessory{
 
-    constructor(value, probability){
+    constructor(value, columnType, firstPattern, secondPattern, mask){
         super("MNAR");
+        this.operator = Generator.Operators.none
         this.value = value || "Miss";
-        this.probability = probability || 0.1;
+        this.columnType = columnType || "Numeric"
+        this.firstPattern = firstPattern || ""
+        this.secondPattern = secondPattern || ""
+        this.mask = mask || "HH:mm:ss"
+        this.explain = "This generator works assuming 3 types of data: Numeric, Categorical and Time. For Numeric, all number between first and second pattern will be missing. For categorical, all categories listed in first pattern will be missing. For Time, all time inside the interval between first and second pattern will be missing."
     }
-
     generate(){
         const value = super.generate(false)
-        if(Math.random() > this.probability) return value;
-
-        this.lastGenerated = this.value;
-        return this.value;
+        if(this.columnType === "Categorical") {
+            try{
+                if(this.firstPattern.replace(" ", "").split(",").includes(value.replace(" ", "")))
+                    return this.lastGenerated = this.value
+                return this.lastGenerated = value
+            } catch(e) {
+                console.error(e)
+                return this.lastGenerated = value
+            }
+        }
+        if(this.columnType === "Numeric"){
+            try {
+                console.log(value, this.firstPattern, this.secondPattern)
+                if(value > this.firstPattern && value < this.secondPattern) return this.lastGenerated = this.value
+                return this.lastGenerated = value
+            } catch(e) {
+                console.error(e)
+                return this.lastGenerated = value
+            }
+            
+        }
+        if(this.columnType === "Time") {
+            try {
+                const
+                { mask } = this,
+                currentTime = moment(value, mask),
+                beforeTime = moment(this.firstPattern, mask),
+                afterTime = moment(this.secondPattern, mask);
+                console.log(currentTime, beforeTime, afterTime, currentTime.isBetween(beforeTime, afterTime))
+                if(currentTime.isBetween(beforeTime, afterTime)) return this.lastGenerated = this.value
+                return this.lastGenerated = value
+            } catch(e) {
+                console.error(e)
+                return this.lastGenerated = value
+            }
+            
+        }
         
     }
 
@@ -924,16 +948,54 @@ class MNAR extends Accessory{
             {
                 shortName: "Value",
                 variableName: "value",
-                name: "The Constant Value",
+                name: "The Missing Value",
                 type: "auto"
             },
             {
-                shortName: "Prob",
-                variableName: "probability",
-                name: "Occurrence Probability\n Must be between 0 and 1",
-                type: "number"
+                shortName: "ColType",
+                variableName: "columnType",
+                name: "For dimension selecting.",
+                type: "options",
+                options: ["Numeric", "Categorical", "Time"]
             }
         );
+        if(this.columnType !== "Time") params.push(
+            {
+                shortName: "First Pattern",
+                variableName: "firstPattern",
+                name: "The First Pattern",
+                type: "auto"
+            }
+        )
+        if(this.columnType !== "Categorical" && this.columnType !== "Time") params.push(
+            {
+                shortName: "Second Pattern",
+                variableName: "secondPattern",
+                name: "The Second Pattern",
+                type: "auto"
+            }
+        )
+        if(this.columnType === "Time") params.push(
+            {
+                shortName: "First Pattern",
+                variableName: "firstPattern",
+                name: "The First Pattern",
+                type: "string"
+            },
+            {
+                shortName: "Second Pattern",
+                variableName: "secondPattern",
+                name: "The Second Pattern",
+                type: "string"
+            },
+            {
+                shortName: "Mask",
+                variableName: "mask",
+                name: "The time mask",
+                type: "string"
+            }
+        )
+
         return params;
     }
 
@@ -950,6 +1012,10 @@ class MNAR extends Accessory{
             newGen.addGenerator(this.generator.copy(), this.order);
         }
         return newGen;
+    }
+
+    getExplaining() {
+        return this.explain
     }
 }
 

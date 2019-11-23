@@ -325,7 +325,6 @@ function propsConfigs(generator,coluna, new_place){
 
         }else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
             let $input;
-            console.log(generator);
             if (generator.name === "Path2D Stroke Generator" || generator.name === "Path2D Fill Generator"){
                 $input = $("<textarea/>");
                 $input.val(generator.path);
@@ -2174,6 +2173,11 @@ function createModelFromDataSet(path) {
 
 $("body").on("change", "#input_genType, #input_columnType", () => {
     propsConfigs(activeGenerator[currentDataGen], activeGenerator[currentDataGen].getRootGenerator().parent)
+})
+
+$("body").on("change", "#input_columnType", () => {
+    $("#input_firstPattern").val('').change()
+    $("#input_secondPattern").val('').change()
 })
 
 //Redraw the options on preview's comboBox.
