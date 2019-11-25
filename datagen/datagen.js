@@ -814,94 +814,21 @@ class MCAR extends Accessory{
     }
 }
 
-class MAR extends Accessory{
-
-    constructor(columnType, inputGenerator, value, probability){
-        super("MAR");
-        this.inputGenerator = inputGenerator;
-        this.columnType = columnType || "Numeric"
-        //this.inputGenIndex = inputGenIndex;
-        this.value = value || "Miss";
-        this.probability = probability || 0.1;
-    }
-
-    generate(){
-        console.log(this.inputGenerator)
-        const oie = this.inputGenerator.generate(0);
-        console.log(oie)
-        if(Math.random() > this.probability) return oie
-        
-        return this.lastGenerated = this.value;
-    }
-
-    getGenParams(){
-        let params = super.getGenParams();
-        params.push(
-            {
-                shortName: "ColType",
-                variableName: "columnType",
-                name: "For dimension selecting.",
-                type: "options",
-                options: ["Numeric", "Categorical", "Time"]
-            },
-            {
-                shortName: "Input",
-                variableName: "inputGenerator",
-                name: "Input Column (Previous one)",
-                type: this.columnType + "Column"
-            },
-            {
-                shortName: "Value",
-                variableName: "value",
-                name: "The Constant Value",
-                type: "auto"
-            },
-            {
-                shortName: "Prob",
-                variableName: "probability",
-                name: "Occurrence Probability\n Must be between 0 and 1",
-                type: "number"
-            }
-        );
-        return params;
-    }
-
-    getReturnedType() {
-        return this.columnType
-    }
-
-    getModel(){
-        let model = super.getModel();
-        model.value = this.value;
-        model.probability = this.probability;
-        model.columnType = this.columnType;
-        model.inputGenerator = this.inputGenerator;
-        return model;
-    }
-
-    copy(){
-        let newGen = new MAR(this.value, this.probability, this.inputGenerator);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
-        return newGen;
-    }
-}
-
 class MNAR extends Accessory{
 
-    constructor(value, columnType, firstPattern, secondPattern, mask){
-        super("MNAR");
+    constructor(value, accessColumnType, firstPattern, secondPattern, mask, className="MNAR"){
+        super(className);
         this.operator = Generator.Operators.none
         this.value = value || "Miss";
-        this.columnType = columnType || "Numeric"
+        this.columnType = accessColumnType || "Numeric"
         this.firstPattern = firstPattern || ""
         this.secondPattern = secondPattern || ""
         this.mask = mask || "HH:mm:ss"
         this.explain = "This generator works assuming 3 types of data: Numeric, Categorical and Time. For Numeric, all number between first and second pattern will be missing. For categorical, all categories listed in first pattern will be missing. For Time, all time inside the interval between first and second pattern will be missing."
     }
-    generate(){
-        const value = super.generate(false)
+
+    generate(value = super.generate(false)){
+        
         if(this.columnType === "Categorical") {
             try{
                 if(this.firstPattern.replace(" ", "").split(",").includes(value.replace(" ", "")))
@@ -914,7 +841,6 @@ class MNAR extends Accessory{
         }
         if(this.columnType === "Numeric"){
             try {
-                console.log(value, this.firstPattern, this.secondPattern)
                 if(value > this.firstPattern && value < this.secondPattern) return this.lastGenerated = this.value
                 return this.lastGenerated = value
             } catch(e) {
@@ -925,12 +851,12 @@ class MNAR extends Accessory{
         }
         if(this.columnType === "Time") {
             try {
+
                 const
                 { mask } = this,
                 currentTime = moment(value, mask),
                 beforeTime = moment(this.firstPattern, mask),
                 afterTime = moment(this.secondPattern, mask);
-                console.log(currentTime, beforeTime, afterTime, currentTime.isBetween(beforeTime, afterTime))
                 if(currentTime.isBetween(beforeTime, afterTime)) return this.lastGenerated = this.value
                 return this.lastGenerated = value
             } catch(e) {
@@ -942,6 +868,19 @@ class MNAR extends Accessory{
         
     }
 
+    get accessColumnType() {
+        return this.columnType
+    }
+
+    /**
+     * @param {string} value
+     */
+    set accessColumnType(value) {
+        this.columnType = value
+        this.firstPattern = ""
+        this.secondPattern = ""
+        this.inputGenerator = undefined
+    }
     getGenParams(){
         let params = super.getGenParams();
         params.push(
@@ -953,7 +892,7 @@ class MNAR extends Accessory{
             },
             {
                 shortName: "ColType",
-                variableName: "columnType",
+                variableName: "accessColumnType",
                 name: "For dimension selecting.",
                 type: "options",
                 options: ["Numeric", "Categorical", "Time"]
@@ -1002,12 +941,15 @@ class MNAR extends Accessory{
     getModel(){
         let model = super.getModel();
         model.value = this.value;
-        model.probability = this.probability;
+        model.columnType = this.columnType 
+        model.firstPattern = this.firstPattern 
+        model.secondPattern = this.secondPattern
+        model.mask = this.mask
         return model;
     }
 
     copy(){
-        let newGen = new MNAR(this.value, this.probability);
+        let newGen = new MNAR(this.value, this.accessColumnType, this.firstPattern, this.secondPattern, this.mask);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -1016,6 +958,58 @@ class MNAR extends Accessory{
 
     getExplaining() {
         return this.explain
+    }
+}
+
+class MAR extends MNAR{
+
+    constructor(value, columnType, firstPattern, secondPattern, mask, inputGenerator){
+        super(value, columnType, firstPattern, secondPattern, mask, "MAR");
+        this.explain = ""
+        this.inputGenerator = inputGenerator;
+    }
+
+    generate(){    
+        return this.lastGenerated = super.generate(this.inputGenerator.generate(0));
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "Input",
+                variableName: "inputGenerator",
+                name: "Input Column (Previous one)",
+                type: this.columnType + "Column"
+            }
+        );
+        return params;
+    }
+    
+
+    getReturnedType() {
+        return this.columnType
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.inputGenerator = this.inputGenerator;
+        return model;
+    }
+
+    copy(){
+        let newGen = new MAR(
+            this.value,
+            this.columnType,
+            this.firstPattern,
+            this.secondPattern,
+            this.mask,
+            this.inputGenerator
+        );
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
     }
 }
 
@@ -2337,8 +2331,6 @@ class Path2DFillGenerator extends Geometric{
 
     }
 }
-
-
 
 class Function extends Generator{
 

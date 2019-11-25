@@ -2171,13 +2171,8 @@ function createModelFromDataSet(path) {
     })
 }
 
-$("body").on("change", "#input_genType, #input_columnType", () => {
+$("body").on("change", "#input_genType, #input_accessColumnType", () => {
     propsConfigs(activeGenerator[currentDataGen], activeGenerator[currentDataGen].getRootGenerator().parent)
-})
-
-$("body").on("change", "#input_columnType", () => {
-    $("#input_firstPattern").val('').change()
-    $("#input_secondPattern").val('').change()
 })
 
 //Redraw the options on preview's comboBox.
