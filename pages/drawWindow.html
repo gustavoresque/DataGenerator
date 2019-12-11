@@ -52,6 +52,11 @@
         }
 
         #tripod{
+            background-image: url("res.png");
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-position: 65% 40%;
+            background-size: 500px 500px;
             background-color: white;
             box-shadow: 5px 5px 5px black;
             border-style: solid;
@@ -343,7 +348,7 @@
                 let b;
                 switch(element.type){
                     case 'Bezier':
-                        let cycle = true;
+                        let cycle = false;
                         if (cycle){
                             previewPath.push(pontoOposto(previewPath[0][0],previewPath[0][1],previewPath[1][0],previewPath[1][1]));
                             previewPath.push(previewPath[0]);
@@ -467,11 +472,12 @@
 
         ipc.on('open-window', function(event, message){
             let path = '', pathCircles = '';
+            console.log(message);
             message.forEach((e,i) => {
                 if (e.name === 'Bezier')
                     path += e.path;
-                else if (e.name === 'Circle')
-                    pathCircles += e.path;
+                //else if (e.name === 'Circle')
+                    //pathCircles += e.path;
             });
 
             let svgObj = DataGen.Utils.decodeSvgPathD(path);
