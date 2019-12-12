@@ -812,15 +812,22 @@ class MCAR extends Accessory{
         }
         return newGen;
     }
+    getReturnedType(){
+        if(!this.generator) return super.getReturnedType();
+        const genColType = this.generator.getReturnedType()
+        if(genColType === "Categorical" || genColType === "Time") this.operator = Generator.Operators.none
+        return genColType
+    }
 }
 
 class MNAR extends Accessory{
 
-    constructor(value, accessColumnType, firstPattern, secondPattern, mask, className="MNAR"){
+    constructor(value, probability, firstPattern, secondPattern, mask, className="MNAR"){
         super(className);
         this.operator = Generator.Operators.none
         this.value = value || "Miss";
-        this.columnType = accessColumnType || "Numeric"
+        this.probability = probability || 1;
+        this.columnType = this.getReturnedType()
         this.firstPattern = firstPattern || ""
         this.secondPattern = secondPattern || ""
         this.mask = mask || "HH:mm:ss"
@@ -831,8 +838,9 @@ class MNAR extends Accessory{
         
         if(this.columnType === "Categorical") {
             try{
-                if(this.firstPattern.replace(" ", "").split(",").includes(value.replace(" ", "")))
-                    return this.lastGenerated = this.value
+                if(Math.random()<this.probability)
+                    if(this.firstPattern.replace(" ", "").split(",").includes(value.replace(" ", "")))
+                        return this.lastGenerated = this.value
                 return this.lastGenerated = value
             } catch(e) {
                 console.error(e)
@@ -841,7 +849,9 @@ class MNAR extends Accessory{
         }
         if(this.columnType === "Numeric"){
             try {
-                if(value > this.firstPattern && value < this.secondPattern) return this.lastGenerated = this.value
+                if(Math.random()<this.probability)
+                    if(value > this.firstPattern && value < this.secondPattern) 
+                        return this.lastGenerated = this.value
                 return this.lastGenerated = value
             } catch(e) {
                 console.error(e)
@@ -857,7 +867,9 @@ class MNAR extends Accessory{
                 currentTime = moment(value, mask),
                 beforeTime = moment(this.firstPattern, mask),
                 afterTime = moment(this.secondPattern, mask);
-                if(currentTime.isBetween(beforeTime, afterTime)) return this.lastGenerated = this.value
+                if(Math.random()<this.probability)
+                    if(currentTime.isBetween(beforeTime, afterTime)) 
+                        return this.lastGenerated = this.value
                 return this.lastGenerated = value
             } catch(e) {
                 console.error(e)
@@ -868,13 +880,6 @@ class MNAR extends Accessory{
         
     }
 
-    get accessColumnType() {
-        return this.columnType
-    }
-
-    /**
-     * @param {string} value
-     */
     set accessColumnType(value) {
         this.columnType = value
         this.firstPattern = ""
@@ -891,11 +896,10 @@ class MNAR extends Accessory{
                 type: "auto"
             },
             {
-                shortName: "ColType",
-                variableName: "accessColumnType",
-                name: "For dimension selecting.",
-                type: "options",
-                options: ["Numeric", "Categorical", "Time"]
+                shortName: "Probability",
+                variableName: "probability",
+                name: "The Missing Rate",
+                type: "number"
             }
         );
         if(this.columnType !== "Time") params.push(
@@ -941,6 +945,7 @@ class MNAR extends Accessory{
     getModel(){
         let model = super.getModel();
         model.value = this.value;
+        model.probability = this.probability
         model.columnType = this.columnType 
         model.firstPattern = this.firstPattern 
         model.secondPattern = this.secondPattern
@@ -949,11 +954,24 @@ class MNAR extends Accessory{
     }
 
     copy(){
-        let newGen = new MNAR(this.value, this.accessColumnType, this.firstPattern, this.secondPattern, this.mask);
+        let newGen = new MNAR(this.value, this.probability, this.accessColumnType, this.firstPattern, this.secondPattern, this.mask);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
         return newGen;
+    }
+
+    getReturnedType() {
+        if(!this.generator) return super.getReturnedType()
+
+        const genColType = this.generator.getReturnedType()
+        if(genColType === "Categorical" || genColType === "Time") 
+            this.operator = Generator.Operators.none
+
+        if(genColType !== this.columnType)
+            this.accessColumnType = genColType
+        return genColType
+        
     }
 
     getExplaining() {
@@ -963,29 +981,57 @@ class MNAR extends Accessory{
 
 class MAR extends MNAR{
 
-    constructor(value, columnType, firstPattern, secondPattern, mask, inputGenerator){
-        super(value, columnType, firstPattern, secondPattern, mask, "MAR");
+    constructor(value, probability, firstPattern, secondPattern, mask, accessColumnType, inputGenerator, inputData){
+        super(value, probability, firstPattern, secondPattern, mask, "MAR");
+        this.columnType = accessColumnType || super.getReturnedType()
+        
         this.explain = ""
         this.inputGenerator = inputGenerator;
+        this.inputData = inputData || true
     }
 
     generate(){    
-        return this.lastGenerated = super.generate(this.inputGenerator.generate(0));
+        return this.lastGenerated = super.generate(this.inputData ? this.inputGenerator.generate(0) : undefined);
+    }
+
+    get accessColumnType() {
+        return this.columnType
+    }
+
+    /**
+     * @param {string} value
+     */
+    set accessColumnType(value) {
+        this.columnType = value
+        this.firstPattern = ""
+        this.secondPattern = ""
+        this.inputGenerator = undefined
     }
 
     getGenParams(){
         let params = super.getGenParams();
         params.push(
             {
+                shortName: "ColType",
+                variableName: "accessColumnType",
+                name: "For dimension selecting.",
+                type: "options",
+                options: ["Numeric", "Categorical", "Time"]
+            },
+            {
                 shortName: "Input",
                 variableName: "inputGenerator",
                 name: "Input Column (Previous one)",
                 type: this.columnType + "Column"
+            },{
+                shortName: "InputData",
+                variableName: "inputData",
+                name: "Data comes from Input",
+                type: "boolean"
             }
         );
         return params;
     }
-    
 
     getReturnedType() {
         return this.columnType
@@ -994,17 +1040,20 @@ class MAR extends MNAR{
     getModel(){
         let model = super.getModel();
         model.inputGenerator = this.inputGenerator;
+        model.inputData = this.inputData
         return model;
     }
 
     copy(){
         let newGen = new MAR(
             this.value,
-            this.columnType,
+            this.probability,
             this.firstPattern,
             this.secondPattern,
             this.mask,
-            this.inputGenerator
+            this.columnType,
+            this.inputGenerator,
+            this.inputData
         );
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
@@ -1301,6 +1350,59 @@ class MinMax extends Accessory {
     }
 }
 
+class NumberFormat extends Accessory {
+    constructor(disc, decPlaces) {
+        super("NumberFormat");
+        this.disc = disc || false;
+        this.decPlaces = decPlaces || undefined;
+    }
+
+    generate() {
+        let value = super.generate(0)
+        if(this.disc) {
+            value = Math.round(value)
+        } else 
+        if(this.decPlaces) {
+            value = Number(value.toFixed(this.decPlaces))
+        }
+        return this.lastGenerated = value;
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "Disc",
+                variableName: "disc",
+                name: "Discrete Values",
+                type: "boolean"
+            },
+            {
+                shortName: "Decimal Places",
+                variableName: "decPlaces",
+                name: "Decimal Places",
+                type: "number"
+            }
+        );
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.disc = this.disc;
+        model.decPlaces = this.decPlaces;
+        return model;
+    }
+
+    copy(){
+        let newGen = new NumberFormat(this.disc, this.decPlaces);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+}
+
 class LowPassFilter extends Accessory {
     constructor(scale) {
         super("Low-Pass Filter");
@@ -1355,6 +1457,8 @@ class NoRepeat extends Accessory {
 
     generate() {
         let newValue = super.generate(0);
+        if(newValue === undefined || newValue === null) return false
+        console.log(newValue)
         while(this.values.includes(newValue))
             newValue = super.generate(0);
 
@@ -3921,6 +4025,7 @@ DataGen.listOfGens = {
     'Linear Scale': LinearScale,
     'No Repeat': NoRepeat,
     'MinMax': MinMax,
+    'NumberFormat': NumberFormat,
     'Low-Pass Filter': LowPassFilter,
     'Weighted Categorical': RandomWeightedCategorical,
     'Categorical': RandomCategorical,
@@ -3961,6 +4066,7 @@ DataGen.listOfGensHelp = {
     'Linear Scale': LinearScale,
     'No Repeat': "Generate distinct values.",
     'MinMax': MinMax,
+    "Number Format": "Format the number from generators",
     'Low-Pass Filter': LowPassFilter,
     'Weighted Categorical': "Almost the same as Categorical, but the names have probability to appear.",
     'Categorical': "Generate random data using names.",
