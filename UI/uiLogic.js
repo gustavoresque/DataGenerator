@@ -981,7 +981,7 @@ function deleteCollumn(){
 async function verifyBackupModels() {
     if(!await access(platformASpath)) throw new Error("No Files")
     let files = await readDir(platformASpath);
-    if(files.length === 0) throw new Error("No Files")
+    // if(files.length === 0) throw new Error("No Files")
     try {
         for (let nextFile of files) {
             await openModel(platformASpath+nextFile, true);
