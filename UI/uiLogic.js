@@ -658,12 +658,13 @@ $("html").ready(function() {
         if(activeGenerator[currentDataGen] instanceof DataGen.superTypes["Geometric"]){
             //TODO: Aqui Yvan!
             let configs = [];
-            if (paths.length === 0){
+            //if (paths.length === 0){
                 //configs.push(activeGenerator[currentDataGen].getModel());
                 configs.push({name:'Bezier', path: activeGenerator[currentDataGen].getModel().path});
-            }else{
+                console.log(configs);
+            /*}else{
                 configs = paths;
-            }
+            }*/
             ipc.send('draw-window', configs);
         }
     });

@@ -52,6 +52,11 @@
         }
 
         #tripod{
+            background-image: url("res.png");
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-position: 65% 40%;
+            background-size: 500px 500px;
             background-color: white;
             box-shadow: 5px 5px 5px black;
             border-style: solid;
@@ -343,23 +348,29 @@
                 let b;
                 switch(element.type){
                     case 'Bezier':
-                        previewPath.pop();
-                        b = new Drawing.listOfDrawings['Bezier'](previewPath,drawings.length,function(){
+                        let cycle = false;
+                        if (cycle){
+                            previewPath.push(pontoOposto(previewPath[0][0],previewPath[0][1],previewPath[1][0],previewPath[1][1]));
+                            previewPath.push(previewPath[0]);
+                        }else{
+                            previewPath.pop();
+                        }
+
+                        b = new Drawing.listOfDrawings['Bezier'](previewPath,drawings.length,cycle,function(){
                             update();
                         },function(){
                             return getAllPath();
                         });
                         break;
                     case 'Circle':
-                        b = new Drawing.listOfDrawings['Circle']({
-                            _points: previewPath,
-                            _id: drawings.length,
-                            _globalUpdate: function(){
-                                update();
-                            },
-                            _getAllPath: function(){
-                                return getAllPath();
-                            }
+                        let temp = new Drawing.listOfDrawings['Circle']({
+                            _points: previewPath
+                        });
+
+                        b = new Drawing.listOfDrawings['Bezier'](temp.circlePoints(),drawings.length,true,function(){
+                            update();
+                        },function(){
+                            return getAllPath();
                         });
                         break;
                     default:
@@ -461,11 +472,12 @@
 
         ipc.on('open-window', function(event, message){
             let path = '', pathCircles = '';
+            console.log(message);
             message.forEach((e,i) => {
                 if (e.name === 'Bezier')
                     path += e.path;
-                else if (e.name === 'Circle')
-                    pathCircles += e.path;
+                //else if (e.name === 'Circle')
+                    //pathCircles += e.path;
             });
 
             let svgObj = DataGen.Utils.decodeSvgPathD(path);
@@ -503,7 +515,7 @@
             svgObj.forEach((e,i) => {
                 for (let j = 0; j < e.params.length; j += 2){
                     if (e.command === "L"){
-                        let aux = new Drawing.listOfDrawings['Bezier'](output,drawings.length,function(){
+                        let aux = new Drawing.listOfDrawings['Bezier'](output,drawings.length,false,function(){
                             update();
                         },function(){
                             return getAllPath();
@@ -516,7 +528,7 @@
                 }
             });
 
-            let b = new Drawing.listOfDrawings['Bezier'](output,drawings.length,function(){
+            let b = new Drawing.listOfDrawings['Bezier'](output,drawings.length,false,function(){
                 update();
             },function(){
                 return getAllPath();
