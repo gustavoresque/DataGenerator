@@ -3583,6 +3583,7 @@ function copyAttrs(source, target, context){
                     if(source[attr].hasOwnProperty(attr2)) {
                         for (let genObj of source[attr][attr2]) {
                             //Resolve os filhos
+                            console.log(genObj.name);
                             let gen1 = new (DataGen.listOfGens[genObj.name])();
 
                             if (target[attr][attr2]) {
@@ -3624,7 +3625,7 @@ class DataGen {
         this.name = "Model";
         this.n_lines = 100; // Quantidade de linhas na geração
         this.step_lines = 10000;
-        this.n_sample_lines = 10;
+        this.n_sample_lines = 100;
         this.save_as = "csv";
         this.header = true;
         this.header_type = true;
@@ -4009,6 +4010,8 @@ class DataGen {
 
 DataGen.listOfGens = {
     'Constant Value': ConstantValue,
+    //Legacy form below
+    'Missing Value': MCAR,
     'MCAR': MCAR,
     // 'MAR': MAR,
     'MNAR': MNAR,

@@ -117,7 +117,7 @@ async function openModel (path, backup=false) {
         try{
             dg.importModel(file);
         } catch(e) {
-            console.log(e)
+            console.log(e);
             if(!e.message.includes("Real Data Wrapper is strange!"))
                 throw new Error("Something Bad Happened")
         }
@@ -1308,19 +1308,20 @@ async function createServerSocket() {
             jdata = JSON.parse(data)
             if(!jdata.hasOwnProperty("code")) return 
             const code = jdata['code'];
-    
+            let chunk;
+
             switch(code) {
                 case 1:
-                    clients[name]["sentChunk"] = []
-                    clients[name]["receivedChunk"] = []
+                    clients[name]["sentChunk"] = [];
+                    clients[name]["receivedChunk"] = [];
     
-                    const chunk = getChunkInteration()
+                    chunk = getChunkInteration();
     
                     if(!!chunk) {
-                        socket.write(JSON.stringify({code: 5}))
-                        server.close()
+                        socket.write(JSON.stringify({code: 5}));
+                        server.close();
                     } else {
-                        clients[name]["sentChunk"].push(chunk)
+                        clients[name]["sentChunk"].push(chunk);
     
                         socket.write(JSON.stringify(
                             {
@@ -1333,21 +1334,21 @@ async function createServerSocket() {
                     }
                     break;
                 case 4: //TODO: receber o chunk e salvar que este foi concluído com sucesso.
-                    clients[name]["receivedChunk"].push(jdata["chunk"])
-                    const chunk = getChunkInteration()
+                    clients[name]["receivedChunk"].push(jdata["chunk"]);
+                    chunk = getChunkInteration();
     
                     if(!!chunk) {
-                        socket.write(JSON.stringify({code: 5}))
-                        server.close()
+                        socket.write(JSON.stringify({code: 5}));
+                        server.close();
                     } else {
-                        clients[name]["chunks"].push(chunk)
+                        clients[name]["chunks"].push(chunk);
     
                         socket.write(JSON.stringify(
                             {
                                 code: 3,
                                 "chunk": chunk
                             }
-                        ))
+                        ));
                     }
                     break;
                 case 7:
@@ -1389,41 +1390,41 @@ async function createClientSocket() {
         return
     }
 
-    const ipAddress = datagen[currentDataGen]["dsIpAddress"]
-    const port = datagen[currentDataGen]["dsPort"]
+    const ipAddress = datagen[currentDataGen]["dsIpAddress"];
+    const port = datagen[currentDataGen]["dsPort"];
 
     const clientLog = {
         server: `${ipAddress}_${port}`,
         chunks: []
-    }
+    };
 
-    let model = new DataGen()
-    model.columns = []
+    let model = new DataGen();
+    model.columns = [];
 
-    const pathToChunks = ""
+    let pathToChunks = "";
     
-    distributedSystemSocket = new net.Socket(); // Todo: tornar global para melhor controle. Associar à variável generating!
+    distributedSystemSocket = new net.Socket(); // TODO: tornar global para melhor controle. Associar à variável generating!
 
     try {
         distributedSystemSocket.connect(port, ipAddress, function (err) {
             if(err) 
-                throw err
+                throw err;
     
             distributedSystemSocket.write(JSON.stringify({
                 "code" : 1,
                 "username": username
-            }))
-        })
+            }));
+        });
 
         distributedSystemSocket.on("error", function(e) {
             if(e.message.includes("ECONNREFUSED")) {
-                console.error("was not possible to connect")
-                setModalPadrao("Error!", "It was not possible to connect. Please, verify the Ip Address and Port if those are correct.", "error")
+                console.error("was not possible to connect");
+                setModalPadrao("Error!", "It was not possible to connect. Please, verify the Ip Address and Port if those are correct.", "error");
             } else {
-                throw e
+                throw e;
             }
-            closeConnection()
-        })
+            closeConnection();
+        });
         
         distributedSystemSocket.on('data', async function (data) {
             jdata = JSON.parse(data)
