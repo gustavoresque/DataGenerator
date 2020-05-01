@@ -3734,7 +3734,8 @@ class DataGen {
             columnsCounter: this.columnsCounter,
             save_as: this.save_as,
             header: this.header,
-            header_type: this.header_type
+            header_type: this.header_type,
+            seed: this.seed || ""
         };
         for(let i=0; i<this.columns.length; i++){
             model.generator.push({
@@ -3765,6 +3766,8 @@ class DataGen {
         this.save_as = model.save_as || this.save_as;
         this.header = model.header || this.header;
         this.header_type = model.header_type || this.header_type;
+        if(typeof model.seed === "string" && model.seed !== "")
+            this.seed = model.seed;
 
         if(resetColumns)
             this.columns = [];
