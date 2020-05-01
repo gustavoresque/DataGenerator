@@ -1,6 +1,9 @@
 
 let randgen = require("randgen");
+let seedrandom = require("seedrandom");
+let originalRandom = Math.random;
 let moment = require("moment");
+
 
 class Generator{
     constructor(name){
@@ -980,88 +983,6 @@ class MNAR extends Accessory{
     }
 }
 
-// class MAR extends MNAR{
-//
-//     constructor(value, probability, firstPattern, secondPattern, mask, accessColumnType, inputGenerator, inputData){
-//         super(value, probability, firstPattern, secondPattern, mask, "MAR");
-//         this.columnType = accessColumnType || super.getReturnedType();
-//
-//         this.explain = "";
-//         this.inputGenerator = inputGenerator;
-//         this.inputData = inputData || true
-//     }
-//
-//     generate(){
-//         return this.lastGenerated = super.generate(this.inputData ? this.inputGenerator.generate(0) : undefined);
-//     }
-//
-//     get accessColumnType() {
-//         return this.columnType
-//     }
-//
-//     /**
-//      * @param {string} value
-//      */
-//     set accessColumnType(value) {
-//         this.columnType = value
-//         this.firstPattern = ""
-//         this.secondPattern = ""
-//         this.inputGenerator = undefined
-//     }
-//
-//     getGenParams(){
-//         let params = super.getGenParams();
-//         params.push(
-//             {
-//                 shortName: "ColType",
-//                 variableName: "accessColumnType",
-//                 name: "For dimension selecting.",
-//                 type: "options",
-//                 options: ["Numeric", "Categorical", "Time"]
-//             },
-//             {
-//                 shortName: "Input",
-//                 variableName: "inputGenerator",
-//                 name: "Input Column (Previous one)",
-//                 type: this.columnType + "Column"
-//             },{
-//                 shortName: "InputData",
-//                 variableName: "inputData",
-//                 name: "Data comes from Input",
-//                 type: "boolean"
-//             }
-//         );
-//         return params;
-//     }
-//
-//     getReturnedType() {
-//         return this.columnType
-//     }
-//
-//     getModel(){
-//         let model = super.getModel();
-//         model.inputGenerator = this.inputGenerator;
-//         model.inputData = this.inputData
-//         return model;
-//     }
-//
-//     copy(){
-//         let newGen = new MAR(
-//             this.value,
-//             this.probability,
-//             this.firstPattern,
-//             this.secondPattern,
-//             this.mask,
-//             this.columnType,
-//             this.inputGenerator,
-//             this.inputData
-//         );
-//         if (this.generator){
-//             newGen.addGenerator(this.generator.copy(), this.order);
-//         }
-//         return newGen;
-//     }
-// }
 
 class RandomConstantNoiseGenerator extends Accessory{
     constructor(probability, value){
@@ -3636,6 +3557,7 @@ class DataGen {
         this.columnsCounter = 1; //If delete a not last column, the new colum will the same name as the last but one column and this make the preview have a bug.
         this.filePath = undefined;
         this.datagenChange = false;
+        this.seed = false;
         this.memento = {
             index: 0,
             snapshot: [this.exportModel()]
@@ -3649,6 +3571,7 @@ class DataGen {
             save_as: this.save_as,
             header: this.header,
             header_type: this.header_type,
+            seed: this.seed || "",
             iterator: this.iterator
         }
     }
@@ -3659,6 +3582,8 @@ class DataGen {
         if(obj.save_as) this.save_as = obj.save_as;
         if(typeof obj.header === "boolean") this.header = obj.header;
         if(typeof obj.header_type === "boolean") this.header_type = obj.header_type;
+        if(typeof obj.seed === "string" && obj.seed !== "") this.seed = obj.seed;
+        else this.seed = undefined;
         if(obj.iterator){
             let found = false;
             findGen_block: {
@@ -3766,6 +3691,10 @@ class DataGen {
 
     generate (quantity=NaN) {
         //TODO: pedir uma quantidade exata de dados para serem gerados e associar isso com as configurações ao lado do Generate na Tela Inicial.
+        //Troca entre gerador aleatório com ou sem semente.
+        if(this.seed) seedrandom(this.seed, { global: true });
+        else Math.random = originalRandom;
+
         let data = [];
         const numberLines = 
             Number(quantity) ?

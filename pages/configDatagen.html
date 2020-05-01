@@ -302,13 +302,13 @@
                 dsConfig['dsPort'] = Number($(this).val());
             });
 
-            $(".parameterIt").on("drop",function(evt){
-                evt.preventDefault();
-                evt.stopPropagation();
 
                 //{modelID, modelName, colID, colName, genID, genModel, params}
                 let msg = evt.originalEvent.dataTransfer.getData("text");
                 let objs = JSON.parse(msg);
+                $(".parameterIt").on("drop",function(evt){
+                    evt.preventDefault();
+                    evt.stopPropagation();
 
                 $("#generatorIt_desc").removeClass("focus")
                     .text(objs.modelName+" > "+objs.colName+" > "+objs.genModel.name);
@@ -393,6 +393,12 @@
                         <label for="header_type">Header Type</label>
                     </td>
                     <td><input id="header_type" type="checkbox" class="form-control"></td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="seed">Generation Seed</label>
+                    </td>
+                    <td><input id="seed" type="text" class="form-control"></td>
                 </tr>
             </table>
         </div>
