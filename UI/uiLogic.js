@@ -824,21 +824,23 @@ $("html").ready(function() {
     });
 
     $("#tableCollumn").on("click", "span.btnRemoveGen", function(){
-        if ($(this).parent().find("div.md-chip").length > 1){
+        let md_chips = $(this).parent().children("div.md-chip");
+        if (md_chips.length > 1){
             let generators = [];
             if(generators.includes(activeGenerator[currentDataGen])){
-                activeGenerator[currentDataGen].unlink()
+                activeGenerator[currentDataGen].unlink();
                 activeGenerator[currentDataGen] = undefined;
             } else {
-                let l = $(this).parent().find("div.md-chip").length-2;
-                $(this).parent().find("div.md-chip").get(l).__node__.removeLastGenerator();
+                let l = md_chips.length-2;
+                md_chips.get(l).__node__.removeLastGenerator();
             }
             showGenerators();
         }
         hasChanged();
     }).on("click", "span.btnAddGen", function(){
-        let l = $(this).parent().find("div.md-chip").length-1;
-        $(this).parent().find("div.md-chip").get(l).__node__.addGenerator(new UniformGenerator());
+        let md_chips = $(this).parent().children("div.md-chip");
+        let l = md_chips.length-1;
+        md_chips.get(l).__node__.addGenerator(new UniformGenerator());
 
         let generators = [];
         datagen[currentDataGen].columns[$(this).parent().parent().index()].generator.getFullGenerator(generators);
@@ -846,7 +848,7 @@ $("html").ready(function() {
         showGenerators();
 
         let coluna = $(this).closest(".columnTr").get(0).__node__;
-        propsConfigs(generators[generators.length-1],coluna)
+        propsConfigs(generators[generators.length-1],coluna);
         hasChanged();
 
     }).on("click", "span.btnRemoveColumn", function(){
@@ -856,7 +858,7 @@ $("html").ready(function() {
                 $('#selectGeneratorType').empty().attr("disabled", true);
                 $('#generatorPropertiesForm').empty();
             }
-        })
+        });
         showGenerators();
         hasChanged();
 
@@ -1541,7 +1543,7 @@ function dragAndDropGens(){
         event.stopPropagation();
         $("#iconDown").css({display: "none"});
 
-        console.log(event.target.getBoundingClientRect(), event);
+        // console.log(event.target.getBoundingClientRect(), event);
 
         if(dragged !== event.target.__node__){
             let bouding = event.target.getBoundingClientRect();
@@ -1611,15 +1613,15 @@ function showGenerators() {
                 $tdGen.append($chip);
 
                 let $switchGenTr;
-                let flag = false;
+                // let flag = false;
                 let listOfGenSF = gen.listOfGenerators;
                 for (let c in listOfGenSF){
                     if(listOfGenSF.hasOwnProperty(c)){
                         $switchGenTr = $("<tr/>");
-                        if (!flag){
-                            $switchGenTr.append($("<td/>").attr("rowspan", Object.keys(listOfGenSF).length).append($chip));
-                            flag = true;
-                        }
+                        // if (!flag){
+                        //     $switchGenTr.append($("<td/>").attr("rowspan", Object.keys(listOfGenSF).length).append($chip));
+                        //     flag = true;
+                        // }
                         $switchGenTr.append($("<td/>").text(c));
                         let $td = $("<td/>").addClass("columnGen");
 
@@ -1629,9 +1631,11 @@ function showGenerators() {
                     }
                 }
                 $tdGen.append($("<div/>").css("display","inline-block").append($switchGenTable));
-                break;
+                // break;
             }else{
-                let $chip = $("<div/>").addClass("md-chip md-chip-hover").text(gen.order + "-" + gen.name).attr("draggable","true");
+                let $chip = $("<div/>").addClass("md-chip md-chip-hover")
+                    .text(gen.order + "-" + gen.name)
+                    .attr("draggable","true");
                 $chip.get(0).ondragstart = dragGenerator;
                 if(gen === activeGenerator[currentDataGen])
                     active_gen_chip.obj = $chip.addClass("active-md-chip");
@@ -1647,7 +1651,7 @@ function showGenerators() {
         );
     }
 
-
+    console.log(datagen[currentDataGen]);
     let $tbody = $("#tbody").empty();
     if (datagen.length > 0){
         for(let i = 0; i < datagen[currentDataGen].columns.length; i++){

@@ -42,9 +42,10 @@ class Generator{
 
     unlink(){
         if(this.parent){
-            if(this.parent instanceof SwitchCaseFunction){
+            if(this.parent instanceof SwitchCaseFunction) {
                 this.parent.unlinkChild(this);
-            }else if(this.generator){
+            }
+            if(this.generator){
                 this.parent.generator = this.generator;
                 this.generator.parent = this.parent;
             }else{
@@ -85,7 +86,24 @@ class Generator{
     }
 
     insertGeneratorBefore(gen){
-        if(this.parent instanceof Generator) {
+        //é filho de SwitchCaseFunction e está na listOfGenerators
+        //ou seja não é filho direto e sim da lista de cases
+        if(this.parent instanceof SwitchCaseFunction && this.parent.generator !== this){
+            for(let attr in this.parent.listOfGenerators){
+                let genOfList = this.parent.listOfGenerators[attr];
+                if(genOfList === this){
+                    if(genOfList === gen) return;
+
+                    this.parent.listOfGenerators[attr] = gen;
+
+                    gen.parent = genOfList.parent;
+                    gen.generator = genOfList;
+
+                    genOfList.parent = gen;
+                    break;
+                }
+            }
+        }else if(this.parent instanceof Generator) {
             this.parent.insertGenerator(gen);
             return;
         }else{
@@ -106,6 +124,11 @@ class Generator{
         return gen;
     }
 
+    /**
+     * Troca o gerador atual na cadeia pelo gerador passado por parâmentro.
+     * O gerador que foi chamada o método sairá da sua cadeia de geradores.
+     * @param gen O gerador que assumirá o lugar do gerador que foi chamada o método.
+     */
     changeGenerator(gen){
         gen.order = this.order;
         if (this.parent) {
@@ -2674,12 +2697,13 @@ class SwitchCaseFunction extends Function{
     reset(){
         //Sempre que ocorre um reset, o switchCaseFunction avalia a lista de input para verificar se essa lista possui valores novos.
         //Se possui valores a mais, são incluidos RandomUniformGenerators, caso possua um input a menos esse é removido.
+        super.reset();
         if (!this.inputGenerator || !this.inputArray)
             return;
 
-        let auxgen = new RandomUniformGenerator();
-        this.generator = auxgen;
-        auxgen.parent = this;
+        // let auxgen = new RandomUniformGenerator();
+        // this.generator = auxgen;
+        // auxgen.parent = this;
 
         let attrs = [];
         this.array = [];
@@ -2699,8 +2723,9 @@ class SwitchCaseFunction extends Function{
         this.array = [...new Set(this.array)];
         for(let i=0; i<this.inputArray.length; i++){
             if(!(this.listOfGenerators[this.inputArray[i]])) {
-                let gen = new RandomUniformGenerator();
-                auxgen.changeGenerator(gen);
+                let gen = new defaultGenerator();
+                // auxgen.changeGenerator(gen);
+                gen.parent = this;
                 this.listOfGenerators[this.inputArray[i]] = gen;
             }
             let index = attrs.indexOf(this.inputArray[i]);
@@ -2715,8 +2740,8 @@ class SwitchCaseFunction extends Function{
     }
 
     transform(x){
-        this.generator = this.listOfGenerators[x];
-        return 0;
+        //this.generator = this.listOfGenerators[x];
+        return this.listOfGenerators[x].generate();
     }
 
 
@@ -2738,9 +2763,7 @@ class SwitchCaseFunction extends Function{
 
     getReturnedType(){
         let outType;
-        console.trace(this.listOfGenerators)
         for(let genName in this.listOfGenerators){
-            console.log(2623, genName)
             //if(this.listOfGenerators.hasOwnProperty(genName)) continue //Faz sentido essa linha?
             if(outType && outType !== this.listOfGenerators[genName].getReturnedType()) return "Mixed";
             outType = this.listOfGenerators[genName].getReturnedType(); //Get last generator type
@@ -2777,6 +2800,7 @@ class SwitchCaseFunction extends Function{
                 if (this.listOfGenerators[cat] === child) {
                     this.listOfGenerators[cat] = child.generator || new defaultGenerator();
                     this.listOfGenerators[cat].parent = this;
+                    break;
                 }
             }
         }
@@ -2796,10 +2820,10 @@ class CategoricalFunction extends SwitchCaseFunction{
     }
 
     reset(){
+        super.reset();
         if (!this.inputGenerator)
             return;
         this.inputArray = this.inputGenerator.array;
-        super.reset();
     }
 
 }
@@ -2833,12 +2857,13 @@ class PiecewiseFunction extends SwitchCaseFunction{
     transform(x){
         for(let interval of this.intervals){
             if(x <= interval){
-                this.generator = this.listOfGenerators["<= "+interval];
-                return 0;
+                // this.generator = this.listOfGenerators["<= "+interval];
+                return this.listOfGenerators["<= "+interval].generate();
             }
         }
         if(this.intervals.length > 0)
-            this.generator = this.listOfGenerators["> "+this.intervals[this.intervals.length-1]];
+            return this.listOfGenerators["> "+this.intervals[this.intervals.length-1]].generate();
+            // this.generator = this.listOfGenerators["> "+this.intervals[this.intervals.length-1]];
         return 0;
     }
 
@@ -2850,7 +2875,7 @@ class PiecewiseFunction extends SwitchCaseFunction{
 
     reset(){
         this.inputArray = [];
-
+        super.reset();
         if (!this.inputGenerator)
             return;
 
@@ -2865,7 +2890,7 @@ class PiecewiseFunction extends SwitchCaseFunction{
             this.inputArray.push("<= "+interval);
         }
         this.inputArray.push("> "+this.intervals[this.intervals.length-1]);
-        super.reset();
+
     }
 
 
@@ -2888,12 +2913,13 @@ class TimeLapsFunction extends SwitchCaseFunction{
         let inputTime = moment(x, this.inputGenerator.timeMask);
         for(let timeLap of this.timeLaps){
             if(inputTime.isSameOrBefore(timeLap)){
-                this.generator = this.listOfGenerators["<= "+timeLap.format(this.inputGenerator.timeMask)];
-                return 0;
+                // this.generator = this.listOfGenerators["<= "+timeLap.format(this.inputGenerator.timeMask)];
+                return this.listOfGenerators["<= "+timeLap.format(this.inputGenerator.timeMask)].generate();
             }
         }
         if(this.timeLaps.length > 0)
-            this.generator = this.listOfGenerators["> "+this.timeLaps[this.timeLaps.length-1].format(this.inputGenerator.timeMask)];
+            return this.listOfGenerators["> "+this.timeLaps[this.timeLaps.length-1].format(this.inputGenerator.timeMask)].generate();
+            // this.generator = this.listOfGenerators["> "+this.timeLaps[this.timeLaps.length-1].format(this.inputGenerator.timeMask)];
         return 0;
     }
 
@@ -2911,13 +2937,13 @@ class TimeLapsFunction extends SwitchCaseFunction{
         this.timeLaps = [];
         this.inputArray = [];
 
+        super.reset();
         if (!this.inputGenerator)
             return;
 
         //Caso não tenha nenhum lap ele cria uma função para qualquer tempo.
         if(this.laps.length === 0){
             this.inputArray = ["any time"];
-            super.reset();
             return;
         }
 
@@ -2927,7 +2953,6 @@ class TimeLapsFunction extends SwitchCaseFunction{
             this.inputArray.push("<= "+timeLap.format(this.inputGenerator.timeMask));
         }
         this.inputArray.push("> "+this.timeLaps[this.timeLaps.length-1].format(this.inputGenerator.timeMask));
-        super.reset();
     }
 
     getGenParams() {
