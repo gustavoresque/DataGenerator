@@ -1,4 +1,4 @@
-# DataGenerator
+# Blocks (DataGenerator)
 
 This is an application for generating synthetic databases for helping the information visualization evaluation. The system aims to create a data model that allows the construction of datasets with a diversity of profiles in a controlled manner. During the data model creation, the user can visualize generated data samples in coordinated visualizations to validate if the data has the desired characteristics. The creator of the model can save it for future experiments or updates and can export it enabling other groups to replicate the experiments easily.
 
