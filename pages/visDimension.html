@@ -6,14 +6,17 @@
 </head>
 <body>
 
-
+    Em construção!
     <script>
         let ipc = require('electron').ipcRenderer;
         let DataGen = require("../datagen/datagen.js");
+
+        let datagen = new DataGen();
+        
         
 
         ipc.on('update-dimen-data', (event, arg) => {
-            let datagen = new DataGen();
+
             datagen.importModel(arg, true);
 
             for(let i=0; i<datagen.columns.length;i++){

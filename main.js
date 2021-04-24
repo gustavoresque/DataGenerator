@@ -31,7 +31,13 @@ ipcMain.on("get-path2", function (event, arg) {
 function createWindow () {
 
   // Create the browser window.
-  mainWindow = new BrowserWindow({width: 900, height: 600, icon: "icon3.png"});
+  mainWindow = new BrowserWindow({width: 900, height: 600, icon: "icon3.png", webPreferences: {
+    // preload: path.join(app.getAppPath(), 'UI/preload.js')
+    nodeIntegration: true,
+    nodeIntegrationInWorker: true,
+    contextIsolation: false,
+    enableRemoteModule: true
+  }});
   mainWindow.maximize();
 
     // and load the index.html of the app.
@@ -51,7 +57,10 @@ function createWindow () {
             resizable: true,
             closable: false,
             minimizable: false,
-            maximizable: false
+            maximizable: false,
+            webPreferences: {
+                preload: path.join(app.getAppPath(), 'UI/preload.js')
+            }
         });
         // configDatagenWindow.setMenu(null);
         configDatagenWindow.loadURL(url.format({
@@ -78,7 +87,13 @@ function createWindow () {
             resizable: true,
             closable: true,
             minimizable: true,
-            maximizable: true
+            maximizable: true,
+            webPreferences: {
+                nodeIntegration: true,
+                nodeIntegrationInWorker: true,
+                contextIsolation: false,
+                enableRemoteModule: true
+            }
         });
 
         drawWindow.loadURL(url.format({
@@ -150,7 +165,12 @@ function createWindow () {
     });
 
     let funcOpenVisDimenWindow = (message) => {
-        let visDimenWindow = new BrowserWindow({width: 900, height: 600, show: false,});
+        let visDimenWindow = new BrowserWindow({width: 900, height: 600, show: false, webPreferences: {
+            nodeIntegration: true,
+            nodeIntegrationInWorker: true,
+            contextIsolation: false,
+            enableRemoteModule: true
+        }});
         visDimenWindows.push(visDimenWindow);
         visDimenWindow.loadURL(url.format({
             pathname: path.join(__dirname, 'pages/visDimension.html'),
@@ -400,7 +420,12 @@ function createWindow () {
                     {
                         label: 'Histogram Cascade',
                         click() {
-                            visDimensionWindow = new BrowserWindow({width: 900, height: 600, show: false,});
+                            visDimensionWindow = new BrowserWindow({width: 900, height: 600, show: false,webPreferences: {
+                                nodeIntegration: true,
+                                nodeIntegrationInWorker: true,
+                                contextIsolation: false,
+                                enableRemoteModule: true
+                            }});
                             visDimensionWindow.loadURL(url.format({
                                 pathname: path.join(__dirname, 'pages/visDimension.html'),
                                 protocol: 'file:',
@@ -451,7 +476,13 @@ function createWindow () {
             resizable: true,
             closable: true,
             minimizable: false,
-            maximizable: false
+            maximizable: false,
+            webPreferences: {
+                nodeIntegration: true,
+                nodeIntegrationInWorker: true,
+                contextIsolation: false,
+                enableRemoteModule: true
+            }
         });
         aboutWindow.setMenu(null);
         aboutWindow.loadURL(url.format({

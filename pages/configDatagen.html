@@ -1,92 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Generation Settings</title>
     <link rel="stylesheet" href="../photon-0.1.2-dist/css/photon.min.css">
     <style>
-        body{
+        body {
             padding: 10px;
         }
-        label{
+
+        label {
             display: block;
             margin: 0;
         }
-        td:first-child{
+
+        td:first-child {
             vertical-align: middle;
             text-align: right;
             padding-right: 2px;
         }
-        td:last-child{
+
+        td:last-child {
             padding-left: 2px;
             text-align: left;
         }
-        .btn{
+
+        .btn {
             position: absolute;
             bottom: 15px;
             right: 25px;
         }
-        button.btn-negative{
+
+        button.btn-negative {
             right: 90px;
         }
-        .TabControl{
-            width:100%;
-            overflow:hidden;
-            height:400px
-        }
-        .TabControl #headerTab{
-            width:100%;
-            overflow:hidden;
-            cursor:hand
-        }
-        .TabControl #content{
-            width:100%;
-            border-top: solid 1px;
-            overflow:hidden;
-            height:100%;
-        }
-        .TabControl .abas{
-            display:inline;
-        }
-        .TabControl .abas li{
-            float:left;
-        }
-        .aba{
-            width:100px;
-            height:30px;
-            border:solid 1px;
-            border-radius:5px 5px 0 0;
-            text-align:center;
-            padding-top:5px;
-        }
-        .ativa{
-            width:100px;
-            height:30px;
-            border:solid 1px;
-            border-radius:5px 5px 0 0;
-            text-align:center;
-            padding-top:5px;
-            background:#ddd;
-        }
-        .TabControl .conteudo{
-            width:100%;
-            display:none;
-            height:100%;
-        }
-        .selected{
-            width:100px;
-            height:30px;
-            border:solid 1px;
-            border-radius:5px 5px 0 0;
-            text-align:center;
-            padding-top:5px;
-            background:#999;
+
+        .TabControl {
+            width: 100%;
+            overflow: hidden;
+            height: 400px
         }
 
-        span.focus{
+        .TabControl #headerTab {
+            width: 100%;
+            overflow: hidden;
+            cursor: hand
+        }
+
+        .TabControl #content {
+            width: 100%;
+            border-top: solid 1px;
+            overflow: hidden;
+            height: 100%;
+        }
+
+        .TabControl .abas {
+            display: inline;
+        }
+
+        .TabControl .abas li {
+            float: left;
+        }
+
+        .aba {
+            width: 100px;
+            height: 30px;
+            border: solid 1px;
+            border-radius: 5px 5px 0 0;
+            text-align: center;
+            padding-top: 5px;
+        }
+
+        .ativa {
+            width: 100px;
+            height: 30px;
+            border: solid 1px;
+            border-radius: 5px 5px 0 0;
+            text-align: center;
+            padding-top: 5px;
+            background: #ddd;
+        }
+
+        .TabControl .conteudo {
+            width: 100%;
+            display: none;
+            height: 100%;
+        }
+
+        .selected {
+            width: 100px;
+            height: 30px;
+            border: solid 1px;
+            border-radius: 5px 5px 0 0;
+            text-align: center;
+            padding-top: 5px;
+            background: #999;
+        }
+
+        span.focus {
             border-color: #6db3fd;
             box-shadow: 3px 3px 0 #6db3fd, -3px -3px 0 #6db3fd, -3px 3px 0 #6db3fd, 3px -3px 0 #6db3fd;
         }
+
         /* The list style
         -------------------------------------------------------------- */
 
@@ -114,11 +130,11 @@
         }
 
         .directory-list .folder,
-        .directory-list .folder > a {
+        .directory-list .folder>a {
             color: #000;
         }
 
-        .conteudo{
+        .conteudo {
             width: 100%;
         }
 
@@ -145,7 +161,6 @@
             background-position: center top;
             background-size: 75% auto;
         }
-
     </style>
 
     <script>
@@ -158,8 +173,7 @@
     <script>if (window.module) module = window.module;</script>
 
     <script>
-        let ipc = require('electron').ipcRenderer;
-        let DataGen = require("../datagen/datagen.js");
+        let ipc = window.ipcAPI;//require('electron').ipcRenderer;
 
         let obj = {};
         let iterator = {};
@@ -169,21 +183,21 @@
         let wsConfig = {};
         let dsConfig = {};
 
-        ipc.on('configure-datagen', (event, arg) => {
+        ipc.on('configure-datagen', (arg) => {
             obj = jQuery.extend(true, {}, arg);
 
             // WebService
-            $("#wsActive").prop('checked',obj.wsActive);
+            $("#wsActive").prop('checked', obj.wsActive);
             $("#wsPort").val(obj.wsPort);
             console.log(obj.dsIpAddress, obj.dsPort)
             $("#dsIpAddress").val(obj.dsIpAddress);
             $("#dsPort").val(obj.dsPort);
-            if(!obj.wsActive)
-                $(".webService input[type=number]").attr("disabled","disabled").css("opacity","0.5");
+            if (!obj.wsActive)
+                $(".webService input[type=number]").attr("disabled", "disabled").css("opacity", "0.5");
 
-            for(let attr in obj){
-                if(obj.hasOwnProperty(attr)){
-                    if(attr === "iterator") {
+            for (let attr in obj) {
+                if (obj.hasOwnProperty(attr)) {
+                    if (attr === "iterator") {
                         for (let attrIt in obj.iterator) {
                             let $ele = $("#" + attrIt);
                             if ($ele.is("[type=checkbox]")) {
@@ -206,33 +220,33 @@
                                 $ele.val(obj.iterator[attrIt]);
                             }
                         }
-                    }else if(attr === "modelID"){
-                    }else if(attr === "modelName"){
-                        document.title += " ["+obj.modelName+"]"
-                    }else{
-                        let $ele = $("#"+attr);
-                        if($ele.is("[type=checkbox]")){
+                    } else if (attr === "modelID") {
+                    } else if (attr === "modelName") {
+                        document.title += " [" + obj.modelName + "]"
+                    } else {
+                        let $ele = $("#" + attr);
+                        if ($ele.is("[type=checkbox]")) {
                             $ele.get(0).checked = obj[attr];
-                        }else{
+                        } else {
                             $ele.val(obj[attr]);
                         }
                     }
                 }
             }
         });
-        $(document).ready(function(){
+        $(document).ready(function () {
             $("td")
                 .css("padding-left", function (index) {
                     return 10 * parseInt($(this).data("indent")) + "px";
                 });
 
-            $(".general input, .general select").on("change blur", function(){
+            $(".general input, .general select").on("change blur", function () {
                 let $t = $(this);
                 obj[$t.attr("id")] = $t.is("[type=checkbox]") ? $t.is(":checked") : ($t.is("[type=number]") ? parseInt($t.val()) : $t.val());
             });
-            $(".parameterIt input, .parameterIt select").on("change blur", function(){
+            $(".parameterIt input, .parameterIt select").on("change blur", function () {
                 let $t = $(this);
-                if(!obj.iterator)
+                if (!obj.iterator)
                     obj.iterator = {};
                 obj.iterator[$t.attr("id")] = $t.is("[type=checkbox]") ?
                     $t.is(":checked") : ($t.is("[type=number]") ?
@@ -240,24 +254,24 @@
                             JSON.parse($t.val()) : $t.val());
             });
             $(".btn").click(function () {
-                if($(this).is(".btn-primary")){
-                    if(!$("#hasIt").is(":checked")){
+                if ($(this).is(".btn-primary")) {
+                    if (!$("#hasIt").is(":checked")) {
                         obj.iterator = undefined;
                     }
-                    if(!jQuery.isEmptyObject(wsConfig)) {
+                    if (!jQuery.isEmptyObject(wsConfig)) {
                         ipc.send('change-WebService', wsConfig);
                     }
-                    if(!jQuery.isEmptyObject(dsConfig)) {
+                    if (!jQuery.isEmptyObject(dsConfig)) {
                         ipc.send('change-DistributedSystem', dsConfig);
                     }
                     ipc.send('change-datagen', obj);
 
-                }else{
+                } else {
                     ipc.send('change-datagen', false);
                 }
             });
 
-            $(".nav-group-item").click(function(){
+            $(".nav-group-item").click(function () {
                 $(".nav-group-item").removeClass("active");
                 $(this).addClass("active");
                 let index = $(".configType .nav-group-item").index(this);
@@ -270,21 +284,21 @@
 
 
             $("#hasIt").change(function () {
-                if($(this).is(":checked")){
-                    $(".parameterIt input[type=number], .parameterIt select").removeAttr("disabled").css("opacity","1");
-                    $("span.form-control").css("opacity","1");
-                }else{
-                    $(".parameterIt input[type=number], .parameterIt select").attr("disabled","disabled").css("opacity","0.5");
-                    $("span.form-control").css("opacity","0.5");
+                if ($(this).is(":checked")) {
+                    $(".parameterIt input[type=number], .parameterIt select").removeAttr("disabled").css("opacity", "1");
+                    $("span.form-control").css("opacity", "1");
+                } else {
+                    $(".parameterIt input[type=number], .parameterIt select").attr("disabled", "disabled").css("opacity", "0.5");
+                    $("span.form-control").css("opacity", "0.5");
                 }
             });
 
             $("#wsActive").change(function () {
-                if($(this).is(":checked")){
-                    $(".webService input[type=number]").removeAttr("disabled").css("opacity","1");
+                if ($(this).is(":checked")) {
+                    $(".webService input[type=number]").removeAttr("disabled").css("opacity", "1");
                     wsConfig['wsActive'] = true;
-                }else{
-                    $(".webService input[type=number]").attr("disabled","disabled").css("opacity","0.5");
+                } else {
+                    $(".webService input[type=number]").attr("disabled", "disabled").css("opacity", "0.5");
                     wsConfig['wsActive'] = false;
                 }
             });
@@ -303,22 +317,25 @@
             });
 
 
+            
+            $(".parameterIt").on("drop", function (evt) {
+                evt.preventDefault();
+                evt.stopPropagation();
+                
+                //TODO: Verificar se essas duas linhas abaixo são daqui mesmo.
                 //{modelID, modelName, colID, colName, genID, genModel, params}
                 let msg = evt.originalEvent.dataTransfer.getData("text");
                 let objs = JSON.parse(msg);
-                $(".parameterIt").on("drop",function(evt){
-                    evt.preventDefault();
-                    evt.stopPropagation();
 
                 $("#generatorIt_desc").removeClass("focus")
-                    .text(objs.modelName+" > "+objs.colName+" > "+objs.genModel.name);
+                    .text(objs.modelName + " > " + objs.colName + " > " + objs.genModel.name);
 
                 let generatorIt = $("#generatorIt");
                 generatorIt.val(msg);
 
                 let $params = $("#parameterIt").empty();
-                for(let p of objs.params){
-                    if(p.type === "number")
+                for (let p of objs.params) {
+                    if (p.type === "number")
                         $params.append($("<option/>").attr("value", p.variableName).text(p.name));
                 }
                 let $hasIt = $("#hasIt");
@@ -327,18 +344,18 @@
                 //Faz com que esses campos atualizem o valor de obj.
                 $hasIt.change();
                 generatorIt.change();
-            }).on("dragover", function(event) {
+            }).on("dragover", function (event) {
                 event.preventDefault();
                 event.stopPropagation();
                 $("#generatorIt_desc").addClass("focus");
-            }).on("dragleave", function(event) {
+            }).on("dragleave", function (event) {
                 event.preventDefault();
                 event.stopPropagation();
                 $("#generatorIt_desc").removeClass("focus");
             });
 
-            $(".parameterIt input[type=number], .parameterIt select").attr("disabled","disabled").css("opacity","0.5");
-            $("span.form-control").css("opacity","0.5");
+            $(".parameterIt input[type=number], .parameterIt select").attr("disabled", "disabled").css("opacity", "0.5");
+            $("span.form-control").css("opacity", "0.5");
 
             ipc.send("call-datagen");
 
@@ -346,17 +363,18 @@
     </script>
     <!--<script src="../photon-0.1.2-dist/template-app/js/menu.js" charset="utf-8"></script>-->
 </head>
+
 <body>
-<div class="pane-group">
-    <div class="pane pane-sm sidebar">
-        <nav class="nav-group configType">
-            <!--<h5 class="nav-group-title">Favorites</h5>-->
-            <span class="nav-group-item active">General</span>
-            <span class="nav-group-item">Parameter Iterator</span>
-            <span class="nav-group-item">Web Service</span>
-            <span class="nav-group-item">Distributed System</span>
-        </nav>
-    </div>
+    <div class="pane-group">
+        <div class="pane pane-sm sidebar">
+            <nav class="nav-group configType">
+                <!--<h5 class="nav-group-title">Favorites</h5>-->
+                <span class="nav-group-item active">General</span>
+                <span class="nav-group-item">Parameter Iterator</span>
+                <span class="nav-group-item">Web Service</span>
+                <span class="nav-group-item">Distributed System</span>
+            </nav>
+        </div>
         <div class="conteudo general">
             <table>
                 <tr>
@@ -424,7 +442,8 @@
                 </tr>
                 <tr>
                     <td><label for="generatorIt">Generator</label></td>
-                    <td><span id="generatorIt_desc" class="form-control">Drag and Drop a generator here!</span><input id="generatorIt" type="hidden"></td>
+                    <td><span id="generatorIt_desc" class="form-control">Drag and Drop a generator here!</span><input
+                            id="generatorIt" type="hidden"></td>
                 </tr>
                 <tr>
                     <td><label for="parameterIt">Parameter</label></td>
@@ -447,7 +466,8 @@
                 </tr>
                 <tr>
                     <td><label for="wsPort">Port</label></td>
-                    <td><input id="wsPort" type="number" class="form-control" onkeypress="return event.charCode >= 48 && event.charCode <= 57"></td>
+                    <td><input id="wsPort" type="number" class="form-control"
+                            onkeypress="return event.charCode >= 48 && event.charCode <= 57"></td>
                 </tr>
 
             </table>
@@ -457,11 +477,13 @@
             <table>
                 <tr>
                     <td><label for="dsIpAddress">Ip Address</label></td>
-                    <td><input id="dsIpAddress" type="text" class="form-control" onkeypress="return event.charCode >= 48 && event.charCode <= 57"></td>
+                    <td><input id="dsIpAddress" type="text" class="form-control"
+                            onkeypress="return event.charCode >= 48 && event.charCode <= 57"></td>
                 </tr>
                 <tr>
                     <td><label for="dsPort">Port</label></td>
-                    <td><input id="dsPort" type="number" class="form-control" onkeypress="return event.charCode >= 48 && event.charCode <= 57"></td>
+                    <td><input id="dsPort" type="number" class="form-control"
+                            onkeypress="return event.charCode >= 48 && event.charCode <= 57"></td>
                 </tr>
 
             </table>
@@ -470,8 +492,9 @@
     <button id="btnCancel" class="btn btn-negative">Cancel</button>
     <button id="btnConfirm" class="btn btn-primary">Confirm</button>
 
-<script>
-</script>
+    <script>
+    </script>
 
 </body>
+
 </html>

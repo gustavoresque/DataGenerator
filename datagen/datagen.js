@@ -176,10 +176,12 @@ class Generator{
         }
     }
 
-    /*Entrada: sub_value - valor que será combinado com o gerado através (ou não) de um operador
-     *Saída: lastGenerated - valor gerado pelo Generator
-     *Recebe um valor que é inserido no operador juntamente com um segundo valor gerado pelo Generator inserido neste.
-     *Caso não exista um operador, o valor inserido é somado ao valor gerado e retornado*/
+    /**
+     * Entrada: sub_value - valor que será combinado com o gerado através (ou não) de um operador
+     * Saída: lastGenerated - valor gerado pelo Generator
+     * Recebe um valor que é inserido no operador juntamente com um segundo valor gerado pelo Generator inserido neste.
+     * Caso não exista um operador, o valor inserido é somado ao valor gerado e retornado
+     */
     generate(sub_value){
         if(this.generator && this.operator){
             return this.lastGenerated = this.operator(sub_value, this.generator.generate());
@@ -3786,7 +3788,7 @@ class DataGen {
         if(model.generator[0].generator[0].name === "Real Data Wrapper") {throw new Error('Real Data Wrapper is strange!')}
         this.name = model.name || this.name;
         this.n_lines = model.n_lines || this.n_lines;
-        this.step_lines = modal.step_lines || this.step_lines;
+        this.step_lines = model.step_lines || this.step_lines;
         this.columnsCounter = model.columnsCounter;
         this.save_as = model.save_as || this.save_as;
         this.header = model.header || this.header;

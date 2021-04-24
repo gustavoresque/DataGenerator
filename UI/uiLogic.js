@@ -1,5 +1,7 @@
 
+// const fs = window.requireFS;
 const fs = require('fs');
+console.log(window.requireFS);
 const net = require('net');
 const { promisify } = require('util');
 const electron = require('electron').remote;
@@ -2169,7 +2171,7 @@ function createModelFromDataSet(path) {
             //Adiciona Colunas com base nos dados Reais.
             createdDatagen.columns.splice(0,1);
             for(let c of columns){
-                createdDatagen.addColumn(c, new DataGen.listOfGensComplete['Real Data Wrapper'](_.pluck(data, c)));
+                createdDatagen.addColumn(c, new DataGen.listOfGensComplete['Real Data Wrapper'](data.map(d=>d[c])));
             }
 
             showModels();
