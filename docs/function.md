@@ -1,5 +1,9 @@
 
-# DataGen
+# Function
+
+> abstract class
+
+> extends [Generator](generator.md)
 
 - [Constructor](#constructor)
 - [Static properties](#static-properties)

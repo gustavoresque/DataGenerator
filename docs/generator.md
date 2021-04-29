@@ -1,7 +1,6 @@
 
 # Generator
 
-> [!NOTE]
 > abstract class
 
 - [Constructor](#constructor)

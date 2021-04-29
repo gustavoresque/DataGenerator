@@ -1,9 +1,6 @@
 
 # Column
 
-> [!NOTE]
-> abstract class
-
 - [Constructor](#constructor)
 - [Static properties](#static-properties)
 - [Static methods](#static-properties)
