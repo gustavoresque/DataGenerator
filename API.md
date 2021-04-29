@@ -4,12 +4,12 @@
 - [DataGen](#datagen)
 - [Column](#column)
 - [Generator](#generator)
-  - Accessory
-  - Function
-    - SwitchCaseFunction
-  - Geometric
-  - Random
-  - Sequence
+  - [Accessory](#accessory)
+  - [Function](#function)
+    - [SwitchCaseFunction](#switchcasefunction)
+  - [Geometric](#geometric)
+  - [Random](#random)
+  - [Sequence](#sequence)
   
 
 ## [DataGen](docs/datagen.md)
@@ -41,10 +41,50 @@ Esta classe é o tipo mais abstrato de gerador e tem o propósito de organizar u
 
 Os geradores podem ser encadeados para formar uma geração combinada de vários tipos. Esse encadeamento segue grande parte da lógica presente no padrão de projetos Decorator.
 
-## [Accessory](docs/accessory.md) extends [Generator](docs/generator.md)
+## [Accessory](docs/accessory.md)
+
+> abstract class
+
+> extends [Generator](docs/generator.md)
 
 Essa classe é o tipo abstrato para geradores acessórios, ou seja, geradores que modificam valores já gerados na cadeia de geradores. Por tanto, esses geradores devem ser sempre usados com outros tipos de geradores para que façam sentido.
 
-## [Function](docs/function.md) extends [Generator](docs/generator.md)
+## [Function](docs/function.md)
+
+> abstract class
+
+> extends [Generator](docs/generator.md)
 
 Essa classe é o tipo abstrato para geradores que utilizam valores de outras colunas (atributos) da base de dados gerada. Geradores desse tipo são especialmente úteis para criar uma correlação entre atributos da base de dados.
+
+## [Geometric](docs/geometric.md)
+
+> abstract class
+
+> extends [Generator](docs/generator.md)
+
+Essa classe é o tipo abstrato para geradores que utilizam propriedades geométricas para gerar dados. Geradores desse tipo geralmente gera mais de uma dimensão de dados sendo necessário a utilização do gerador acessório [GetExtraValue](#) para obter as outras dimensões geradas. Por padrão a primeira dimensão é retornada pelo gerador na cadeia de geração.
+
+## [Random](docs/random.md)
+
+> abstract class
+
+> extends [Generator](docs/generator.md)
+
+Essa classe é o tipo abstrato para geradores que geram valores aleatórios conforme uma função de densidade ou conforme uma regra pré-definida.
+
+## [Sequence](docs/sequence.md)
+
+> abstract class
+
+> extends [Generator](docs/generator.md)
+
+Essa classe é o tipo abstrato para geradores que geram valores conforme uma regra de recorrência, formando assim uma sequência de valores.
+
+## SwitchCaseFunction
+
+> abstract class
+
+> extends [Function](docs/function.md)
+
+Essa classe é um subtipo de [Function](docs/function.md) que recebe valores categóricos como entrada e possuem uma cadeia de geradores diferentes para cada entrada diferente. Seu nome vem da semelhança que ela possui com a estrutura `switch case` das linguagens de progamação.
