@@ -2,6 +2,7 @@
 # DataGen
 
 - [Constructor](#constructor)
+  - [DataGen()](#datagen-cons)
 - [Static properties](#static-properties)
 - [Static methods](#static-methods)
 - [Instance properties](#instance-properties)
@@ -9,7 +10,7 @@
 
 ## Constructor
 
-<a id='DataGen()' name='DataGen()'>></a> **DataGen**()
+<a href="#DataGen-cons" name="DataGen-cons">></a> **DataGen**()
 
 Há somente construtor sem parâmetros. Exemplo:
 
@@ -39,7 +40,8 @@ let GaussianGenerator = dg.listOfGens['Gaussian Generator'];
 let gaussian = new GaussianGenerator();
 ```
 
-<br><a id='DataGen.listOfGensHelp' name='DataGen.listOfGensHelp'>></a> DataGen.**listOfGensHelp** : `Object`
+<br>
+<a id='DataGen.listOfGensHelp' name='DataGen.listOfGensHelp'>></a> DataGen.**listOfGensHelp** : `Object`
 
 Esse objeto armazena uma lista (chave-valor) de strings contendo uma descrição sobre o que cada gerador faz.
 
