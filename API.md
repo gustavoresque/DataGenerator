@@ -29,7 +29,7 @@ let dg = new DataGen();
 
 Esta classe é responsável por armazenar alguns metadados sobre os atributos da base de dados a ser gerada.
 
-Geralmente não será necessário instaciar objetos dessa classe manualmente, uma vez que objetos Datagen já possuem o método `dg.addColumn()` que já instacia a classe internamente.
+Geralmente não será necessário instanciar objetos dessa classe manualmente, uma vez que objetos `DataGen` já possuem o método `dg.addColumn()` que já instacia a classe internamente.
 
 ## [Generator](docs/generator.md)
 

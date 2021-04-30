@@ -7,6 +7,7 @@
 - [Static methods](#static-methods)
 - [Instance properties](#instance-properties)
 - [Instance methods](#instance-methods)
+  - [dg.**getColumnsNames**()](#dg.getColumnsNames)
 
 ## Constructor
 
@@ -106,3 +107,6 @@ Identifica o tipo de arquivo que será utilizado para salvar a base de dados que
 <br><a id='dg.memento' name='dg.memento'>></a> dg.**memento** : `Object`
 
 ## Instance methods
+
+<a href="#dg.getColumnsNames" name='dg.getColumnsNames'>></a> dg.**getColumnsNames**() : `Array`
+
