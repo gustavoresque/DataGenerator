@@ -4,6 +4,7 @@ let seedrandom = require("seedrandom");
 let originalRandom = Math.random;
 let moment = require("moment");
 
+//TODO: adicionar o destructuring assignment em todo projeto, exemplos em: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment
 
 class Generator{
     constructor(name){
@@ -13,7 +14,7 @@ class Generator{
         else
             this.operator = defaultOperator;
         this.order = 0;
-        this.ID = "GEN_"+uniqueID();
+        this.ID = "GEN_"+DataGen.Utils.getID();
     }
 
     addGenerator(gen){
@@ -3496,8 +3497,7 @@ Generator.Operators = {
     "modulus": (a,b) => { return a%b; },
     "divide": (a,b) => { return a/b; },
     "subtract": (a,b) => { return a-b; },
-    "none": (a,b) => {return b; },
-
+    "none": (a,b) => { return b; }
 };
 
 Generator.Operators.sum.name = "sum";
@@ -3511,47 +3511,6 @@ Generator.Operators.none.name = "none";
 
 ///--------------------------  Gerenciador de Colunas e Geração da base total. ----------------------------------------
 
-function uniqueID() {
-    return (Math.random()*Date.now()/Math.random()).toString(36);
-}
-
-function copyAttrs(source, target, context){
-    for(let attr in source){
-        if(source.hasOwnProperty(attr) && attr !== "name"){
-            if(attr === "generator2"){
-                target[attr] = new (DataGen.listOfGens[source[attr].name])();
-            }else if(attr === "inputGenIndex") {
-                if(context.columns[source[attr]]){
-                    target.inputGenerator = context.columns[source[attr]].generator;
-                    target[attr] = source[attr];
-                }
-            }else if(attr === "listOfGenerators") {
-                target[attr] = {};
-                for(let attr2 in source[attr]){
-                    if(source[attr].hasOwnProperty(attr2)) {
-                        for (let genObj of source[attr][attr2]) {
-                            //Resolve os filhos
-                            console.log(genObj.name);
-                            let gen1 = new (DataGen.listOfGens[genObj.name])();
-
-                            if (target[attr][attr2]) {
-                                target[attr][attr2].addGenerator(gen1);
-                                // gen1.parent = target;
-                            } else {
-                                target[attr][attr2] = gen1;
-                                target[attr][attr2].parent = target;
-                            }
-                            copyAttrs(genObj, gen1, context);
-
-                        }
-                    }
-                }
-            }else{
-                target[attr] = source[attr];
-            }
-        }
-    }
-}
 
 let defaultGenerator = RandomUniformGenerator;
 let defaultOperator = Generator.Operators.sum;
@@ -3561,7 +3520,7 @@ class Column{
         this.name = name || "Col";
         this.generator = generator || new defaultGenerator();
         this.type = this.generator.getReturnedType();
-        this.ID = "COL_"+uniqueID();
+        this.ID = "COL_"+DataGen.Utils.getID();
         this.generator.parent = this;
         this.display = true; //Variável utilizada para filtrar a dimensão de dados.
     }
@@ -3570,9 +3529,10 @@ class Column{
 class DataGen {
 
     constructor () {
+        //adicionar a version => const { version } = require('./package.json');
         this.name = "Model";
         this.n_lines = 100; // Quantidade de linhas na geração
-        this.step_lines = 10000;
+        this.step_lines = 10000; // TODO: Revisar o propósito disso...
         this.n_sample_lines = 100;
         this.save_as = "csv";
         this.header = true;
@@ -3580,7 +3540,7 @@ class DataGen {
         const column = new Column("Dimension 1");
         this.columns = [column];
         this.iterator = {hasIt:false};
-        this.ID = "MODEL_"+uniqueID();
+        this.ID = "MODEL_"+DataGen.Utils.getID();
         this.columnsCounter = 1; //If delete a not last column, the new colum will the same name as the last but one column and this make the preview have a bug.
         this.filePath = undefined;
         this.datagenChange = false;
@@ -3806,10 +3766,10 @@ class DataGen {
                 if (generator){
                     let newgen = new selectedGenerator();
                     generator.addGenerator(newgen);
-                    copyAttrs(model.generator[i].generator[j], newgen, this);
+                    DataGen.Utils.copyAttrs(model.generator[i].generator[j], newgen, this);
                 }else {
                     generator = new selectedGenerator();
-                    copyAttrs(model.generator[i].generator[j], generator, this);
+                    DataGen.Utils.copyAttrs(model.generator[i].generator[j], generator, this);
                 }
 
             }
@@ -3967,6 +3927,7 @@ class DataGen {
 }
 
 
+//TODO: Criar propriedade estática name e description para cada gerador.
 DataGen.listOfGens = {
     'Constant Value': ConstantValue,
     //Legacy form below
@@ -4010,6 +3971,7 @@ DataGen.listOfGens = {
     'Get Extra Value': GetExtraValue
 };
 
+//TODO: Verificar se essa propriedade não pode ser substituida por uma propriedade estática em cada Gerador.
 DataGen.listOfGensHelp = {
     'Constant Value': "Generate a sequence with only one constant number.",
     'MCAR': "[Use at left] Introduce values Missing Completely At Random.",
@@ -4059,6 +4021,7 @@ DataGen.listOfGensForNoise = {
     'Cauchy Generator': RandomCauchyGenerator,
 };
 
+//TODO: Verificar se isso é uma boa mesmo... Acho melhor deixar o usuário livre para essa decisão.
 DataGen.listOfGensComplete = {
     'Real Data Wrapper' : RealDataWrapper
 };
@@ -4178,7 +4141,50 @@ DataGen.Utils = {
         }
 
         return output;
+    },
+
+    getID: ()=>{
+        return (Math.random()*Date.now()/Math.random()).toString(36);
+    },
+
+    copyAttrs: (source, target, context)=>{
+        for(let attr in source){
+            if(source.hasOwnProperty(attr) && attr !== "name"){
+                if(attr === "generator2"){
+                    target[attr] = new (DataGen.listOfGens[source[attr].name])();
+                }else if(attr === "inputGenIndex") {
+                    if(context.columns[source[attr]]){
+                        target.inputGenerator = context.columns[source[attr]].generator;
+                        target[attr] = source[attr];
+                    }
+                }else if(attr === "listOfGenerators") {
+                    target[attr] = {};
+                    for(let attr2 in source[attr]){
+                        if(source[attr].hasOwnProperty(attr2)) {
+                            for (let genObj of source[attr][attr2]) {
+                                //Resolve os filhos
+                                console.log(genObj.name);
+                                let gen1 = new (DataGen.listOfGens[genObj.name])();
+    
+                                if (target[attr][attr2]) {
+                                    target[attr][attr2].addGenerator(gen1);
+                                    // gen1.parent = target;
+                                } else {
+                                    target[attr][attr2] = gen1;
+                                    target[attr][attr2].parent = target;
+                                }
+                                DataGen.Utils.copyAttrs(genObj, gen1, context);
+    
+                            }
+                        }
+                    }
+                }else{
+                    target[attr] = source[attr];
+                }
+            }
+        }
     }
+
 };
 
 //var datagen = new DataGen();

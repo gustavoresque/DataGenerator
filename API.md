@@ -10,7 +10,6 @@
   - [Geometric](#geometric)
   - [Random](#random)
   - [Sequence](#sequence)
-  
 
 ## [DataGen](docs/datagen.md)
 
@@ -24,7 +23,6 @@ let DataGen = require('./datagen.js').
 
 //creating a new instance of DataGen
 let dg = new DataGen();
-
 ```
 
 ## [Column](docs/column.md)
