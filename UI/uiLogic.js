@@ -1,7 +1,6 @@
 
-// const fs = window.requireFS;
+
 const fs = require('fs');
-console.log(window.requireFS);
 const net = require('net');
 const { promisify } = require('util');
 const electron = require('electron').remote;
@@ -176,17 +175,15 @@ async function rawSave(type, dtIndex) {
                                 extensions: ['json']
                             }
                         ]
-                    },
-                    async function(targetPath) {
-                        if(!targetPath) return;
-                        datagen[index].filePath = targetPath;
-                        const name = path.basename(targetPath,'.json');
-                        if(confirm(`Do you want to change the model's name to '${name}'?`)) {
-                            datagen[index].name = name;
-                        }
-                        exportAndSave()
+                }).then(({canceled, filePath}) => {
+                    if(canceled) return;
+                    datagen[index].filePath = filePath;
+                    const name = path.basename(filePath,'.json');
+                    if(confirm(`Do you want to change the model's name to '${name}'?`)) {
+                        datagen[index].name = name;
                     }
-                );
+                    exportAndSave()
+                });
             } else exportAndSave();
             async function exportAndSave() {
                 try {
@@ -213,19 +210,18 @@ async function rawSave(type, dtIndex) {
                             extensions: ['json']
                         }
                     ]
-                },
-                async function(targetPath) {
-                    if(!targetPath) return;
-                    if(datagen[index].filePath === undefined) {
-                        datagen[index].filePath = targetPath; //Otherwise could be only a copy
-                        datagen[index].name = path.basename(targetPath,'.json');
-                    }
-                    try {
-                        await createExportModel(targetPath);
-                    } catch(e) {
-                        throw new Error('exportModel failed!')
-                    }
-                });
+            }).then(({canceled, filePath}) => {
+                if(canceled) return;
+                if(datagen[index].filePath === undefined) {
+                    datagen[index].filePath = filePath; //Otherwise could be only a copy
+                    datagen[index].name = path.basename(targetPath,'.json');
+                }
+                try {
+                    createExportModel(targetPath);
+                } catch(e) {
+                    throw new Error('exportModel failed!')
+                }
+            });
             break;
     }
 }
@@ -1015,10 +1011,15 @@ function generateDatas(){
 
         let saveScreen = new BrowserWindow({show: false, alwaysOnTop: true});
         if(process.platform === "darwin") {saveScreen.show(); saveScreen.maximize(); saveScreen.focus();}
+        
         dialog.showSaveDialog(saveScreen,{
             title: "Save Data",
             filters: [{name: saveas, extensions: [saveas]}]
-        }, function (targetPath) {
+        }).then((result) => {
+            if(result.canceled)
+                return;
+
+            let targetPath = result.filePath; 
             saveScreen.close();
             modal.style.display = "none";
             if (targetPath) {
@@ -1653,7 +1654,7 @@ function showGenerators() {
         );
     }
 
-    console.log(datagen[currentDataGen]);
+    
     let $tbody = $("#tbody").empty();
     if (datagen.length > 0){
         for(let i = 0; i < datagen[currentDataGen].columns.length; i++){
@@ -1814,9 +1815,9 @@ function deleteModel(indexDatagen=currentDataGen) {
         checkboxChecked: false,
     };
 
-    dialog.showMessageBox(null, options, async (response) => {
+    dialog.showMessageBox(null, options).then(({response}) => {
         if (response === 1){
-            try {await save("save", indexDatagen)} catch(e) {console.error(e)}
+            try {save("save", indexDatagen)} catch(e) {console.error(e)}
         }
         if(response !== 0) closeTab(indexDatagen);
     });
@@ -1844,9 +1845,12 @@ function deleteModel(indexDatagen=currentDataGen) {
 
 function exportModelDot(datastr=datagen[currentDataGen].exportDot()) {
 
-    dialog.showSaveDialog({title:"Save Data", filters:[{name:"Graph",extensions:["dot"]}]}, function(targetPath) {
-        if(targetPath){
-            fs.writeFile(targetPath, datastr, (err) => {
+    dialog.showSaveDialog({
+        title:"Save Data", 
+        filters:[{name:"Graph",extensions:["dot"]}]
+    }).then(({canceled, filePath}) => {
+        if(!canceled){
+            fs.writeFile(filePath, datastr, (err) => {
                 if (err) throw err;
             });
         }
@@ -2055,10 +2059,12 @@ function exportResultsCSVTSV(data, separator){
         filt.extensions = ['tsv'];
     }
 
-    dialog.showSaveDialog({title:"Save Generated DataSet", filters:[filt]}, function(targetPath) {
-        if(targetPath){
-            let partsOfStr = targetPath.split('\\');
-            targetPath = "";
+    dialog.showSaveDialog({
+        title:"Save Generated DataSet", filters:[filt]
+    }).then(({canceled, filePath}) => {
+        if(!canceled){
+            let partsOfStr = filePath.split('\\');
+            let targetPath = "";
             for (let i = 0; i < partsOfStr.length; i++) {
                 targetPath += partsOfStr[i] + "\\\\";
             }
@@ -2092,10 +2098,13 @@ function exportResultsJSON(data){
 
     let myJSON = JSON.stringify(obj);
 
-    dialog.showSaveDialog({title:"Save Generated DataSet", filters:[{name: 'JSON', extensions:['json']}]}, function(targetPath) {
-        if(targetPath){
-            let partsOfStr = targetPath.split('\\');
-            targetPath = "";
+    dialog.showSaveDialog({
+        title:"Save Generated DataSet", 
+        filters:[{name: 'JSON', extensions:['json']}]
+    }).then(({canceled, filePath}) => {
+        if(!canceled){
+            let partsOfStr = filePath.split('\\');
+            let targetPath = "";
             for (let i = 0; i < partsOfStr.length; i++) {
                 targetPath += partsOfStr[i] + "\\\\";
             }

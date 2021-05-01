@@ -2,10 +2,31 @@
 # DataGen
 
 - [Constructor](#constructor)
-  - [DataGen()](#datagen-cons)
+  - [**DataGen**()](#datagen-cons)
 - [Static properties](#static-properties)
+  - [DataGen.**listOfGens**](#DataGen.listOfGens)
+  - [DataGen.**listOfGensHelp**](#DataGen.listOfGensHelp)
+  - [DataGen.**listOfGensForNoise**](#DataGen.listOfGensForNoise)
+  - [DataGen.**listOfGensComplete**](#DataGen.listOfGensComplete)
+  - [DataGen.**superTypes**](#DataGen.superTypes)
+  - [DataGen.**Utils**](#DataGen.Utils)
 - [Static methods](#static-methods)
 - [Instance properties](#instance-properties)
+  - [dg.**name**](#dg.name)
+  - [dg.**n_lines**](#dg.n_lines)
+  - [dg.**step_lines**](#dg.step_lines)
+  - [dg.**n_sample_lines**](#dg.n_sample_lines)
+  - [dg.**save_as**](#dg.save_as)
+  - [gd.**header**](#gd.header)
+  - [gd.**header_type**](#gd.header_type)
+  - [gd.**columns**](#gd.columns)
+  - [dg.**iterator**](#gd.iterator)
+  - [dg.**ID**](#gd.ID)
+  - [dg.**columnsCounter**](#gd.columnsCounter)
+  - [dg.**filePath**](#gd.filePath)
+  - [dg.**datagenChange**](#gd.datagenChange)
+  - [dg.**seed**](#gd.seed)
+  - [dg.**memento**](#gd.memento)
 - [Instance methods](#instance-methods)
   - [dg.**getColumnsNames**()](#dg.getColumnsNames)
 
@@ -57,7 +78,7 @@ Esse objeto armazena uma lista (chave-valor) de todas as classes de geradores qu
 
 Esse objeto armazena uma lista (chave-valor) de todas as classes abstratas presentes nesse módulo para que possam ser instanciadas.
 
-<br><a href='#DataGen.listOfGens' name='DataGen.listOfGens'>></a> DataGen.**Utils** : `Object`
+<br><a href='#DataGen.Utils' name='DataGen.Utils'>></a> DataGen.**Utils** : `Object`
 
 Esse objeto armazena uma lista (chave-valor) de funções utilitárias que poupam a repetição de código.
 
