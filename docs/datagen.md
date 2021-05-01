@@ -32,7 +32,7 @@
 
 ## Constructor
 
-<a class="anchor" href="#DataGen-cons" name="DataGen-cons">></a> **DataGen**()
+<a href="#DataGen-cons" name="DataGen-cons">></a> **DataGen**()
 
 Há somente construtor sem parâmetros. Exemplo:
 
@@ -46,7 +46,7 @@ let dg = new DataGen();
 
 ## Static properties
 
-<a href='#DataGen.listOfGens' name='DataGen.listOfGens'>></a> DataGen.**listOfGens** : `Object`
+<a href='#DataGen.listOfGens' name='DataGen.listOfGens'>&diams;</a> DataGen.**listOfGens** : `Object`
 
 Armazena uma lista (chave-valor) das classes de geradores que podem ser listados no Block para os usuários. Todas as classes presentes na lista podem ser instanciadas. O código abaixo mostra o nome das classes no console.
 
@@ -86,7 +86,7 @@ Esse objeto armazena uma lista (chave-valor) de funções utilitárias que poupa
 
 ## Instance properties
 
-<br><a href='#dg.name' name='dg.name'>></a> dg.**name** : `String`
+<a href='#dg.name' name='dg.name'>></a> dg.**name** : `String`
 
 O nome do modelo gerador.
 
