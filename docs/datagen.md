@@ -46,7 +46,7 @@ let dg = new DataGen();
 
 ## Static properties
 
-<a href='#DataGen.listOfGens' name='DataGen.listOfGens'>&diams;</a> DataGen.**listOfGens** : `Object`
+<a href='#DataGen.listOfGens' name='DataGen.listOfGens'>&raquo;</a> DataGen.**listOfGens** : `Object`
 
 Armazena uma lista (chave-valor) das classes de geradores que podem ser listados no Block para os usuários. Todas as classes presentes na lista podem ser instanciadas. O código abaixo mostra o nome das classes no console.
 
