@@ -32,7 +32,7 @@
 
 ## Constructor
 
-<a href="#DataGen-cons" name="DataGen-cons">></a> **DataGen**()
+<a class="anchor" href="#DataGen-cons" name="DataGen-cons">></a> **DataGen**()
 
 Há somente construtor sem parâmetros. Exemplo:
 
