@@ -4,6 +4,11 @@ This is an application for generating synthetic databases for helping the inform
 
 The [API Reference](API.md) is under construction.
 
+## How to cite the project
+If you have used the project to help you or to compare it with your proposal, we would be grateful if you cite our publications associated with this software. They are listed below:
+
+- [A Prototype Application to Generate Synthetic Datasets for Information Visualization Evaluations](https://ieeexplore.ieee.org/document/8564154).
+- [Synthetic Datasets Generator for Testing Information Visualization and Machine Learning Techniques and Tools](https://ieeexplore.ieee.org/abstract/document/9084138).
 
 ## How to build
 First of all, you have to install the [electron-packager](https://github.com/electron-userland/electron-packager) in globally way running the code below:
