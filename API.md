@@ -29,7 +29,7 @@ let dg = new DataGen();
 
 Esta classe é responsável por armazenar alguns metadados sobre os atributos da base de dados a ser gerada.
 
-Geralmente não será necessário instanciar objetos dessa classe manualmente, uma vez que objetos `DataGen` já possuem o método `dg.addColumn()` que já instacia a classe internamente.
+Geralmente não será necessário instanciar objetos dessa classe manualmente, uma vez que objetos [`DataGen`](docs/datagen.md) já possuem o método [dg.**addColumn**()](docs/datagen.md#dg.addColumn) que já instancia a classe internamente.
 
 ## [Generator](docs/generator.md)
 
@@ -85,4 +85,4 @@ Essa classe é o tipo abstrato para geradores que geram valores conforme uma reg
 
 > extends [Function](docs/function.md)
 
-Essa classe é um subtipo de [Function](docs/function.md) que recebe valores categóricos como entrada e possuem uma cadeia de geradores diferentes para cada entrada diferente. Seu nome vem da semelhança que ela possui com a estrutura `switch case` das linguagens de progamação.
+Essa classe é um subtipo de [`Function`](docs/function.md) que recebe valores categóricos como entrada e possuem uma cadeia de geradores diferentes para cada entrada diferente. Seu nome vem da semelhança que ela possui com a estrutura `switch-case` das linguagens de progamação.
