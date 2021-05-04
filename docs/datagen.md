@@ -125,11 +125,35 @@ Identifica o tipo de arquivo que será utilizado para salvar a base de dados que
 
 <br><a href='#dg.header' name='dg.header'>&raquo;</a> dg.**header** : `Boolean`
 
+Indica se os dados gerados terão um cabeçalho indicando o nome do atributo de cada valor (`true`) ou não (`false`). A tabela abaixo mostra um exemplo de dataset exportado em `.csv` com `dg.header=true`.
+
+|Nome     |System   |Language   |
+|---------|---------|-----------|
+|Gustavo  |Windows  |Javascript |
+|Tiago    |Linux    |Python     |
+|Roberto  |Mac      |Python     |
+|Anderson |Windows  |Java       |
+
+Agora o mesmo dado com `dg.header=false`.
+
+|         |         |           |
+|---------|---------|-----------|
+|Gustavo  |Windows  |Javascript |
+|Tiago    |Linux    |Python     |
+|Roberto  |Mac      |Python     |
+|Anderson |Windows  |Java       |
+
+O conteúdo do header vem de cada [column.**name**](column.md#column.name).
+
 <br><a href='#dg.header_type' name='dg.header_type'>&raquo;</a> dg.**header_type** : `Boolean`
+
+Indica se será exportado o tipo de dados no dataset final. O tipo de cada coluna fica armazenado em [column.**type**](column.md#column.type).
 
 <br><a href='#dg.columns' name='dg.columns'>&raquo;</a> dg.**columns** : `Array`
 
-<br><a href='#dg.iterator' name='dg.iterator'>&raquo;</a> dg.**columns** : `Object`
+Array que armazena cada coluna do modelo gerador. Os objetos armazenados são do tipo [Column](column.md). Não se deve fazer inserções ou remoções diretamente nesse array, para isso use o método [dg.**addColumn**()](#dg.addColumn) e [dg.**removeColumn**()](#dg.removeColumn).
+
+<br><a href='#dg.iterator' name='dg.iterator'>&raquo;</a> dg.**iterator** : `Object`
 
 <br><a href='#dg.ID' name='dg.ID'>&raquo;</a> dg.**ID** : `String`
 
