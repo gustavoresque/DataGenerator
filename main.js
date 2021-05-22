@@ -268,11 +268,13 @@ function createWindow () {
                     label: 'Open Model',
                     accelerator: process.platform === "darwin" ? 'Cmd+O' : 'Ctrl+O',
                     click () {
-                        let pathFile = dialog.showOpenDialog(mainWindow, {
+                        dialog.showOpenDialog(mainWindow, {
                             properties: ['openFile']
+                        }).then(({canceled, filePaths}) => {
+                            if(canceled || !filePaths) return;
+                            mainWindow.webContents.send('open-datagen', filePaths[0].toString());
                         });
-                        if(!pathFile) return;
-                        mainWindow.webContents.send('open-datagen', pathFile.toString());
+                        
                     }
                 },
                 {
@@ -309,11 +311,10 @@ function createWindow () {
                                         }
                                     ]
                             },
-                            function(targetPath) {
-                                if(!targetPath) return;
-                                mainWindow.webContents.executeJavaScript(`createModelFromDataSet("${targetPath[0].replace(/\\/g,'\\\\')}");`);
-                            }
-                        );
+                        ).then(function({canceled, filePaths}) {
+                            if(canceled || !filePaths) return;
+                            mainWindow.webContents.executeJavaScript(`createModelFromDataSet("${filePaths[0].replace(/\\/g,'\\\\')}");`);
+                        });
                     }
                 }
         ]

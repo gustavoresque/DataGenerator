@@ -108,7 +108,12 @@ ipc.on('get-path', function(event, allPath){
     }
 });
 
-ipc.on('open-datagen', async function(event, path){await openModel(path); showModels(); showGenerators();});
+ipc.on('open-datagen', async function(event, path){
+    console.log(event, path)
+    await openModel(path);
+    showModels();
+    showGenerators();
+});
 
 async function openModel (path, backup=false) {
     const file = await readFile(path.toString(), 'utf8')

@@ -245,6 +245,8 @@ class Generator{
     }
 }
 
+
+
 class Random extends Generator{
     constructor(name){
         super(name);
@@ -788,6 +790,8 @@ class PoissonTimeGenerator extends Random{
     }
 }
 
+
+
 class Accessory extends Generator{
     constructor(name){
         super(name);
@@ -1008,7 +1012,6 @@ class MNAR extends Accessory{
         return this.explain
     }
 }
-
 
 class RandomConstantNoiseGenerator extends Accessory{
     constructor(probability, value){
@@ -2430,6 +2433,8 @@ class Function extends Generator{
         return newGen;
     }
 }
+
+
 
 class LinearFunction extends Function{
     constructor(inputGenerator, a, b){
