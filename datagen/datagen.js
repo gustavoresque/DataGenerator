@@ -356,6 +356,7 @@ class RandomGaussianGenerator extends Random{
 }
 
 class RandomPoissonGenerator extends Random{
+
     constructor(lambda){
         super("Poisson Generator");
         this.lambda = lambda || 1;
@@ -1237,6 +1238,7 @@ class LinearScale extends Accessory {
 
     getModel(){
         let model = super.getModel();
+        //verificar se pode remover esse this.array
         model.array = this.array;
         model.minDomain = this.minDomain;
         model.maxDomain = this.maxDomain;
@@ -1247,6 +1249,53 @@ class LinearScale extends Accessory {
 
     copy(){
         let newGen = new LinearScale(this.minDomain, this.maxDomain, this.minRange, this.maxRange);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+}
+
+class Normalization extends Accessory{
+    constructor(mean = 0, std = 1){
+        super("Normalization");
+        this.mean = mean;
+        this.std = std;
+    }
+
+    generate() {
+        return this.lastGenerated = (super.generate(0)-this.mean)/this.std;
+    }
+    
+    getGenParams() {
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "Mean",
+                variableName: "mean",
+                name: "Mean of Normalization",
+                type: "number"
+            },
+            {
+                shortName: "StD",
+                variableName: "std",
+                name: "Standard Deviation",
+                type: "number"
+            }
+        );
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.mean = this.mean;
+        model.std = this.std;
+        return model;
+    }
+
+    copy(){
+        let newGen = new Normalization(this.mean, this.std);
+        //TODO: Colocar esse código abaixo na super classe: Generator
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -3952,6 +4001,7 @@ DataGen.listOfGens = {
     'Constant Noise Generator': RandomConstantNoiseGenerator,
     'Range Filter': RangeFilter,
     'Linear Scale': LinearScale,
+    'Normalization': Normalization,
     'No Repeat': NoRepeat,
     'MinMax': MinMax,
     'NumberFormat': NumberFormat,
@@ -3994,6 +4044,7 @@ DataGen.listOfGensHelp = {
     'Constant Noise Generator': RandomConstantNoiseGenerator,
     'Range Filter': RangeFilter,
     'Linear Scale': LinearScale,
+    'Normalization': "Aplica uma normalização nos dados.",
     'No Repeat': "Generate distinct values.",
     'MinMax': MinMax,
     "Number Format": "Format the number from generators",

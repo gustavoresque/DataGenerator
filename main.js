@@ -274,7 +274,6 @@ function createWindow () {
                             if(canceled || !filePaths) return;
                             mainWindow.webContents.send('open-datagen', filePaths[0].toString());
                         });
-                        
                     }
                 },
                 {
