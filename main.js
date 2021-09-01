@@ -33,10 +33,11 @@ function createWindow () {
   // Create the browser window.
   mainWindow = new BrowserWindow({width: 900, height: 600, icon: "icon3.png", webPreferences: {
     // preload: path.join(app.getAppPath(), 'UI/preload.js')
-    nodeIntegration: true,
-    nodeIntegrationInWorker: true,
+    // nodeIntegration: true,
+    // nodeIntegrationInWorker: true,
     contextIsolation: false,
-    enableRemoteModule: true
+    // enableRemoteModule: true
+    preload: path.join(__dirname, 'UI/main_preload.js')
   }});
   mainWindow.maximize();
 

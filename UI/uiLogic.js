@@ -1,6 +1,9 @@
 
 
-const fs = require('fs');
+// const fs = require('fs');
+console.log(window.isElectron);
+const fs = window.mainVariables.fs;
+console.log(fs);
 const net = require('net');
 const { promisify } = require('util');
 const electron = require('electron').remote;
