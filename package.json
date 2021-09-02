@@ -22,6 +22,7 @@
     "electron-builder": "^22.10.5"
   },
   "dependencies": {
+    "@electron/remote": "^1.2.1",
     "@labvis-ufpa/vistechlib": "latest",
     "asar": "^0.14.5",
     "cross-spawn": "^6.0.5",
