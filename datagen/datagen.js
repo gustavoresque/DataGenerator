@@ -3570,9 +3570,9 @@ let defaultGenerator = RandomUniformGenerator;
 let defaultOperator = Generator.Operators.sum;
 
 class Column{
-    constructor(name, generator){
-        this.name = name || "Col";
-        this.generator = generator || new defaultGenerator();
+    constructor(name = "Col", generator = new defaultGenerator()){
+        this.name = name;
+        this.generator = generator;
         this.type = this.generator.getReturnedType();
         this.ID = "COL_"+DataGen.Utils.getID();
         this.generator.parent = this;
@@ -3582,17 +3582,19 @@ class Column{
 
 class DataGen {
 
-    constructor () {
+    constructor (name = "Model", column_name="Dimension 1") {
         //adicionar a version => const { version } = require('./package.json');
-        this.name = "Model";
+        this.name = name;
         this.n_lines = 100; // Quantidade de linhas na geração
         this.step_lines = 10000; // TODO: Revisar o propósito disso...
         this.n_sample_lines = 100;
         this.save_as = "csv";
         this.header = true;
         this.header_type = true;
-        const column = new Column("Dimension 1");
-        this.columns = [column];
+        // const column = new Column(column_name);
+        // this.columns = [column];
+        this.columns = [];
+        this.addColumn(column_name);
         this.iterator = {hasIt:false};
         this.ID = "MODEL_"+DataGen.Utils.getID();
         this.columnsCounter = 1; //If delete a not last column, the new colum will the same name as the last but one column and this make the preview have a bug.
@@ -3662,8 +3664,7 @@ class DataGen {
         return names;
     }
 
-    addColumn(name, generator){
-        generator = generator || new defaultGenerator();
+    addColumn(name, generator = new defaultGenerator()){
         let column = new Column(name, generator);
         this.columns.push(column);
     }
@@ -4097,6 +4098,14 @@ DataGen.superTypes = {
     Geometric,
     Column
 };
+
+DataGen.listOfSuperTypesMenu = [
+    "Sequence",
+    "Random",
+    "Function",
+    "Accessory",
+    "Geometric"
+];
 
 DataGen.Utils = {
     decodeSvgPathD: (str)=>{

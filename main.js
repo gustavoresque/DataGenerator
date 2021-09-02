@@ -1,6 +1,8 @@
 const electron = require('electron');
 const dialog = electron.dialog;
 
+
+
 const spawn = require('cross-spawn');
 
 // Module to control application life.
@@ -11,6 +13,9 @@ const app = electron.app;
 const ipcMain = require('electron').ipcMain;
 // Module to create native browser window.
 const BrowserWindow = electron.BrowserWindow;
+
+require('@electron/remote/main').initialize();
+
 
 const path = require('path');
 const url = require('url');
@@ -36,7 +41,7 @@ function createWindow () {
     // nodeIntegration: true,
     // nodeIntegrationInWorker: true,
     contextIsolation: false,
-    // enableRemoteModule: true
+    enableRemoteModule: true,
     preload: path.join(__dirname, 'UI/main_preload.js')
   }});
   mainWindow.maximize();
