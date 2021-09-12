@@ -2360,9 +2360,9 @@ function preview(data2){
     */
 
 }
-
+//TODO: Refatorar lista de supertipos, deixar essa lista somente dentro do datagen.js 
 function configureMenuOfGens(){
-    let types = ["Sequence", "Random", "Function", "Accessory", "Geometric"];
+    let types = ["Sequence", "Random", "Function", "Accessory", "Geometric", "NeuralNetwork"];
     let menuObj = {};
 
     for(let t of types){
@@ -2381,3 +2381,20 @@ function configureMenuOfGens(){
     }
     return menuObj;
 }
+
+//Substitui o botão submit para envio
+/*$("#selectGeneratorType").click(function(){
+    $("#fileupload").trigger("click");
+    //"Neural Network Generator";
+});
+
+$("fileupload").change(function(){
+    uploadFile(("upload-json"), ("upload-weights"));
+});
+
+function uploadFile(input_file_1, input_file_2){
+    var file = [];
+    file[0] = input_file_1[0].files[0];
+    file[1] = input_file_2[0].files[0];
+    return file;
+}*/

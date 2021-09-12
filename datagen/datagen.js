@@ -356,7 +356,6 @@ class RandomGaussianGenerator extends Random{
 }
 
 class RandomPoissonGenerator extends Random{
-
     constructor(lambda){
         super("Poisson Generator");
         this.lambda = lambda || 1;
@@ -1238,7 +1237,6 @@ class LinearScale extends Accessory {
 
     getModel(){
         let model = super.getModel();
-        //verificar se pode remover esse this.array
         model.array = this.array;
         model.minDomain = this.minDomain;
         model.maxDomain = this.maxDomain;
@@ -1256,8 +1254,8 @@ class LinearScale extends Accessory {
     }
 }
 
-class Normalization extends Accessory{
-    constructor(mean = 0, std = 1){
+class Normalization extends Accessory {
+    constructor(mean = 0, std = 1) {
         super("Normalization");
         this.mean = mean;
         this.std = std;
@@ -1266,7 +1264,7 @@ class Normalization extends Accessory{
     generate() {
         return this.lastGenerated = (super.generate(0)-this.mean)/this.std;
     }
-    
+
     getGenParams() {
         let params = super.getGenParams();
         params.push(
@@ -1277,7 +1275,7 @@ class Normalization extends Accessory{
                 type: "number"
             },
             {
-                shortName: "StD",
+                shortName: "Std",
                 variableName: "std",
                 name: "Standard Deviation",
                 type: "number"
@@ -1295,12 +1293,12 @@ class Normalization extends Accessory{
 
     copy(){
         let newGen = new Normalization(this.mean, this.std);
-        //TODO: Colocar esse código abaixo na super classe: Generator
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
         return newGen;
     }
+
 }
 
 class MinMax extends Accessory {
@@ -1549,7 +1547,6 @@ class GetExtraValue extends Accessory{
         return newGen;
     }
 }
-
 
 
 class Geometric extends Generator{
@@ -2865,6 +2862,8 @@ class SwitchCaseFunction extends Function{
 
 }
 
+
+
 class CategoricalFunction extends SwitchCaseFunction{
     constructor(listOfGenerators, inputGenerator, inputGenIndex){
         super("Categorical Function", listOfGenerators, inputGenerator, inputGenIndex);
@@ -3037,8 +3036,6 @@ class TimeLapsFunction extends SwitchCaseFunction{
         return newGen;
     }
 }
-
-
 
 
 class Sequence extends Generator{
@@ -3376,8 +3373,6 @@ class FixedTimeGenerator extends Sequence{
 }
 
 
-
-
 class RealDataWrapper extends Generator {
     constructor(data, dataType, genType) {
         super("Real Data Wrapper");
@@ -3543,7 +3538,59 @@ class RealDataWrapper extends Generator {
 
 }
 
+class NeuralNetwork extends Generator{
+    constructor(name){
+        super(name);
+    }
+}
 
+class NeuralNetworkGenerator extends NeuralNetwork {
+
+    constructor(data = [5]) {
+        super("Neural Network Generator");
+        this.data = data;
+        
+        const tf = require('@tensorflow/tfjs');
+        // Use the model to do inference on a data point the model hasn't seen before:
+        tf.loadLayersModel('file://C:/Users/ibyte/Documents/Teste/my-model.json').then((res)=>{
+            this.model = res;
+        });
+        
+    }
+
+    generate() {
+        const tf = require('@tensorflow/tfjs');
+        this.lastGenerated = this.model.predict(tf.tensor2d([[5]], [1, 1]))[0];
+        return this.lastGenerated;
+    }
+
+    getGenParams() {
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "Data",
+                variableName: "data",
+                name: "Data Value",
+                type: "number"
+            }
+        );
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        return model;
+    }
+
+    copy(){
+        let newGen = new NeuralNetworkGenerator(this.data);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+
+}
 
 Generator.Operators = {
     "sum": (a,b) => { return a+b; },
@@ -3991,6 +4038,7 @@ DataGen.listOfGens = {
     'MNAR': MNAR,
     'Counter Generator': CounterGenerator,
     'Fixed Time Generator': FixedTimeGenerator,
+    'Neural Network Generator': NeuralNetworkGenerator,
     'Poisson Time Generator': PoissonTimeGenerator,
     'Uniform Generator': RandomUniformGenerator,
     'Gaussian Generator': RandomGaussianGenerator,
@@ -4001,7 +4049,7 @@ DataGen.listOfGens = {
     'Constant Noise Generator': RandomConstantNoiseGenerator,
     'Range Filter': RangeFilter,
     'Linear Scale': LinearScale,
-    'Normalization': Normalization,
+    'Normalization':  Normalization,
     'No Repeat': NoRepeat,
     'MinMax': MinMax,
     'NumberFormat': NumberFormat,
@@ -4044,7 +4092,6 @@ DataGen.listOfGensHelp = {
     'Constant Noise Generator': RandomConstantNoiseGenerator,
     'Range Filter': RangeFilter,
     'Linear Scale': LinearScale,
-    'Normalization': "Aplica uma normalização nos dados.",
     'No Repeat': "Generate distinct values.",
     'MinMax': MinMax,
     "Number Format": "Format the number from generators",
@@ -4095,7 +4142,8 @@ DataGen.superTypes = {
     Random,
     Accessory,
     Geometric,
-    Column
+    Column,
+    NeuralNetwork,
 };
 
 DataGen.Utils = {
