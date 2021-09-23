@@ -45,13 +45,17 @@ button.floatButton:active{
     border-color: #555 transparent transparent transparent;
 }
 
-.icon.btn{
-    /*Tem se ser mais específico*/
-    /*float: right;*/
-}
+
 .icon.btn:hover{
     color: black;
     background-color: #ccc;
+}
+
+.btn-group .btn .icon{
+    width: 14.8px;
+    height: 14.8px;
+    font-size: 14.8px;
+    line-height: 1.1;
 }
 
 .btnGenerator{

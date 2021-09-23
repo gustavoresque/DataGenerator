@@ -334,9 +334,14 @@ function propsConfigs(generator,coluna, new_place){
                 .attr("value", generator[p.variableName])
                 .attr("id", "input_"+p.variableName)
                 .attr("data-variable", p.variableName)
-                .attr("data-type", p.type);
+                .attr("data-type", p.type)
+                .css("display", "none");
+            let $labelFile = $("<label/>")
+                .addClass("btn btn-mini btn-default")
+                .text("Choose File")
+                .attr("for", "input_"+p.variableName)
             $input.get(0).__node__ = generator;
-            $tr.append($("<td/>").append($input));
+            $tr.append($("<td/>").append($input).append($labelFile));
 
         }else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
             let $input;
@@ -752,8 +757,11 @@ $("html").ready(function() {
         if($input.attr("data-type") === "number")
             this.__node__[$input.attr("data-variable")] = parseFloat($input.val());
 
-        else if($input.attr("data-type") === "string" || $input.attr("data-type") === "file")
+        else if($input.attr("data-type") === "string")
             this.__node__[$input.attr("data-variable")] = $input.val();
+
+        else if($input.attr("data-type") === "file" && $input.get(0).files[0])
+            this.__node__[$input.attr("data-variable")] = $input.get(0).files[0].path.replace(/\\/g,'/');
 
         else if($input.attr("data-type") === "auto")
             this.__node__[$input.attr("data-variable")] = isNaN(parseFloat($input.val())) ? $input.val() : parseFloat($input.val());
