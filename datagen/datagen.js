@@ -3549,18 +3549,37 @@ class NeuralNetworkGenerator extends NeuralNetwork {
     constructor(data = [5]) {
         super("Neural Network Generator");
         this.data = data;
+        this.fileName = ""
         
-        const tf = require('@tensorflow/tfjs');
+        this.tf = require('@tensorflow/tfjs');
         // Use the model to do inference on a data point the model hasn't seen before:
-        tf.loadLayersModel('file://C:/Users/ibyte/Documents/Teste/my-model.json').then((res)=>{
+        // tf.loadLayersModel('file://C:/Users/ibyte/Documents/Teste/my-model.json').then((res)=>{
+        //     this.model = res;
+        // });
+        // this.tf.loadLayersModel('file://C:/Users/Gustavo/Documents/my-model.json').then((res)=>{
+        //     this.model = res;
+        // });
+    }
+
+    get accessFileName (){
+        return this.fileName;
+    }
+
+    set accessFileName (fileName){
+        console.log("teste", `file://${fileName}`);
+        this.fileName = fileName;
+        this.tf.loadLayersModel(`file://${fileName}`).then((res)=>{
             this.model = res;
         });
-        
     }
 
     generate() {
-        const tf = require('@tensorflow/tfjs');
-        this.lastGenerated = this.model.predict(tf.tensor2d([[5]], [1, 1]))[0];
+        try{
+            this.lastGenerated = this.model.predict(this.tf.tensor2d([[5]], [1, 1]))[0];
+        }catch(e){
+            // console.log(e);
+            return this.lastGenerated = 0;
+        }
         return this.lastGenerated;
     }
 
@@ -3568,10 +3587,10 @@ class NeuralNetworkGenerator extends NeuralNetwork {
         let params = super.getGenParams();
         params.push(
             {
-                shortName: "Data",
-                variableName: "data",
-                name: "Data Value",
-                type: "number"
+                shortName: "File",
+                variableName: "accessFileName",
+                name: "TF Model File",
+                type: "file"
             }
         );
         return params;

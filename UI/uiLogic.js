@@ -326,6 +326,18 @@ function propsConfigs(generator,coluna, new_place){
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input));
 
+        }else if(p.type === "file"){
+            let $input = $("<input/>")
+                .addClass("form-control")
+                .addClass("smallInput")
+                .attr("type","file")
+                .attr("value", generator[p.variableName])
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type);
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input));
+
         }else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
             let $input;
             if (generator.name === "Path2D Stroke Generator" || generator.name === "Path2D Fill Generator"){
@@ -740,7 +752,7 @@ $("html").ready(function() {
         if($input.attr("data-type") === "number")
             this.__node__[$input.attr("data-variable")] = parseFloat($input.val());
 
-        else if($input.attr("data-type") === "string")
+        else if($input.attr("data-type") === "string" || $input.attr("data-type") === "file")
             this.__node__[$input.attr("data-variable")] = $input.val();
 
         else if($input.attr("data-type") === "auto")
@@ -898,7 +910,6 @@ $("html").ready(function() {
     });
 
     $("#tableCollumn").on("change", "input.checkboxSelectColumn", function(){
-        console.log("Testando um dois tres");
         let col = $(this).parent().parent().get(0).__node__;
         let i = collumnsSelected.indexOf(col);
         if ($(this).is(':checked')){
