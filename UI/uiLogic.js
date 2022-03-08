@@ -2381,7 +2381,7 @@ function preview(data2){
 }
 //TODO: Refatorar lista de supertipos, deixar essa lista somente dentro do datagen.js 
 function configureMenuOfGens(){
-    let types = ["Sequence", "Random", "Function", "Accessory", "Geometric", "NeuralNetwork"];
+    let types = ["Sequence", "Random", "Function", "Accessory", "Geometric", "NeuralNetwork", "Image"];
     let menuObj = {};
 
     for(let t of types){

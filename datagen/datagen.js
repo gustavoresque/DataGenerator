@@ -3550,15 +3550,8 @@ class NeuralNetworkGenerator extends NeuralNetwork {
         super("Neural Network Generator");
         this.data = data;
         this.fileName = ""
-        
+        this.count = 0;
         this.tf = require('@tensorflow/tfjs');
-        // Use the model to do inference on a data point the model hasn't seen before:
-        // tf.loadLayersModel('file://C:/Users/ibyte/Documents/Teste/my-model.json').then((res)=>{
-        //     this.model = res;
-        // });
-        // this.tf.loadLayersModel('file://C:/Users/Gustavo/Documents/my-model.json').then((res)=>{
-        //     this.model = res;
-        // });
     }
 
     get accessFileName (){
@@ -3574,10 +3567,22 @@ class NeuralNetworkGenerator extends NeuralNetwork {
     }
 
     generate() {
+       
+        console.log( this.count);
+
         try{
-            this.lastGenerated = this.model.predict(this.tf.tensor2d([[5]], [1, 1]))[0];
+            let dados = [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10], [11, 12, 13, 14, 15], [16, 17, 18, 19, 20], [21, 22, 23, 24, 25], [26, 27, 28, 29, 30], [31, 32, 33, 34, 35], [36, 37, 38, 39, 40]];
+            //let dados = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40];
+            //console.log(dados);
+            //let shape = [8, 5];
+            //this.lastGenerated = this.model.predict(this.tf.tensor2d([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10], [11, 12, 13, 14, 15], [16, 17, 18, 19, 20], [21, 22, 23, 24, 25], [26, 27, 28, 29, 30], [31, 32, 33, 34, 35], [36, 37, 38, 39, 40]]))[0];
+            //this.lastGenerated = this.model.predict(this.tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40], [8, 5]))[0];
+            //let dados = [[1], [3], [5], [7], [9], [11], [13], [15]];
+            this.lastGenerated = this.model.predict(this.tf.tensor2d(dados))[this.count];
+            this.count++;
+            console.log( this.count);
         }catch(e){
-            // console.log(e);
+            console.log(e);
             return this.lastGenerated = 0;
         }
         return this.lastGenerated;
@@ -3603,6 +3608,118 @@ class NeuralNetworkGenerator extends NeuralNetwork {
 
     copy(){
         let newGen = new NeuralNetworkGenerator(this.data);
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
+        return newGen;
+    }
+
+}
+
+class Image extends Generator{
+    constructor(name){
+        super(name);
+    }
+}
+
+class ImageGenerator extends Image {
+
+    /*constructor(data = [5]) {
+        super("Image Generator");
+        this.data = data;
+        this.fileName = ""
+        this.count = 0;
+    }*/
+    constructor(name, firstname, lastname){
+        super(name);
+        this.firstname = firstname || "Brynner";
+        this.lastname = lastname || "Brito";
+    }
+
+    generate() {
+    
+        const spawn = require("child_process").spawn;
+
+        (async () => {
+            try {
+                const exec = spawn('python',["./datagen/teste.py", this.firstname, this.lastname]);
+                exec.stdin.end();
+
+                let error = '';
+                for await (const chunk of exec.stderr) {
+                    error += chunk;
+                }
+                if (error) {
+                    console.error('error', error);
+                    return;
+                }
+
+                let data = '';
+                for await (const chunk of exec.stdout) {
+                    data += chunk;
+                }
+                if (data) {
+                    console.log('data', data);
+                }
+            } catch (e) {
+                console.error('execute error', e);
+            }
+        })();
+        
+        
+        /*try{
+            
+            var spawn = require("child_process").spawn;    
+            var process = spawn('python',["./teste.py"] );               
+            process.stdout.on('data', function(data) { 
+                console.log(data.toString());
+                console.log("Oi");
+            } ) 
+       
+            this.lastGenerated = this.model.;
+            this.count++;
+            console.log( this.count);
+        }catch(e){
+            console.log(e);
+            //return this.lastGenerated = 0;
+        }*/
+        //return this.lastGenerated;
+    }
+
+    getGenParams() {
+        let params = super.getGenParams();
+        /*params.push(
+            {
+                shortName: "File",
+                variableName: "accessFileName",
+                name: "Image Model File",
+                type: "file"
+            }
+        );*/
+        params.push(
+            {
+                shortName: "First",
+                variableName: "firstname",
+                name: "First Name",
+                type: "string"
+            },
+            {
+                shortName: "Last",
+                variableName: "lastname",
+                name: "Last Name",
+                type: "string"
+            }
+        );
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        return model;
+    }
+
+    copy(){
+        let newGen = new ImageGenerator(this.data);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -4058,6 +4175,7 @@ DataGen.listOfGens = {
     'Counter Generator': CounterGenerator,
     'Fixed Time Generator': FixedTimeGenerator,
     'Neural Network Generator': NeuralNetworkGenerator,
+    'Image Generator': ImageGenerator,
     'Poisson Time Generator': PoissonTimeGenerator,
     'Uniform Generator': RandomUniformGenerator,
     'Gaussian Generator': RandomGaussianGenerator,
@@ -4163,6 +4281,7 @@ DataGen.superTypes = {
     Geometric,
     Column,
     NeuralNetwork,
+    Image,
 };
 
 DataGen.Utils = {
