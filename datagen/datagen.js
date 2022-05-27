@@ -3616,33 +3616,38 @@ class NeuralNetworkGenerator extends NeuralNetwork {
 
 }
 
-class Image extends Generator{
+class ScriptReader extends Generator{
     constructor(name){
         super(name);
     }
 }
 
-class ImageGenerator extends Image {
+class PythonScriptReader extends ScriptReader {
 
     /*constructor(data = [5]) {
-        super("Image Generator");
+        super("Python Script Reader");
         this.data = data;
         this.fileName = ""
         this.count = 0;
     }*/
-    constructor(name, firstname, lastname){
-        super(name);
-        this.firstname = firstname || "Brynner";
-        this.lastname = lastname || "Brito";
+    constructor(){
+        super("Python Script Reader");
+        this.count = 0;
+        this.array = [];
+        this.fileName = "";       
     }
 
-    generate() {
-    
-        const spawn = require("child_process").spawn;
+    get accessFileName (){
+        return this.fileName;
+    }
 
+    set accessFileName (fileName){
+        console.log("teste", `file://${fileName}`);
+        this.fileName = fileName;
+        const spawn = require("child_process").spawn;
         (async () => {
             try {
-                const exec = spawn('python',["./datagen/teste.py", this.firstname, this.lastname]);
+                const exec = spawn('python',["./datagen/codigos_gerador_azulejos/example_singleMosaic.py", this.fileName]);
                 exec.stdin.end();
 
                 let error = '';
@@ -3656,17 +3661,26 @@ class ImageGenerator extends Image {
 
                 let data = '';
                 for await (const chunk of exec.stdout) {
-                    data += chunk;
+                    data += chunk; 
                 }
-                if (data) {
-                    console.log('data', data);
+                if (data) { 
+                    console.log('Arquivo:', data);
+                    this.array = JSON.parse(data);
+                    console.log(this.array);
+                    console.log(this.array.length);
+                    for (let i = 0; i < this.array.length; i++){
+                        console.log(this.array[i]);
+                    }
                 }
             } catch (e) {
                 console.error('execute error', e);
             }
         })();
-        
-        
+    }
+
+    generate() {
+        return this.lastGenerated = this.array[Math.floor(Math.random() * this.array.length)];
+       
         /*try{
             
             var spawn = require("child_process").spawn;    
@@ -3688,15 +3702,15 @@ class ImageGenerator extends Image {
 
     getGenParams() {
         let params = super.getGenParams();
-        /*params.push(
+        params.push(
             {
                 shortName: "File",
                 variableName: "accessFileName",
                 name: "Image Model File",
                 type: "file"
             }
-        );*/
-        params.push(
+        );
+        /*params.push(
             {
                 shortName: "First",
                 variableName: "firstname",
@@ -3709,17 +3723,22 @@ class ImageGenerator extends Image {
                 name: "Last Name",
                 type: "string"
             }
-        );
+        );*/
         return params;
     }
 
     getModel(){
         let model = super.getModel();
+        model.array = this.array;
         return model;
     }
 
+    getReturnedType(){
+        return "Categorical";
+    }
+
     copy(){
-        let newGen = new ImageGenerator(this.data);
+        let newGen = new PythonScriptReader(this.array);
         if (this.generator){
             newGen.addGenerator(this.generator.copy(), this.order);
         }
@@ -4175,7 +4194,7 @@ DataGen.listOfGens = {
     'Counter Generator': CounterGenerator,
     'Fixed Time Generator': FixedTimeGenerator,
     'Neural Network Generator': NeuralNetworkGenerator,
-    'Image Generator': ImageGenerator,
+    'Python Script Reader': PythonScriptReader,
     'Poisson Time Generator': PoissonTimeGenerator,
     'Uniform Generator': RandomUniformGenerator,
     'Gaussian Generator': RandomGaussianGenerator,
@@ -4281,7 +4300,7 @@ DataGen.superTypes = {
     Geometric,
     Column,
     NeuralNetwork,
-    Image,
+    ScriptReader,
 };
 
 DataGen.Utils = {
