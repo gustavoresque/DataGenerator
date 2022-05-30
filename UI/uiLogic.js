@@ -2271,6 +2271,7 @@ function preview(data2){
     //Set configs according to the dimension type.
     for(let col of datagen[currentDataGen].columns) {
         if(col.name == selectColumnPreview) {
+            console.log("TODO: Adicionar um scale para o tempo na visualização.", col.type)
             switch(col.type) {
                 case "Categorical":
                     scaleFunction = d3.scaleOrdinal();
