@@ -3733,7 +3733,7 @@ class ImageGenerator extends Image {
 
     afterGenerate(data){
         //TODO: Chamar o método do python
-        // 
+        // Se tem spawn rodando cancela ele antes.
         super.afterGenerate();
     }
 
