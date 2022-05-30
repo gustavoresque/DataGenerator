@@ -243,6 +243,11 @@ class Generator{
     getEstimatedRange(){
 
     }
+
+    afterGenerate(){
+        if(this.generator)
+            this.generator.afterGenerate();
+    }
 }
 
 
@@ -3726,6 +3731,12 @@ class ImageGenerator extends Image {
         return newGen;
     }
 
+    afterGenerate(data){
+        //TODO: Chamar o método do python
+        // 
+        super.afterGenerate();
+    }
+
 }
 
 Generator.Operators = {
@@ -3929,17 +3940,20 @@ class DataGen {
             
         for (let i = 0; i < numberLines; i++){
             data.push( this.save_as === "json" && !this.header ? [] : {});
-            for (let j = 0; j < this.columns.length; j++){
-                if(this.columns[j].display) {
+            for (let col of this.columns){
+                if(col.display) {
                     if(this.save_as === "json" && !this.header){
-                        data[i].push(this.columns[j].generator.generate());
+                        data[i].push(col.generator.generate());
                     } else {
-                        data[i][this.columns[j].name] = this.columns[j].generator.generate();
+                        data[i][col.name] = col.generator.generate();
                     }
                 }
             }
         }
         this.resetAll();
+        for(let col of this.columns){
+            col.generator.afterGenerate(data.map(v => v[col.name]))
+        }
         return data;
     }
 
