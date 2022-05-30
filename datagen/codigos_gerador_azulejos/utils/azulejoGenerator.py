@@ -14,6 +14,8 @@ from itertools import permutations
 import random
 import imgaug.augmenters as iaa
 import json
+import logging
+logging.basicConfig(level=logging.INFO)
 
 #%% Funções
 def resizeAndPad(img, size, padColor=0):
@@ -182,11 +184,11 @@ def augmentation(img, add=(-10,10)):
     
     return img_aug
 
-def make_crack(img, input_dir = 'images/cracks/', file_prefix = '*.png', p=5):
+def make_crack(img, input_dir = 'datagen/codigos_gerador_azulejos/images/cracks', file_prefix = '*.png', p=5):
     
     if np.random.rand() > (p/100):
         return img
-     
+    #print(glob(os.path.join(input_dir, file_prefix)))
     image_name_list =  glob(os.path.join(input_dir, file_prefix))
     mask_name = np.random.choice(image_name_list)
     
@@ -248,7 +250,7 @@ def collage_function(image_name, collage_size, p=10):
     
     return image_collage
 
-def single_mosaic(image_name = 'input.png', output_name = 'output.jpg',
+def single_mosaic(image_name = 'input.png', output_name = 'output.jpg', output_dir = 'datagen/codigos_gerador_azulejos/output',
                   min_size = 1, max_size = 10, img_size = 256, p = 5):
     
     """A função gera um único mosaico de um azulejo 
@@ -262,7 +264,6 @@ def single_mosaic(image_name = 'input.png', output_name = 'output.jpg',
         p {int}: Chance do azulejo ter rachadura.
     
     """  
-    
     size = np.random.randint(min_size, max_size+1, 2)
     collage_size = (size[0], size[1])
     
@@ -284,8 +285,11 @@ def single_mosaic(image_name = 'input.png', output_name = 'output.jpg',
     # imagem ajustada corretamente para a resolução desejada
     image_collage = resizeAndPad(image_collage, (img_size, img_size))
     
-    cv2.imwrite(output_name, image_collage)
-    print(json.dumps(output_name))
+    output_image_name = output_name + '.jpg'
+    output_image_name = os.path.join(output_dir, output_image_name)
+    cv2.imwrite(output_image_name, image_collage)
+
+    print(output_name, end="")
     
     
 def multiple_mosaics(input_dir = 'input', output_dir = 'output',

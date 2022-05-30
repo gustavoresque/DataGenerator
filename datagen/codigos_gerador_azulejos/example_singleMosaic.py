@@ -10,9 +10,10 @@ from utils.azulejoGenerator import single_mosaic
 import sys
 
 fileName = sys.argv[1]
-
-start_time = time.time()
-single_mosaic(fileName)
+output_name = "img" + sys.argv[2]
+output_name.replace("\\", "")
+#start_time = time.time()
+single_mosaic(fileName, output_name)
 #t = time.time() - start_time
 
 #print('Tempo de execução (s):', t)

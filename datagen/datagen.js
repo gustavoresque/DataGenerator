@@ -3644,10 +3644,16 @@ class PythonScriptReader extends ScriptReader {
     set accessFileName (fileName){
         console.log("teste", `file://${fileName}`);
         this.fileName = fileName;
+        this.count = 0;        
+    }
+
+    generate() {
+        this.count++
         const spawn = require("child_process").spawn;
         (async () => {
             try {
-                const exec = spawn('python',["./datagen/codigos_gerador_azulejos/example_singleMosaic.py", this.fileName]);
+                const exec = spawn('python',["./datagen/teste.py", this.fileName, this.count]);
+                //const exec = spawn('python',["./datagen/codigos_gerador_azulejos/example_singleMosaic.py", this.fileName, this.count]);
                 exec.stdin.end();
 
                 let error = '';
@@ -3665,7 +3671,8 @@ class PythonScriptReader extends ScriptReader {
                 }
                 if (data) { 
                     console.log('Arquivo:', data);
-                    this.array = JSON.parse(data);
+                    //this.array = JSON.parse(data);
+                    this.array.push(data);
                     console.log(this.array);
                     console.log(this.array.length);
                     for (let i = 0; i < this.array.length; i++){
@@ -3676,9 +3683,6 @@ class PythonScriptReader extends ScriptReader {
                 console.error('execute error', e);
             }
         })();
-    }
-
-    generate() {
         return this.lastGenerated = this.array[Math.floor(Math.random() * this.array.length)];
        
         /*try{
