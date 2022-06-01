@@ -3762,6 +3762,12 @@ class PythonScriptReader extends ScriptReader {
         super.afterGenerate();
     }
 
+    afterGenerate(data){
+        //TODO: Chamar o método do python
+        // Se tem spawn rodando cancela ele antes.
+        super.afterGenerate();
+    }
+
 }
 
 Generator.Operators = {
