@@ -243,6 +243,11 @@ class Generator{
     getEstimatedRange(){
 
     }
+
+    afterGenerate(){
+        if(this.generator)
+            this.generator.afterGenerate();
+    }
 }
 
 
@@ -3649,44 +3654,11 @@ class PythonScriptReader extends ScriptReader {
 
     generate() {
         this.count++
-        const spawn = require("child_process").spawn;
-        (async () => {
-            try {
-                const exec = spawn('python',["./datagen/teste.py", this.fileName, this.count]);
-                //const exec = spawn('python',["./datagen/codigos_gerador_azulejos/example_singleMosaic.py", this.fileName, this.count]);
-                exec.stdin.end();
-
-                let error = '';
-                for await (const chunk of exec.stderr) {
-                    error += chunk;
-                }
-                if (error) {
-                    console.error('error', error);
-                    return;
-                }
-
-                let data = '';
-                for await (const chunk of exec.stdout) {
-                    data += chunk; 
-                }
-                if (data) { 
-                    console.log('Arquivo:', data);
-                    //this.array = JSON.parse(data);
-                    this.array.push(data);
-                    console.log(this.array);
-                    console.log(this.array.length);
-                    for (let i = 0; i < this.array.length; i++){
-                        console.log(this.array[i]);
-                    }
-                }
-            } catch (e) {
-                console.error('execute error', e);
-            }
-        })();
-        return this.lastGenerated = this.array[Math.floor(Math.random() * this.array.length)];
+        //this.array.push(this.count);
+        return this.lastGenerated = 'img' + this.count;
+        //return this.lastGenerated = this.array[Math.floor(Math.random() * this.array.length)];
        
-        /*try{
-            
+        /*try{          
             var spawn = require("child_process").spawn;    
             var process = spawn('python',["./teste.py"] );               
             process.stdout.on('data', function(data) { 
@@ -3748,6 +3720,47 @@ class PythonScriptReader extends ScriptReader {
         }
         return newGen;
     }
+    
+    afterGenerate(dataArray){
+        //TODO: Chamar o método do python
+        // Se tem spawn rodando cancela ele antes.
+        const spawn = require("child_process").spawn;
+        (async () => {
+            try {
+                const exec = spawn('python',["./datagen/teste.py", this.fileName, dataArray]);
+                //const exec = spawn('python',["./datagen/codigos_gerador_azulejos/example_singleMosaic.py", this.fileName, this.count]);
+                exec.stdin.end();
+
+                let error = '';
+                for await (const chunk of exec.stderr) {
+                    error += chunk;
+                }
+                if (error) {
+                    console.error('error', error);
+                    return;
+                }
+
+                let data = '';
+                for await (const chunk of exec.stdout) {
+                    data += chunk; 
+                }
+                if (data) { 
+                    console.log('Arquivo:', data);
+                    this.array = JSON.parse(data);
+                    //this.array.push(data);
+                    //this.array = data;
+                    console.log(this.array);
+                    console.log(this.array.length);
+                    for (let i = 0; i < this.array.length; i++){
+                        console.log(this.array[i]);
+                    }
+                }
+            } catch (e) {
+                console.error('execute error', e);
+            }
+        })();
+        super.afterGenerate();
+    }
 
 }
 
@@ -3776,9 +3789,9 @@ let defaultGenerator = RandomUniformGenerator;
 let defaultOperator = Generator.Operators.sum;
 
 class Column{
-    constructor(name, generator){
-        this.name = name || "Col";
-        this.generator = generator || new defaultGenerator();
+    constructor(name = "Col", generator = new defaultGenerator()){
+        this.name = name;
+        this.generator = generator;
         this.type = this.generator.getReturnedType();
         this.ID = "COL_"+DataGen.Utils.getID();
         this.generator.parent = this;
@@ -3788,17 +3801,19 @@ class Column{
 
 class DataGen {
 
-    constructor () {
+    constructor (name = "Model", column_name="Dimension 1") {
         //adicionar a version => const { version } = require('./package.json');
-        this.name = "Model";
+        this.name = name;
         this.n_lines = 100; // Quantidade de linhas na geração
         this.step_lines = 10000; // TODO: Revisar o propósito disso...
         this.n_sample_lines = 100;
         this.save_as = "csv";
         this.header = true;
         this.header_type = true;
-        const column = new Column("Dimension 1");
-        this.columns = [column];
+        // const column = new Column(column_name);
+        // this.columns = [column];
+        this.columns = [];
+        this.addColumn(column_name);
         this.iterator = {hasIt:false};
         this.ID = "MODEL_"+DataGen.Utils.getID();
         this.columnsCounter = 1; //If delete a not last column, the new colum will the same name as the last but one column and this make the preview have a bug.
@@ -3868,8 +3883,7 @@ class DataGen {
         return names;
     }
 
-    addColumn(name, generator){
-        generator = generator || new defaultGenerator();
+    addColumn(name, generator = new defaultGenerator()){
         let column = new Column(name, generator);
         this.columns.push(column);
     }
@@ -3952,17 +3966,20 @@ class DataGen {
             
         for (let i = 0; i < numberLines; i++){
             data.push( this.save_as === "json" && !this.header ? [] : {});
-            for (let j = 0; j < this.columns.length; j++){
-                if(this.columns[j].display) {
+            for (let col of this.columns){
+                if(col.display) {
                     if(this.save_as === "json" && !this.header){
-                        data[i].push(this.columns[j].generator.generate());
+                        data[i].push(col.generator.generate());
                     } else {
-                        data[i][this.columns[j].name] = this.columns[j].generator.generate();
+                        data[i][col.name] = col.generator.generate();
                     }
                 }
             }
         }
         this.resetAll();
+        for(let col of this.columns){
+            col.generator.afterGenerate(data.map(v => v[col.name]))
+        }
         return data;
     }
 
@@ -4306,6 +4323,14 @@ DataGen.superTypes = {
     NeuralNetwork,
     ScriptReader,
 };
+
+DataGen.listOfSuperTypesMenu = [
+    "Sequence",
+    "Random",
+    "Function",
+    "Accessory",
+    "Geometric"
+];
 
 DataGen.Utils = {
     decodeSvgPathD: (str)=>{

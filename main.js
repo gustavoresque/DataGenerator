@@ -1,6 +1,8 @@
 const electron = require('electron');
 const dialog = electron.dialog;
 
+
+
 const spawn = require('cross-spawn');
 
 // Module to control application life.
@@ -8,9 +10,12 @@ const Menu = electron.Menu;
 const MenuItem = electron.MenuItem;
 
 const app = electron.app;
-const ipcMain = require('electron').ipcMain;
+//const ipcMain = require('electron').ipcMain;
 // Module to create native browser window.
 const BrowserWindow = electron.BrowserWindow;
+
+//require('@electron/remote/main').initialize();
+
 
 const path = require('path');
 const url = require('url');
@@ -24,9 +29,9 @@ let visDimensionWindow;
 
 let sockets = [];
 
-ipcMain.on("get-path2", function (event, arg) {
+/*ipcMain.on("get-path2", function (event, arg) {
     mainWindow.webContents.send('get-path', arg);
-});
+});*/
 
 function createWindow () {
 
@@ -37,6 +42,7 @@ function createWindow () {
     nodeIntegrationInWorker: true,
     contextIsolation: false,
     enableRemoteModule: true
+    //preload: path.join(__dirname, 'UI/main_preload.js')
   }});
   mainWindow.maximize();
 
@@ -48,7 +54,7 @@ function createWindow () {
     }));
 
     let configDatagenWindow;
-    ipcMain.on('open-config-datagen-window', (event, arg) => {
+    /*ipcMain.on('open-config-datagen-window', (event, arg) => {
         configDatagenWindow = new BrowserWindow({
             parent: mainWindow,
             width: 675,
@@ -186,7 +192,7 @@ function createWindow () {
             visDimenWindow.show();
             visDimenWindow.webContents.send('update-dimen-data', message);
         });
-    };
+    };*/
 
     let funcOpenVisWindow = () => {
 
