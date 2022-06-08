@@ -3629,17 +3629,13 @@ class ScriptReader extends Generator{
 
 class PythonScriptReader extends ScriptReader {
 
-    /*constructor(data = [5]) {
-        super("Python Script Reader");
-        this.data = data;
-        this.fileName = ""
-        this.count = 0;
-    }*/
     constructor(){
         super("Python Script Reader");
         this.count = 0;
         this.array = [];
-        this.fileName = "";       
+        this.fileName = "";
+        this.exec = "";
+        this.procId = "";    
     }
 
     get accessFileName (){
@@ -3654,10 +3650,53 @@ class PythonScriptReader extends ScriptReader {
 
     generate() {
         this.count++
-        //this.array.push(this.count);
         return this.lastGenerated = 'img' + this.count;
         //return this.lastGenerated = this.array[Math.floor(Math.random() * this.array.length)];
-       
+        /*if(this.procId) {
+            this.exec.kill('SIGHUP');
+            console.log('Processo filho morto');
+        } else {
+
+            console.log('Entrou no processo filho');
+            const spawn = require("child_process").spawn;
+            (async () => {
+                try {
+                    const exec = spawn('python',["./datagen/teste.py", this.fileName, this.count]);
+                    //const exec = spawn('python',["./datagen/codigos_gerador_azulejos/example_singleMosaic.py", this.fileName, this.count]);
+                    this.procId = exec.pid;
+                    console.log(`Spawned child pid: ${exec.pid}`);
+                    exec.stdin.end();
+
+                    let error = '';
+                    for await (const chunk of exec.stderr) {
+                        error += chunk;
+                    }
+                    if (error) {
+                        console.error('error', error);
+                        return;
+                    }
+
+                    let data = '';
+                    for await (const chunk of exec.stdout) {
+                        data += chunk; 
+                    }
+                    if (data) { 
+                        console.log('Arquivo:', data);
+                        this.array = JSON.parse(data);
+                        //this.array.push(data);
+                        //this.array = data;
+                        console.log(this.array);
+                        console.log(this.array.length);
+                        for (let i = 0; i < this.array.length; i++){
+                            console.log(this.array[i]);
+                        }
+                    }
+                } catch (e) {
+                    console.error('execute error', e);
+                }
+            })();
+            return this.lastGenerated = 'img' + this.count;
+        }*/
         /*try{          
             var spawn = require("child_process").spawn;    
             var process = spawn('python',["./teste.py"] );               
@@ -3686,20 +3725,6 @@ class PythonScriptReader extends ScriptReader {
                 type: "file"
             }
         );
-        /*params.push(
-            {
-                shortName: "First",
-                variableName: "firstname",
-                name: "First Name",
-                type: "string"
-            },
-            {
-                shortName: "Last",
-                variableName: "lastname",
-                name: "Last Name",
-                type: "string"
-            }
-        );*/
         return params;
     }
 
@@ -3724,15 +3749,30 @@ class PythonScriptReader extends ScriptReader {
     afterGenerate(dataArray){
         //TODO: Chamar o método do python
         // Se tem spawn rodando cancela ele antes.
+        console.log('AfterGenerate');
+        this.count = 0;
+
+        if(this.exec){
+            console.log('Entrou para matar o processo filho');
+            console.log(this.exec);
+            this.exec.kill('SIGKILL');
+            console.log(this.exec);
+            console.log('Processo filho morto');
+        }           
+
         const spawn = require("child_process").spawn;
         (async () => {
             try {
-                const exec = spawn('python',["./datagen/teste.py", this.fileName, dataArray]);
-                //const exec = spawn('python',["./datagen/codigos_gerador_azulejos/example_singleMosaic.py", this.fileName, this.count]);
-                exec.stdin.end();
+                //const exec = spawn('python',["./datagen/teste.py", this.fileName, dataArray]);
+                this.exec = spawn('python',["./datagen/codigos_gerador_azulejos/example_singleMosaic.py", this.fileName, dataArray], {
+                    killSignal: 'SIGKILL',
+                  });
+                console.log(this.exec);
+                //this.procId = this.exec.pid;
+                this.exec.stdin.end();
 
                 let error = '';
-                for await (const chunk of exec.stderr) {
+                for await (const chunk of this.exec.stderr) {
                     error += chunk;
                 }
                 if (error) {
@@ -3741,14 +3781,13 @@ class PythonScriptReader extends ScriptReader {
                 }
 
                 let data = '';
-                for await (const chunk of exec.stdout) {
+                for await (const chunk of this.exec.stdout) {
                     data += chunk; 
                 }
                 if (data) { 
                     console.log('Arquivo:', data);
+                    console.log(this.exec);
                     this.array = JSON.parse(data);
-                    //this.array.push(data);
-                    //this.array = data;
                     console.log(this.array);
                     console.log(this.array.length);
                     for (let i = 0; i < this.array.length; i++){
@@ -3758,16 +3797,9 @@ class PythonScriptReader extends ScriptReader {
             } catch (e) {
                 console.error('execute error', e);
             }
-        })();
+        })();                   
         super.afterGenerate();
     }
-
-    afterGenerate(data){
-        //TODO: Chamar o método do python
-        // Se tem spawn rodando cancela ele antes.
-        super.afterGenerate();
-    }
-
 }
 
 Generator.Operators = {
@@ -3810,9 +3842,9 @@ class DataGen {
     constructor (name = "Model", column_name="Dimension 1") {
         //adicionar a version => const { version } = require('./package.json');
         this.name = name;
-        this.n_lines = 100; // Quantidade de linhas na geração
+        this.n_lines = 20; // Quantidade de linhas na geração
         this.step_lines = 10000; // TODO: Revisar o propósito disso...
-        this.n_sample_lines = 100;
+        this.n_sample_lines = 20;
         this.save_as = "csv";
         this.header = true;
         this.header_type = true;

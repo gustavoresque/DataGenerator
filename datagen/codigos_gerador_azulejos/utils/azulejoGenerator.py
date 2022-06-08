@@ -289,7 +289,8 @@ def single_mosaic(image_name = 'input.png', output_name = 'output.jpg', output_d
     output_image_name = os.path.join(output_dir, output_image_name)
     cv2.imwrite(output_image_name, image_collage)
 
-    print(output_name, end="")
+    #print(output_name, end="")
+    return output_name
     
     
 def multiple_mosaics(input_dir = 'input', output_dir = 'output',
