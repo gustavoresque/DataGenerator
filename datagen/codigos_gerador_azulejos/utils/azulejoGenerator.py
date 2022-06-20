@@ -13,9 +13,6 @@ from glob import glob
 from itertools import permutations
 import random
 import imgaug.augmenters as iaa
-import json
-import logging
-logging.basicConfig(level=logging.INFO)
 
 #%% Funções
 def resizeAndPad(img, size, padColor=0):
@@ -184,11 +181,12 @@ def augmentation(img, add=(-10,10)):
     
     return img_aug
 
-def make_crack(img, input_dir = 'datagen/codigos_gerador_azulejos/images/cracks', file_prefix = '*.png', p=5):
+def make_crack(file_path, img, input_dir = 'images/cracks/', file_prefix = '*.png', p=5):
     
     if np.random.rand() > (p/100):
         return img
-    #print(glob(os.path.join(input_dir, file_prefix)))
+    
+    input_dir = os.path.join(file_path[0], input_dir)
     image_name_list =  glob(os.path.join(input_dir, file_prefix))
     mask_name = np.random.choice(image_name_list)
     
@@ -212,7 +210,7 @@ def make_crack(img, input_dir = 'datagen/codigos_gerador_azulejos/images/cracks'
     
     return img_crack
 
-def collage_function(image_name, collage_size, p=10):
+def collage_function(path_file, image_name, collage_size, p=10):
     
     """A função cria o mosaico de azulejos 
     
@@ -221,10 +219,9 @@ def collage_function(image_name, collage_size, p=10):
         collage_size {tupla}: Tamanho do mosaico.
         p {int}: Chance do azulejo ter rachadura.
     
-    """  
-    
+    """
     image = cv2.imread(image_name, 1)
-    
+
     r, c = collage_size
 
     images_outers = []
@@ -234,7 +231,7 @@ def collage_function(image_name, collage_size, p=10):
         for j in range(c):
             
             # Adiciona a rachadura ao azulejo de acordo com a chance p
-            image_crack = make_crack(image, p=p)
+            image_crack = make_crack(path_file, image, p=p)
     
             # Adiciona giros horizontais e verticais ao azulejo,
             # ruído gaussiano (média zero e desvio padrão na faixa de 0 a 0.05)
@@ -250,7 +247,7 @@ def collage_function(image_name, collage_size, p=10):
     
     return image_collage
 
-def single_mosaic(image_name = 'input.png', output_name = 'output.jpg', output_dir = 'datagen/codigos_gerador_azulejos/output',
+def single_mosaic(image_name = 'input.png', output_name = 'output.jpg',
                   min_size = 1, max_size = 10, img_size = 256, p = 5):
     
     """A função gera um único mosaico de um azulejo 
@@ -258,12 +255,13 @@ def single_mosaic(image_name = 'input.png', output_name = 'output.jpg', output_d
     Argumentos:
         image_name {string}: Imagem de entrada.
         output_name {string}: Imagem de saída.
-        min_size {int}: Tamnho miníno do mosaico.
-        max_size {int}: Tamnanho máximo do mosaico.
+        min_size {int}: Tamanho miníno do mosaico.
+        max_size {int}: Tamanho máximo do mosaico.
         img_size {int}: Tamanho da imagem de saída.
         p {int}: Chance do azulejo ter rachadura.
     
     """  
+    
     size = np.random.randint(min_size, max_size+1, 2)
     collage_size = (size[0], size[1])
     
@@ -285,17 +283,12 @@ def single_mosaic(image_name = 'input.png', output_name = 'output.jpg', output_d
     # imagem ajustada corretamente para a resolução desejada
     image_collage = resizeAndPad(image_collage, (img_size, img_size))
     
-    output_image_name = output_name + '.jpg'
-    output_image_name = os.path.join(output_dir, output_image_name)
-    cv2.imwrite(output_image_name, image_collage)
-
-    #print(output_name, end="")
-    return output_name
+    cv2.imwrite(output_name, image_collage)
     
     
-def multiple_mosaics(input_dir = 'input', output_dir = 'output',
+def multiple_mosaics(path_file = '', input_dir = 'input', output_dir = 'output',
                      file_prefix = '*.png', min_size = 1, max_size = 10,
-                     n_images = 5, img_size = 256, p = 5):
+                     file_name = 'img', n_images = 5, img_size = 256, p = 5):
 
     """A função gera mosaicos de azulejos por classe 
     
@@ -310,18 +303,21 @@ def multiple_mosaics(input_dir = 'input', output_dir = 'output',
         p {int}: Chance do azulejo ter rachadura.
     
     """
-    
+    path_file = path_file.replace("/", "\\")
+    file_path = os.path.split(path_file)
+    input_dir = os.path.join(file_path[0], input_dir)
+    output_dir = os.path.join(file_path[0], output_dir)
     
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
     
-    image_name_list =  glob(os.path.join(input_dir, file_prefix))
-    
+    image_name_list = glob(os.path.join(input_dir, file_prefix))
+
     num = 0
     for image_name in image_name_list:
-        
+        #os.chdir(input_dir)
         dir_name = str(num)
-        print(image_name[len(input_dir)+1:-4])
+        #print(image_name[len(input_dir)+1:-4])
         output_subdir = os.path.join(output_dir, dir_name)
         
         if not os.path.exists(output_subdir):
@@ -335,7 +331,7 @@ def multiple_mosaics(input_dir = 'input', output_dir = 'output',
             collage_size = (size[0], size[1])
         
             # Criação do mosaico (ver mais dentro da própria função)
-            image_collage = collage_function(image_name, collage_size, p=p)
+            image_collage = collage_function(file_path, image_name, collage_size, p=p)
             
             # Adiciona contraste gamma (faixo do expoente de
             # ajuste de contraste variando entre 0.5 e 1.5)
@@ -354,7 +350,7 @@ def multiple_mosaics(input_dir = 'input', output_dir = 'output',
             
             j = adjust_image_numbering(i)
              
-            output_image_name = 'image_' + j + '.jpg'
+            output_image_name = file_name + j + '.jpg'
             output_name = os.path.join(output_subdir, output_image_name)
             cv2.imwrite(output_name, image_collage)
             i+=1

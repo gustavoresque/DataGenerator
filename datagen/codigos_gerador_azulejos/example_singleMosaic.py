@@ -10,8 +10,9 @@ from utils.azulejoGenerator import single_mosaic
 import sys
 import json
 
-fileName = sys.argv[1]
 array = []
+
+fileName = sys.argv[1]
 names = sys.argv[2].split(',')
 for name in names:
     path = single_mosaic(fileName, name)
@@ -22,10 +23,8 @@ print(json.dumps(array))
 #output_name.replace("\\", "")
 #start_time = time.time()
 #single_mosaic(fileName, output_name)
-#t = time.time() - start_time
 
-#print('Tempo de execução (s):', t)
+"""single_mosaic('casaache.png')
+t = time.time() - start_time
 
-
-
-
+print('Tempo de execução (s):', t)"""

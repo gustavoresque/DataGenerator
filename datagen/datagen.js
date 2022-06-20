@@ -3629,13 +3629,14 @@ class ScriptReader extends Generator{
 
 class PythonScriptReader extends ScriptReader {
 
-    constructor(){
+    constructor(imgName){
         super("Python Script Reader");
         this.count = 0;
         this.array = [];
+        this.filePath = [];
+        this.imgName = imgName || "img";
         this.fileName = "";
-        this.exec = "";
-        this.procId = "";    
+        this.exec = ""; 
     }
 
     get accessFileName (){
@@ -3645,74 +3646,21 @@ class PythonScriptReader extends ScriptReader {
     set accessFileName (fileName){
         console.log("teste", `file://${fileName}`);
         this.fileName = fileName;
+        //Desmonta o caminho em um array
+        this.filePath = this.fileName.split('/');
+  
+        //Remove só o arquivo do caminho
+        //this.filePath.pop();
+  
+        //Constroi o caminho denovo
+        //console.log(this.filePath.join('/'));
+
         this.count = 0;        
     }
 
     generate() {
         this.count++
-        return this.lastGenerated = 'img' + this.count;
-        //return this.lastGenerated = this.array[Math.floor(Math.random() * this.array.length)];
-        /*if(this.procId) {
-            this.exec.kill('SIGHUP');
-            console.log('Processo filho morto');
-        } else {
-
-            console.log('Entrou no processo filho');
-            const spawn = require("child_process").spawn;
-            (async () => {
-                try {
-                    const exec = spawn('python',["./datagen/teste.py", this.fileName, this.count]);
-                    //const exec = spawn('python',["./datagen/codigos_gerador_azulejos/example_singleMosaic.py", this.fileName, this.count]);
-                    this.procId = exec.pid;
-                    console.log(`Spawned child pid: ${exec.pid}`);
-                    exec.stdin.end();
-
-                    let error = '';
-                    for await (const chunk of exec.stderr) {
-                        error += chunk;
-                    }
-                    if (error) {
-                        console.error('error', error);
-                        return;
-                    }
-
-                    let data = '';
-                    for await (const chunk of exec.stdout) {
-                        data += chunk; 
-                    }
-                    if (data) { 
-                        console.log('Arquivo:', data);
-                        this.array = JSON.parse(data);
-                        //this.array.push(data);
-                        //this.array = data;
-                        console.log(this.array);
-                        console.log(this.array.length);
-                        for (let i = 0; i < this.array.length; i++){
-                            console.log(this.array[i]);
-                        }
-                    }
-                } catch (e) {
-                    console.error('execute error', e);
-                }
-            })();
-            return this.lastGenerated = 'img' + this.count;
-        }*/
-        /*try{          
-            var spawn = require("child_process").spawn;    
-            var process = spawn('python',["./teste.py"] );               
-            process.stdout.on('data', function(data) { 
-                console.log(data.toString());
-                console.log("Oi");
-            } ) 
-       
-            this.lastGenerated = this.model.;
-            this.count++;
-            console.log( this.count);
-        }catch(e){
-            console.log(e);
-            //return this.lastGenerated = 0;
-        }*/
-        //return this.lastGenerated;
+        return this.lastGenerated = this.imgName + this.count;
     }
 
     getGenParams() {
@@ -3721,8 +3669,14 @@ class PythonScriptReader extends ScriptReader {
             {
                 shortName: "File",
                 variableName: "accessFileName",
-                name: "Image Model File",
+                name: "Script File",
                 type: "file"
+            },
+            {
+                shortName: "Name",
+                variableName: "accessName",
+                name: "File Name",
+                type: "string"
             }
         );
         return params;
@@ -3746,15 +3700,12 @@ class PythonScriptReader extends ScriptReader {
         return newGen;
     }
     
-    afterGenerate(dataArray){
-        //TODO: Chamar o método do python
-        // Se tem spawn rodando cancela ele antes.
+    afterGenerate(nFilesArray){
         console.log('AfterGenerate');
         this.count = 0;
 
         if(this.exec){
             console.log('Entrou para matar o processo filho');
-            console.log(this.exec);
             this.exec.kill('SIGKILL');
             console.log(this.exec);
             console.log('Processo filho morto');
@@ -3763,12 +3714,10 @@ class PythonScriptReader extends ScriptReader {
         const spawn = require("child_process").spawn;
         (async () => {
             try {
-                //const exec = spawn('python',["./datagen/teste.py", this.fileName, dataArray]);
-                this.exec = spawn('python',["./datagen/codigos_gerador_azulejos/example_singleMosaic.py", this.fileName, dataArray], {
+                this.exec = spawn('python',[this.fileName, this.fileName, this.imgName, nFilesArray], {
                     killSignal: 'SIGKILL',
                   });
-                console.log(this.exec);
-                //this.procId = this.exec.pid;
+                console.log('Spawn:', this.exec);
                 this.exec.stdin.end();
 
                 let error = '';
@@ -3787,12 +3736,12 @@ class PythonScriptReader extends ScriptReader {
                 if (data) { 
                     console.log('Arquivo:', data);
                     console.log(this.exec);
-                    this.array = JSON.parse(data);
+                    /*this.array = JSON.parse(data);
                     console.log(this.array);
                     console.log(this.array.length);
                     for (let i = 0; i < this.array.length; i++){
                         console.log(this.array[i]);
-                    }
+                    }*/
                 }
             } catch (e) {
                 console.error('execute error', e);
