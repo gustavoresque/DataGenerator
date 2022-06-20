@@ -3658,6 +3658,14 @@ class PythonScriptReader extends ScriptReader {
         this.count = 0;        
     }
 
+    get accessName (){
+        return this.imgName;
+    }
+
+    set accessName (name){
+        this.imgName = name;
+    }
+
     generate() {
         this.count++
         return this.lastGenerated = this.imgName + this.count;
@@ -4316,7 +4324,9 @@ DataGen.listOfSuperTypesMenu = [
     "Random",
     "Function",
     "Accessory",
-    "Geometric"
+    "Geometric",
+    "NeuralNetwork", 
+    "ScriptReader"
 ];
 
 DataGen.Utils = {

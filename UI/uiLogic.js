@@ -1,16 +1,45 @@
 
+//------- Importando as variáveis que vem do ambiente do Node.js
+// const fs = require('fs');
+const fs = window.mainVariables.fs;
+// console.log(window.mainVariables);
+// const net = require('net');
+const net = window.mainVariables.net;
+// const { promisify } = require('util');
+const promisify = window.mainVariables.promisify;
+// const electron = require('electron').remote;
+const electron = window.mainVariables.electron;
+// const {clipboard} = require('electron');
+const clipboard = window.mainVariables.clipboard;
+// const path = require('path');
+const path = window.mainVariables.path;
+// const _ = require('lodash');
+const _ = window.mainVariables._;
+// const DataGen = require("./datagen/datagen.js");
+const DataGen = window.mainVariables.DataGen;
+// let ipc = require('electron').ipcRenderer;
+const ipc = window.mainVariables.ipc;
+// let vis = require("@labvis-ufpa/vistechlib");
+let vis = window.mainVariables.vis;
+window.mainVariables.onload = () => { 
+    vis = window.mainVariables.vis;
+    showGenerators();
+}
+// const Json2csvParser = require('json2csv').Parser;
+const Json2csvParser = window.mainVariables.Json2csvParser;
+// const {createServer,closeServer,changePort} = require('./WebService');
+const {createServer,closeServer,changePort} = window.mainVariables;
 
-const fs = require('fs');
-const net = require('net');
-const { promisify } = require('util');
-const electron = require('electron').remote;
-const {clipboard} = require('electron');
+const process = window.mainVariables.process;
+
+//------------------
+
+
 const dialog = electron.dialog;
-const path = require('path');
-const _ = require('lodash');
+
 const BrowserWindow = electron.BrowserWindow;
 
-const DataGen = require("./datagen/datagen.js");
+
 let UniformGenerator = DataGen.listOfGens['Uniform Generator'];
 let datagen = [new DataGen()];
 
@@ -38,20 +67,17 @@ let especialPasteState = 0; //0-Desativado, 1-Cola uma vez, 2-Cola até clicar d
 let generating = false; //Avoid more then 1 generation at a time, include local and Distributed generation. 
 
 
-let ipc = require('electron').ipcRenderer;
-
-let vis = require("@labvis-ufpa/vistechlib");
-
 let pc;
 
-const {createServer,closeServer,changePort} = require('./WebService');
+
+
 let wsActive = false;
 let wsPort = 8000;
 let WSMA = {};//Note: It must be out of DataGen library! It stores the models that is avaliable to web server (Web Server Model Available). It receives the model id, the boolean and the currentDatagen. Model is the Key.
 
 let distributedSystemSocket;
 
-const Json2csvParser = require('json2csv').Parser;
+
 
 let stopGeneration = false; // Stop Data Generation.
 let itFiles = []; //Save the index and paths of Iterator Files.
@@ -835,7 +861,10 @@ $("html").ready(function() {
     });
 
     $("#selectGeneratorType").on("click", function(e){
+        e.preventDefault();
         $(this).contextMenu();
+    }).on("mousedown",(e)=>{
+        e.preventDefault();
     });
 
     $("#rowsQtInput").blur(function(){
@@ -1926,7 +1955,9 @@ function openWS(i=currentDataGen) {
         createServer();
         changePort(wsPort);
     }
-    require("electron").shell.openExternal(`http://localhost:${wsPort}/?modelid=${datagen[i].ID}&nsample=${datagen[i].n_lines}&format=${datagen[i].save_as}`);
+    //TODO: verificar se vai dá erro trocar essa linha comentada de cima pela de baixo.
+    // require("electron").shell.openExternal(`http://localhost:${wsPort}/?modelid=${datagen[i].ID}&nsample=${datagen[i].n_lines}&format=${datagen[i].save_as}`);
+    electron.shell.openExternal(`http://localhost:${wsPort}/?modelid=${datagen[i].ID}&nsample=${datagen[i].n_lines}&format=${datagen[i].save_as}`);
 }
 
 function uriWS(i=currentDataGen) {
@@ -2242,7 +2273,7 @@ $('#comboBoxPreview').change(() => {
 });
 
 function preview(data2){
-    //console.log(data2);
+    if(!vis) return;
     if(pc === undefined) {
         pc = new vis["ParallelCoordinates"]($("#previewCanvas").get(0));
     }
@@ -2259,6 +2290,7 @@ function preview(data2){
     //Set configs according to the dimension type.
     for(let col of datagen[currentDataGen].columns) {
         if(col.name == selectColumnPreview) {
+            console.log("TODO: Adicionar um scale para o tempo na visualização.", col.type)
             switch(col.type) {
                 case "Categorical":
                     scaleFunction = d3.scaleOrdinal();
@@ -2381,7 +2413,7 @@ function preview(data2){
 }
 //TODO: Refatorar lista de supertipos, deixar essa lista somente dentro do datagen.js 
 function configureMenuOfGens(){
-    let types = ["Sequence", "Random", "Function", "Accessory", "Geometric", "NeuralNetwork", "ScriptReader"];
+    let types = DataGen.listOfSuperTypesMenu;
     let menuObj = {};
 
     for(let t of types){
