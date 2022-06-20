@@ -18,18 +18,18 @@
   "author": "Laboratório de Visualização, Interação e Sistemas inteligentes (LABVIS)",
   "license": "Apache-2.0",
   "devDependencies": {
-    "electron": ">=12.0.4",
-    "electron-builder": "^22.10.5"
+    "electron": "12.0.4",
+    "electron-builder": "22.10.5"
   },
   "dependencies": {
-    "@electron/remote": "^1.2.1",
+    "@electron/remote": "1.2.1",
     "@labvis-ufpa/vistechlib": "latest",
     "@tensorflow/tfjs": "^3.8.0",
     "asar": "^0.14.5",
     "cross-spawn": "^6.0.5",
     "csv-write-stream": "^2.0.0",
     "d3": "^4.13.0",
-    "electron-packager": "^15.2.0",
+    "electron-packager": "15.2.0",
     "fontawesome-actions": "^0.17.0",
     "jquery": "^3.3.1",
     "json2csv": "^4.3.1",
