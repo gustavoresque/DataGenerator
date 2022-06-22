@@ -369,6 +369,24 @@ function propsConfigs(generator,coluna, new_place){
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input).append($labelFile));
 
+        }else if(p.type === "folder"){
+            let $input = $("<input/>")
+                .addClass("form-control")
+                .addClass("smallInput")
+                .attr("type","file")
+                .attr("value", generator[p.variableName])
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type)
+                .prop("webkitdirectory directory multiple")
+                .css("display", "none");
+            let $labelFile = $("<label/>")
+                .addClass("btn btn-mini btn-default")
+                .text("Choose File")
+                .attr("for", "input_"+p.variableName)
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input).append($labelFile));
+
         }else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
             let $input;
             if (generator.name === "Path2D Stroke Generator" || generator.name === "Path2D Fill Generator"){

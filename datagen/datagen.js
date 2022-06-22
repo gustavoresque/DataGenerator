@@ -236,8 +236,11 @@ class Generator{
         return "Numeric";
     }
 
-    copy(){
-
+    copy(newGen){
+        //Faz a cópia profunda (deepcopy)
+        if (this.generator){
+            newGen.addGenerator(this.generator.copy(), this.order);
+        }
     }
 
     getEstimatedRange(){
@@ -259,11 +262,11 @@ class Random extends Generator{
 }
 
 class RandomUniformGenerator extends Random{
-    constructor(min, max, disc){
+    constructor(min=0 , max=1, disc = false){
         super("Uniform Generator");
-        this.min = min || 0;
-        this.max = max || 1;
-        this.disc = disc || false;
+        this.min = min;
+        this.max = max;
+        this.disc = disc;
     }
 
     generate(){
@@ -795,6 +798,62 @@ class PoissonTimeGenerator extends Random{
     }
 }
 
+class RandomFileName extends Random{
+
+    constructor(folder=""){
+        super("Random File Name");
+        this.accessFolder = folder;
+    }
+
+    generate(){
+        return super.generate(randgen.rlist(this.files));
+    }
+
+    get accessFolder(){
+        return this.folder;
+    }
+
+    set accessFolder(folder){
+        this.folder = folder
+        //TODO: refactor -> jogar para o main
+        if(this.folder){
+            let fs = require('fs');
+            this.files = fs.readdirSync(this.folder);
+        }else{
+            this.files = ["None"]
+        }
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "Folder",
+                variableName: "accessFolder",
+                name: "Folder",
+                type: "folder"
+            }
+        );
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        model.files = this.files;
+        model.folder = this.folder;
+        return model;
+    }
+
+    copy(){
+        let newGen = new RandomFileName(this.folder);
+        super.copy(newGen);
+        return newGen;
+    }
+}
+
+
+
+
 
 
 class Accessory extends Generator{
@@ -845,9 +904,7 @@ class MCAR extends Accessory{
 
     copy(){
         let newGen = new MCAR(this.value, this.probability);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
+        super.copy(newGen);
         return newGen;
     }
 
@@ -1533,8 +1590,8 @@ class GetExtraValue extends Accessory{
     get accessSrcGen(){
         return this.srcGen;
     }
-    set accessSrcGen(ID){
-        this.srcGen = ID;
+    set accessSrcGen(gen){
+        this.srcGen = gen;
     }
 
     getModel(){
@@ -4219,6 +4276,7 @@ DataGen.listOfGens = {
     'Cauchy Generator': RandomCauchyGenerator,
     'Noise Generator': RandomNoiseGenerator,
     'Constant Noise Generator': RandomConstantNoiseGenerator,
+    'Random File Name': RandomFileName,
     'Range Filter': RangeFilter,
     'Linear Scale': LinearScale,
     'Normalization':  Normalization,
