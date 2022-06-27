@@ -830,13 +830,14 @@ class RandomFileName extends Random{
 
     generate(){
         //return super.generate(randgen.rlist(this.files));
-        this.pathFile = super.generate(randgen.rlist(this.files));
-        console.log(this.pathFile);
-        let splitPath = this.pathFile.split("/");
-        console.log(splitPath);
+        let pathFile = randgen.rlist(this.files);
+        //console.log(pathFile);
+        let splitPath = pathFile.split("/");
+        //console.log(splitPath);
         this.fileName = splitPath[splitPath.length - 1];
-        console.log(this.fileName);
-        return this.fileName;
+        //console.log(this.fileName);
+        this.lastGenerated1 = pathFile
+        return super.generate(this.fileName);
     }
 
     getGenParams(){
@@ -3748,6 +3749,7 @@ class PythonScriptReader extends ScriptReader {
     }
 
     set accessImgPathInput (imgPathInput){
+        //Se string ou se gen obj
         this.imgPathInput = imgPathInput;
     }
 
