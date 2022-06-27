@@ -11,13 +11,22 @@ import sys
 import json
 
 array = []
+count = 0
+imgPath = sys.argv[1]
+imgName = sys.argv[2].split('.')
+names = sys.argv[3].split(',')
 
-fileName = sys.argv[1]
-names = sys.argv[2].split(',')
-for name in names:
-    path = single_mosaic(fileName, name)
-    array.append(path)
+
+for i in names:
+    count = count + 1
+    fileName = single_mosaic(imgPath, imgName[0], count)
+    array.append(fileName)
 print(json.dumps(array))
+
+"""for name in names:
+    path = single_mosaic(imgPath, name)
+    array.append(path)
+print(json.dumps(array))"""
 
 #output_name = "img" + sys.argv[2]
 #output_name.replace("\\", "")

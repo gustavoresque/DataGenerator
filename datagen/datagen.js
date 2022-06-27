@@ -803,10 +803,8 @@ class RandomFileName extends Random{
     constructor(folder=""){
         super("Random File Name");
         this.accessFolder = folder;
-    }
-
-    generate(){
-        return super.generate(randgen.rlist(this.files));
+        this.files = [];
+        this.pathFile = "";
     }
 
     get accessFolder(){
@@ -814,14 +812,31 @@ class RandomFileName extends Random{
     }
 
     set accessFolder(folder){
+        //console.log("teste", `file://${folder}`);
         this.folder = folder
-        //TODO: refactor -> jogar para o main
         if(this.folder){
+            this.files = this.folder;
+        }else{
+            this.files = ["None"];
+        }
+        //TODO: refactor -> jogar para o main
+        /*if(this.folder){
             let fs = require('fs');
             this.files = fs.readdirSync(this.folder);
         }else{
             this.files = ["None"]
-        }
+        }*/
+    }
+
+    generate(){
+        //return super.generate(randgen.rlist(this.files));
+        this.pathFile = super.generate(randgen.rlist(this.files));
+        console.log(this.pathFile);
+        let splitPath = this.pathFile.split("/");
+        console.log(splitPath);
+        this.fileName = splitPath[splitPath.length - 1];
+        console.log(this.fileName);
+        return this.fileName;
     }
 
     getGenParams(){
@@ -839,8 +854,8 @@ class RandomFileName extends Random{
 
     getModel(){
         let model = super.getModel();
-        model.files = this.files;
-        model.folder = this.folder;
+        model.pathFile = this.pathFile;
+        //model.folder = this.folder;
         return model;
     }
 
@@ -3686,61 +3701,79 @@ class ScriptReader extends Generator{
 
 class PythonScriptReader extends ScriptReader {
 
-    constructor(imgName){
+    constructor(imgPathInput=""){
         super("Python Script Reader");
-        this.count = 0;
         this.array = [];
-        this.filePath = [];
-        this.imgName = imgName || "img";
-        this.fileName = "";
-        this.exec = ""; 
+        this.scriptPath = "";
+        this.imgFilePath = "";
+        this.accessImgPathInput = imgPathInput;
+        this.imgName = ["None"];
+        this.exec = "";
     }
 
-    get accessFileName (){
-        return this.fileName;
+    get accessScriptPath (){
+        return this.scriptPath;
     }
 
-    set accessFileName (fileName){
-        console.log("teste", `file://${fileName}`);
-        this.fileName = fileName;
-        //Desmonta o caminho em um array
-        this.filePath = this.fileName.split('/');
-  
-        //Remove só o arquivo do caminho
-        //this.filePath.pop();
-  
-        //Constroi o caminho denovo
-        //console.log(this.filePath.join('/'));
-
-        this.count = 0;        
+    set accessScriptPath (scriptPath){
+        console.log("teste", `file://${scriptPath}`);   
+        if(scriptPath){
+            this.scriptPath = scriptPath;
+        }else{
+            this.scriptPath = ["None"];
+        }     
     }
 
-    get accessName (){
-        return this.imgName;
+    get accessImgFilePath (){
+        return this.imgFilePath;
     }
 
-    set accessName (name){
-        this.imgName = name;
+    set accessImgFilePath (imgFilePath){
+        console.log("teste", `file://${imgFilePath}`);
+        if(this.imgPathInput){
+            this.imgFilePath = this.imgPathInput;
+            let splitPath = this.imgFilePath.split("/");
+            console.log(splitPath);
+            this.imgName = splitPath[splitPath.length - 1];
+        }else{
+            this.imgFilePath = imgFilePath;
+            let splitPath = this.imgFilePath.split("/");
+            console.log(splitPath);
+            this.imgName = splitPath[splitPath.length - 1];
+        }      
+    }
+
+    get accessImgPathInput (){
+        return this.imgPathInput;
+    }
+
+    set accessImgPathInput (imgPathInput){
+        this.imgPathInput = imgPathInput;
     }
 
     generate() {
-        this.count++
-        return this.lastGenerated = this.imgName + this.count;
+        return this.lastGenerated = this.imgName;
     }
 
     getGenParams() {
         let params = super.getGenParams();
         params.push(
             {
-                shortName: "File",
-                variableName: "accessFileName",
+                shortName: "Script",
+                variableName: "accessScriptPath",
                 name: "Script File",
                 type: "file"
             },
             {
-                shortName: "Name",
-                variableName: "accessName",
-                name: "File Name",
+                shortName: "Img",
+                variableName: "accessImgFilePath",
+                name: "Image File",
+                type: "file"
+            },
+            {
+                shortName: "Img Path",
+                variableName: "accessImgPathInput",
+                name: "Image File Path",
                 type: "string"
             }
         );
@@ -3765,9 +3798,10 @@ class PythonScriptReader extends ScriptReader {
         return newGen;
     }
     
-    afterGenerate(nFilesArray){
+    afterGenerate(arrayFileName){
         console.log('AfterGenerate');
-        this.count = 0;
+        console.log('AfterGenerate:', arrayFileName[0]);
+        console.log('Caminho Script:', this.scriptPath);
 
         if(this.exec){
             console.log('Entrou para matar o processo filho');
@@ -3779,9 +3813,13 @@ class PythonScriptReader extends ScriptReader {
         const spawn = require("child_process").spawn;
         (async () => {
             try {
-                this.exec = spawn('python',[this.fileName, this.fileName, this.imgName, nFilesArray], {
+                // Para gerar imagens de múltiplas imagens de entrada
+                /*this.exec = spawn('python',[this.fileName, this.fileName, this.imgName, nFilesArray], {
                     killSignal: 'SIGKILL',
-                  });
+                  });*/
+                this.exec = spawn('python',[this.scriptPath, this.imgFilePath, arrayFileName[0], arrayFileName], {
+                    killSignal: 'SIGKILL',
+                });
                 console.log('Spawn:', this.exec);
                 this.exec.stdin.end();
 
@@ -3801,12 +3839,12 @@ class PythonScriptReader extends ScriptReader {
                 if (data) { 
                     console.log('Arquivo:', data);
                     console.log(this.exec);
-                    /*this.array = JSON.parse(data);
+                    this.array = JSON.parse(data);
                     console.log(this.array);
                     console.log(this.array.length);
                     for (let i = 0; i < this.array.length; i++){
                         console.log(this.array[i]);
-                    }*/
+                    }
                 }
             } catch (e) {
                 console.error('execute error', e);

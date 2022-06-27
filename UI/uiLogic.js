@@ -378,14 +378,17 @@ function propsConfigs(generator,coluna, new_place){
                 .attr("id", "input_"+p.variableName)
                 .attr("data-variable", p.variableName)
                 .attr("data-type", p.type)
-                .prop("webkitdirectory directory multiple")
+                .prop("webkitdirectory", true)
+                .prop("directory", true)
+                .prop("multiple", true)
                 .css("display", "none");
             let $labelFile = $("<label/>")
                 .addClass("btn btn-mini btn-default")
-                .text("Choose File")
+                .text("Choose Folder")
                 .attr("for", "input_"+p.variableName)
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input).append($labelFile));
+            console.log(generator);
 
         }else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
             let $input;
@@ -807,6 +810,16 @@ $("html").ready(function() {
         else if($input.attr("data-type") === "file" && $input.get(0).files[0])
             this.__node__[$input.attr("data-variable")] = $input.get(0).files[0].path.replace(/\\/g,'/');
 
+        else if($input.attr("data-type") === "folder" && $input.get(0).files[0]){
+            let files = $input.get(0).files;
+            let dataArray = [];
+            for (let i=0; i<files.length; i++) {
+                let pathName = $input.get(0).files[i].path.replace(/\\/g,'/');
+                dataArray.push(pathName);              
+            }
+            console.log(dataArray);
+            this.__node__[$input.attr("data-variable")] = dataArray;
+        }
         else if($input.attr("data-type") === "auto")
             this.__node__[$input.attr("data-variable")] = isNaN(parseFloat($input.val())) ? $input.val() : parseFloat($input.val());
 
