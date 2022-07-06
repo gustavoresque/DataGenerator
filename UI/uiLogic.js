@@ -390,7 +390,42 @@ function propsConfigs(generator,coluna, new_place){
             $tr.append($("<td/>").append($input).append($labelFile));
             console.log(generator);
 
-        }else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
+        }else if(p.type === "file-Generator"){
+            let $input;
+            if (generator.name === "Path2D Stroke Generator" || generator.name === "Path2D Fill Generator"){
+                $input.val(generator.path);
+            } else {
+                $input = $("<input/>").attr("value", generator[p.variableName]);
+            }
+            $input = $("<input/>")
+                .addClass("form-control")
+                .addClass("smallInput")
+                .attr("type","file")
+                //.attr("value", generator[p.variableName])
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", "file")
+                .css("display", "none");
+            let $labelFile = $("<label/>")
+                .addClass("btn btn-mini btn-default")
+                .text("Choose File")
+                .attr("for", "input_"+p.variableName)
+                            
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input).append($labelFile));
+
+            let genSel = generator[p.variableName];
+            $input.val(genSel ? genSel.ID : "");
+            $input.on("drop", function(evt){
+                evt.preventDefault();
+                evt.stopPropagation();
+    
+                let msg = evt.originalEvent.dataTransfer.getData("text");
+                let objs = JSON.parse(msg);
+                $input.val(objs.genID);
+                $input.trigger("change");
+            });
+        } else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
             let $input;
             if (generator.name === "Path2D Stroke Generator" || generator.name === "Path2D Fill Generator"){
                 $input = $("<textarea/>");
@@ -809,6 +844,14 @@ $("html").ready(function() {
 
         else if($input.attr("data-type") === "file" && $input.get(0).files[0])
             this.__node__[$input.attr("data-variable")] = $input.get(0).files[0].path.replace(/\\/g,'/');
+
+        else if($input.attr("data-type") === "file-generator" && $input.get(0).files[0])
+            this.__node__[$input.attr("data-variable")] = $input.get(0).files[0].path.replace(/\\/g,'/');
+
+        else if($input.attr("data-type") === "file-generator"){
+            console.log("Aqui de novo!!!!!!!!!!", $input.val());
+            this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].findGenByID($input.val());
+        }
 
         else if($input.attr("data-type") === "folder" && $input.get(0).files[0]){
             let files = $input.get(0).files;

@@ -3770,7 +3770,7 @@ class PythonScriptReader extends ScriptReader {
                 shortName: "Img",
                 variableName: "accessImgFilePath",
                 name: "Image File",
-                type: "file"
+                type: "file-generator"
             },
             {
                 shortName: "Img Path",
