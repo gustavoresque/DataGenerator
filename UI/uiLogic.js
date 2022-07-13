@@ -366,8 +366,23 @@ function propsConfigs(generator,coluna, new_place){
                 .addClass("btn btn-mini btn-default")
                 .text("Choose File")
                 .attr("for", "input_"+p.variableName)
+
             $input.get(0).__node__ = generator;
-            $tr.append($("<td/>").append($input).append($labelFile));
+            $tr.append($("<td/>").append($input).append($labelFile));    
+            
+            let genSel = generator[p.variableName];
+            $input.val(genSel ? genSel.ID : "");
+            $input.on("drop", function(evt){
+                evt.preventDefault();
+                evt.stopPropagation();
+
+                let msg = evt.originalEvent.dataTransfer.getData("text");
+                let objs = JSON.parse(msg);
+                $input.val(objs.genID);
+                $input.trigger("change");
+                console.log("Pegou o objeto GEN");
+            });
+            
 
         }else if(p.type === "folder"){
             let $input = $("<input/>")
@@ -390,42 +405,7 @@ function propsConfigs(generator,coluna, new_place){
             $tr.append($("<td/>").append($input).append($labelFile));
             console.log(generator);
 
-        }else if(p.type === "file-Generator"){
-            let $input;
-            if (generator.name === "Path2D Stroke Generator" || generator.name === "Path2D Fill Generator"){
-                $input.val(generator.path);
-            } else {
-                $input = $("<input/>").attr("value", generator[p.variableName]);
-            }
-            $input = $("<input/>")
-                .addClass("form-control")
-                .addClass("smallInput")
-                .attr("type","file")
-                //.attr("value", generator[p.variableName])
-                .attr("id", "input_"+p.variableName)
-                .attr("data-variable", p.variableName)
-                .attr("data-type", "file")
-                .css("display", "none");
-            let $labelFile = $("<label/>")
-                .addClass("btn btn-mini btn-default")
-                .text("Choose File")
-                .attr("for", "input_"+p.variableName)
-                            
-            $input.get(0).__node__ = generator;
-            $tr.append($("<td/>").append($input).append($labelFile));
-
-            let genSel = generator[p.variableName];
-            $input.val(genSel ? genSel.ID : "");
-            $input.on("drop", function(evt){
-                evt.preventDefault();
-                evt.stopPropagation();
-    
-                let msg = evt.originalEvent.dataTransfer.getData("text");
-                let objs = JSON.parse(msg);
-                $input.val(objs.genID);
-                $input.trigger("change");
-            });
-        } else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
+        }else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
             let $input;
             if (generator.name === "Path2D Stroke Generator" || generator.name === "Path2D Fill Generator"){
                 $input = $("<textarea/>");
@@ -836,60 +816,62 @@ $("html").ready(function() {
 
     $("#generatorPropertiesForm").on("change", "input,select", function(){
         let $input = $(this);
-        if($input.attr("data-type") === "number")
-            this.__node__[$input.attr("data-variable")] = parseFloat($input.val());
-
-        else if($input.attr("data-type") === "string")
-            this.__node__[$input.attr("data-variable")] = $input.val();
-
-        else if($input.attr("data-type") === "file" && $input.get(0).files[0])
-            this.__node__[$input.attr("data-variable")] = $input.get(0).files[0].path.replace(/\\/g,'/');
-
-        else if($input.attr("data-type") === "file-generator" && $input.get(0).files[0])
-            this.__node__[$input.attr("data-variable")] = $input.get(0).files[0].path.replace(/\\/g,'/');
-
-        else if($input.attr("data-type") === "file-generator"){
-            console.log("Aqui de novo!!!!!!!!!!", $input.val());
-            this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].findGenByID($input.val());
-        }
-
-        else if($input.attr("data-type") === "folder" && $input.get(0).files[0]){
-            let files = $input.get(0).files;
-            let dataArray = [];
-            for (let i=0; i<files.length; i++) {
-                let pathName = $input.get(0).files[i].path.replace(/\\/g,'/');
-                dataArray.push(pathName);              
-            }
-            console.log(dataArray);
-            this.__node__[$input.attr("data-variable")] = dataArray;
-        }
-        else if($input.attr("data-type") === "auto")
-            this.__node__[$input.attr("data-variable")] = isNaN(parseFloat($input.val())) ? $input.val() : parseFloat($input.val());
-
-        else if($input.attr("data-type") === "options")
-            this.__node__[$input.attr("data-variable")] = $input.val();
-
-        else if($input.attr("data-type") === "array")
-            this.__node__[$input.attr("data-variable")] = $input.val().split(",");
-
-        else if($input.attr("data-type") === "boolean")
-            this.__node__[$input.attr("data-variable")] = $input.get(0).checked;
-
-        else if($input.attr("data-type") === "Generator") {
+        var str = $input.val();
+        if(str.substring(0,3) === "GEN"){
             console.log("Aqui!!!!!!!!!!", $input.val());
             this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].findGenByID($input.val());
-        }
+        } else {
+            console.log("Não entrou no GEN");
+            if($input.attr("data-type") === "number")
+            this.__node__[$input.attr("data-variable")] = parseFloat($input.val());
 
-        else if($input.attr("data-type").indexOf("Column") >= 0) {
-            this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].columns[parseInt($input.val())].generator;
-            this.__node__.inputGenIndex = parseInt($input.val());
-            this.__node__.reset();
-        }else if($input.attr("data-type") === "numarray"){
-            let arr = $input.val().split(",");
-            for(let i=0; i<arr.length; i++)
-                arr[i] = +arr[i];
-            this.__node__[$input.attr("data-variable")] = arr;
+            else if($input.attr("data-type") === "string")
+                this.__node__[$input.attr("data-variable")] = $input.val();
+
+            else if($input.attr("data-type") === "file" && $input.get(0).files[0]){
+                this.__node__[$input.attr("data-variable")] = $input.get(0).files[0].path.replace(/\\/g,'/');
+            }
+
+            else if($input.attr("data-type") === "folder" && $input.get(0).files[0]){
+                let files = $input.get(0).files;
+                let dataArray = [];
+                for (let i=0; i<files.length; i++) {
+                    let pathName = $input.get(0).files[i].path.replace(/\\/g,'/');
+                    dataArray.push(pathName);              
+                }
+                //console.log(dataArray);
+                this.__node__[$input.attr("data-variable")] = dataArray;
+            }
+            else if($input.attr("data-type") === "auto")
+                this.__node__[$input.attr("data-variable")] = isNaN(parseFloat($input.val())) ? $input.val() : parseFloat($input.val());
+
+            else if($input.attr("data-type") === "options")
+                this.__node__[$input.attr("data-variable")] = $input.val();
+
+            else if($input.attr("data-type") === "array")
+                this.__node__[$input.attr("data-variable")] = $input.val().split(",");
+
+            else if($input.attr("data-type") === "boolean")
+                this.__node__[$input.attr("data-variable")] = $input.get(0).checked;
+
+            /*else if($input.attr("data-type") === "Generator") {
+                console.log("Aqui!!!!!!!!!!", $input.val());
+                this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].findGenByID($input.val());
+            }*/
+
+            else if($input.attr("data-type").indexOf("Column") >= 0) {
+                this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].columns[parseInt($input.val())].generator;
+                this.__node__.inputGenIndex = parseInt($input.val());
+                this.__node__.reset();
+            }else if($input.attr("data-type") === "numarray"){
+                let arr = $input.val().split(",");
+                for(let i=0; i<arr.length; i++)
+                    arr[i] = +arr[i];
+                this.__node__[$input.attr("data-variable")] = arr;
+            }
         }
+        
+        
         datagen[currentDataGen].resetAll();
         setTimeout(()=>{ showGenerators(); }, 500);
         hasChanged();
