@@ -3702,15 +3702,57 @@ class ScriptReader extends Generator{
 
 class PythonScriptReader extends ScriptReader {
 
-    constructor(imgPathInputGen, extra_index = 1){
+    constructor(extra_index = 1){
         super("Python Script Reader");
-        this.array = [];
         this.scriptPath = "";
         this.imgFilePath = "";
-        this.accessImgPathInputGen = imgPathInputGen;
-        this.imgName = ["None"];
+        this.accessImgNameInputGen = "";
+        this.accessImgNameArray = "" || ["casaache"];
+        this.imgName = "";
         this.exec = "";
         this.extra_index = extra_index;
+    }
+
+    get accessImgNameArray(){
+        return this.imgNameArray;
+    }
+
+    set accessImgNameArray(imgNameArray){
+        console.log("teste array", `file://${imgNameArray}`);
+        if(imgNameArray != ""){
+            // Guarda os nomes em this.imgName
+            this.imgNameArray = imgNameArray;
+            this.imgName = this.imgNameArray
+            console.log("name array", this.imgName);
+        } else {
+            this.imgNameArray = "";
+        }  
+    }
+
+    get accessImgNameInputGen (){
+        return this.imgNameInputGen;
+    }
+
+    set accessImgNameInputGen (imgNameInputGen){
+        //Se string ou se gen obj
+        console.log("teste gen", `file://${imgNameInputGen}`);
+        // Sobe o gen arrastando e soltando no campo Random Name
+        if(imgNameInputGen){
+            this.imgNameInputGen = imgNameInputGen;
+            let lastValue = this.imgNameInputGen["lastGenerated" + (this.extra_index > 0 ? this.extra_index : "")];
+            // Guarda o caminho em this.imgFilePath
+            this.imgFilePath = super.generate(lastValue);
+            console.log("name", this.imgFilePath);
+            if (this.imgNameArray != ""){
+                this.imgName = this.imgNameArray;
+                console.log("name", this.imgName);
+            }
+            else{
+                let splitPath = this.imgFilePath.split("/");
+                this.imgName = [splitPath[splitPath.length - 1]];
+                console.log(this.imgName);
+            }  
+        }
     }
 
     get accessScriptPath (){
@@ -3733,42 +3775,28 @@ class PythonScriptReader extends ScriptReader {
     set accessImgFilePath (imgFilePath){
         console.log("teste", `file://${imgFilePath}`);
         // Sobe imagem pelo botão de upload
-        if(this.imgPathInputGen){
+        if(imgFilePath){
             // Guarda o caminho completo em this.imgFilePath
-            this.imgFilePath = this.imgPathInputGen;
-            let splitPath = this.imgFilePath.split("/");
-            console.log(splitPath);
-            this.imgName = splitPath[splitPath.length - 1];
-        }else{
             this.imgFilePath = imgFilePath;
-            let splitPath = this.imgFilePath.split("/");
-            console.log(splitPath);
-            this.imgName = splitPath[splitPath.length - 1];
+            console.log(this.imgFilePath);
+            if (this.imgNameArray != ""){
+                this.imgName = this.imgNameArray;
+                console.log("name", this.imgName);
+            }
+            else {
+                let splitPath = this.imgFilePath.split("/");
+                console.log(splitPath);
+                this.imgName = [splitPath[splitPath.length - 1]];
+                console.log(this.imgName);
+            }
+
+        }else{
+            this.imgFilePath = ["None"];
         }      
     }
 
-    get accessImgPathInputGen (){
-        return this.imgPathInputGen;
-    }
-
-    set accessImgPathInputGen (imgPathInputGen){
-        //Se string ou se gen obj
-        //this.imgPathInputGen = imgPathInputGen;
-
-        // Guarda o caminho completo em this.imgFilePath
-        this.imgPathInputGen = imgPathInputGen;
-        if(this.imgPathInputGen){
-            this.imgFilePath = this.imgPathInputGen["lastGenerated" + (this.extra_index > 0 ? this.extra_index : "")];
-            console.log(super.generate(this.imgFilePath));
-            //this.imgName = super.generate(lastValue);
-            let splitPath = super.generate(this.imgFilePath).split("/");
-            console.log(splitPath);
-            this.imgName = splitPath[splitPath.length - 1];
-        }
-    }
-
     generate() {
-        return this.lastGenerated = this.imgName;
+        return this.lastGenerated = this.imgName[Math.floor(Math.random() * this.imgName.length)];
     }
 
     getGenParams() {
@@ -3781,15 +3809,21 @@ class PythonScriptReader extends ScriptReader {
                 type: "file"
             },
             {
+                shortName: "Img Name",
+                variableName: "accessImgNameArray",
+                name: "Image Name Array",
+                type: "array"
+            },
+            {
                 shortName: "Img",
                 variableName: "accessImgFilePath",
                 name: "Image File",
                 type: "file"
             },
             {
-                shortName: "Img Path",
-                variableName: "accessImgPathInputGen",
-                name: "Image File Path",
+                shortName: "Random Img",
+                variableName: "accessImgNameInputGen",
+                name: "Image File Name Gen",
                 type: "Generator"
             },
             {
@@ -3805,7 +3839,7 @@ class PythonScriptReader extends ScriptReader {
     getModel(){
         let model = super.getModel();
         model.extra_index = this.extra_index;
-        model.imgPathInputGen = this.imgPathInputGen ? this.imgPathInputGen.ID : "";
+        model.imgNameInputGen = this.imgNameInputGen ? this.imgNameInputGen.ID : "";
         return model;
     }
 
@@ -3824,10 +3858,10 @@ class PythonScriptReader extends ScriptReader {
     afterGenerate(arrayFileName){
         console.log('afterGenerate:' + arrayFileName);
         if(this.exec){
-            //console.log('Entrou para matar o processo filho');
+            console.log('Entrou para matar o processo filho');
             this.exec.kill('SIGKILL');
             //console.log(this.exec);
-            //console.log('Processo filho morto');
+            console.log('Processo filho morto');
         }           
 
         const spawn = require("child_process").spawn;
