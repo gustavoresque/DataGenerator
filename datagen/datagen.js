@@ -836,8 +836,7 @@ class RandomFileName extends Random{
         //console.log(splitPath);
         this.fileName = splitPath[splitPath.length - 1];
         //console.log(this.fileName);
-        this.lastGenerated1 = pathFile
-        return super.generate(this.fileName);
+        return this.lastGenerated = super.generate(this.fileName);
     }
 
     getGenParams(){
@@ -3757,18 +3756,21 @@ class PythonScriptReader extends ScriptReader {
 
         // Guarda o caminho completo em this.imgFilePath
         this.imgPathInputGen = imgPathInputGen;
-        if(this.imgPathInputGen){
-            this.imgFilePath = this.imgPathInputGen["lastGenerated" + (this.extra_index > 0 ? this.extra_index : "")];
-            console.log(super.generate(this.imgFilePath));
-            //this.imgName = super.generate(lastValue);
-            let splitPath = super.generate(this.imgFilePath).split("/");
-            console.log(splitPath);
-            this.imgName = splitPath[splitPath.length - 1];
-        }
+        // if(this.imgPathInputGen){
+        //     this.imgFilePath = this.imgPathInputGen["lastGenerated" + (this.extra_index > 0 ? this.extra_index : "")];
+        //     console.log(super.generate(this.imgFilePath));
+        //     //this.imgName = super.generate(lastValue);
+        //     let splitPath = super.generate(this.imgFilePath).split("/");
+        //     console.log(splitPath);
+        //     this.imgName = splitPath[splitPath.length - 1];
+        // }
     }
 
     generate() {
-        return this.lastGenerated = this.imgName;
+
+        return this.lastGenerated = super.generate(
+            this.imgPathInputGen ? this.imgPathInputGen.lastGenerated :
+            this.imgName);
     }
 
     getGenParams() {
@@ -3823,6 +3825,7 @@ class PythonScriptReader extends ScriptReader {
     
     afterGenerate(arrayFileName){
         console.log('afterGenerate:' + arrayFileName);
+
         if(this.exec){
             //console.log('Entrou para matar o processo filho');
             this.exec.kill('SIGKILL');
