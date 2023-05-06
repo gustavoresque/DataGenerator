@@ -319,7 +319,7 @@ function propsConfigs(generator,coluna, new_place){
 
     //Ativa o <select> e coloca as opções de Geradores para trocar o tipo do gerador.
     let $selectGenType = $("#selectGeneratorType").removeAttr("disabled").empty();
-    putGeneratorOptions($selectGenType, generator.name);
+    putGeneratorOptions($selectGenType, generator.constructor.displayName);
     $selectGenType.get(0).__node__ = generator;
 
     let $propForms = $(new_place || "#generatorPropertiesForm");
@@ -354,7 +354,7 @@ function propsConfigs(generator,coluna, new_place){
 
         }else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
             let $input;
-            if (generator.name === "Path2D Stroke Generator" || generator.name === "Path2D Fill Generator"){
+            if (generator.constructor.displayName === "Path2D Stroke Generator" || generator.constructor.displayName === "Path2D Fill Generator"){
                 $input = $("<textarea/>");
                 $input.val(generator.path);
             } else {
@@ -787,8 +787,8 @@ $("html").ready(function() {
         }
 
         else if($input.attr("data-type").indexOf("Column") >= 0) {
-            this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].columns[parseInt($input.val())].generator;
-            this.__node__.inputGenIndex = parseInt($input.val());
+            this.__node__[$input.attr("data-variable")] = parseInt($input.val());
+            // this.__node__.inputGenIndex = parseInt($input.val());
             this.__node__.reset();
         }else if($input.attr("data-type") === "numarray"){
             let arr = $input.val().split(",");
@@ -1639,7 +1639,7 @@ function showGenerators() {
             if (gen instanceof DataGen.superTypes.SwitchCaseFunction){
                 let $switchGenTable = $("<table/>");
                 let $chip = $("<div/>").addClass("md-chip md-chip-hover")
-                    .text(gen.order + "-" + gen.name)
+                    .text(gen.order + "-" + gen.constructor.displayName)
                     .attr("draggable","true");
 
                 $chip.get(0).ondragstart = dragGenerator;
@@ -1671,7 +1671,7 @@ function showGenerators() {
                 // break;
             }else{
                 let $chip = $("<div/>").addClass("md-chip md-chip-hover")
-                    .text(gen.order + "-" + gen.name)
+                    .text(gen.order + "-" + gen.constructor.displayName)
                     .attr("draggable","true");
                 $chip.get(0).ondragstart = dragGenerator;
                 if(gen === activeGenerator[currentDataGen])
@@ -2067,8 +2067,8 @@ function createImportModel (modelName, data) {
 function exportResultsCSVTSV(data, separator){
     let str = "";
     if (datagen[currentDataGen].header){
-        datagen[currentDataGen].columns.forEach(function(item){
-            str += item.name + separator;
+        datagen[currentDataGen].columns.forEach(function(col){
+            str += col.name + separator;
         });
         str += "\n";
     }
@@ -2271,7 +2271,8 @@ function preview(data2){
     //Set configs according to the dimension type.
     for(let col of datagen[currentDataGen].columns) {
         if(col.name == selectColumnPreview) {
-            console.log("TODO: Adicionar um scale para o tempo na visualização.", col.type)
+            //TODO: Adicionar um scale para o tempo na visualização.
+            // console.log("TODO: Adicionar um scale para o tempo na visualização.", col.type)
             switch(col.type) {
                 case "Categorical":
                     scaleFunction = d3.scaleOrdinal();
