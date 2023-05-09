@@ -247,7 +247,7 @@ def collage_function(image_name, path_file_root, collage_size, p=10):
     
     return image_collage
 
-def single_mosaic(path_file = '', file_name = '', img_number = '', output_dir = 'output',
+def single_mosaic(path_file = '', image_name = '', img_number = '', output_dir = 'output',
                   min_size = 1, max_size = 10, img_size = 256, p = 5):
     
     """A função gera um único mosaico de um azulejo 
@@ -263,7 +263,8 @@ def single_mosaic(path_file = '', file_name = '', img_number = '', output_dir = 
     """  
     path_file = path_file.replace("/", "\\")
     file_path_array = os.path.split(path_file)
-    file_path_input_array = os.path.split(file_path_array[0])
+    file_path_input_root = file_path_array[0]
+    file_path_input_array = os.path.split(file_path_input_root)
     file_path_root = file_path_input_array[0]
     output_dir = os.path.join(file_path_root, output_dir)
 
@@ -293,16 +294,16 @@ def single_mosaic(path_file = '', file_name = '', img_number = '', output_dir = 
 
     j = adjust_image_numbering(img_number)
 
-    output_image_name = file_name + j + '.jpg'
+    output_image_name = image_name + j + '.jpg'
     output_name = os.path.join(output_dir, output_image_name)
     cv2.imwrite(output_name, image_collage)
 
     return output_image_name
     
     
-def multiple_mosaics(path_file = '', input_dir = 'input', output_dir = 'output',
-                     file_prefix = '*.png', min_size = 1, max_size = 10,
-                     file_name = 'img', n_images = 5, img_size = 256, p = 5):
+def multiple_mosaics(path_file = '', image_name_list = [], output_dir = 'output',
+                     min_size = 1, max_size = 10,
+                     n_images = 5, img_size = 256, p = 5):
 
     """A função gera mosaicos de azulejos por classe 
     
@@ -317,18 +318,21 @@ def multiple_mosaics(path_file = '', input_dir = 'input', output_dir = 'output',
         p {int}: Chance do azulejo ter rachadura.
     
     """
+
     path_file = path_file.replace("/", "\\")
-    file_path = os.path.split(path_file)
-    input_dir = os.path.join(file_path[0], input_dir)
-    output_dir = os.path.join(file_path[0], output_dir)
+    file_path_array = os.path.split(path_file)
+    file_path_input_root = file_path_array[0]
+    file_path_input_array = os.path.split(file_path_input_root)
+    file_path_root = file_path_input_array[0]
+    output_dir = os.path.join(file_path_root, output_dir)
     
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
-    
-    image_name_list = glob(os.path.join(input_dir, file_prefix))
 
+    array_output_image_name = []
     num = 0
     for image_name in image_name_list:
+        image_input = os.path.join(file_path_input_root, image_name)
         #os.chdir(input_dir)
         dir_name = str(num)
         #print(image_name[len(input_dir)+1:-4])
@@ -345,7 +349,7 @@ def multiple_mosaics(path_file = '', input_dir = 'input', output_dir = 'output',
             collage_size = (size[0], size[1])
         
             # Criação do mosaico (ver mais dentro da própria função)
-            image_collage = collage_function(file_path, image_name, collage_size, p=p)
+            image_collage = collage_function(image_input, file_path_root, collage_size, p=p)
             
             # Adiciona contraste gamma (faixo do expoente de
             # ajuste de contraste variando entre 0.5 e 1.5)
@@ -364,9 +368,12 @@ def multiple_mosaics(path_file = '', input_dir = 'input', output_dir = 'output',
             
             j = adjust_image_numbering(i)
              
-            output_image_name = file_name + j + '.jpg'
+            output_image_name = j + "- " + image_name
+            array_output_image_name.append(output_image_name)
             output_name = os.path.join(output_subdir, output_image_name)
             cv2.imwrite(output_name, image_collage)
             i+=1
         
         num+=1
+
+    return array_output_image_name

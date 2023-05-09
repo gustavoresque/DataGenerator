@@ -829,13 +829,9 @@ class RandomFileName extends Random{
     }
 
     generate(){
-        //return super.generate(randgen.rlist(this.files));
-        let pathFile = randgen.rlist(this.files);
-        //console.log(pathFile);
-        let splitPath = pathFile.split("/");
-        //console.log(splitPath);
+        this.pathFile = randgen.rlist(this.files);
+        let splitPath = this.pathFile.split("/");
         this.fileName = splitPath[splitPath.length - 1];
-        //console.log(this.fileName);
         return this.lastGenerated = super.generate(this.fileName);
     }
 
@@ -3704,10 +3700,9 @@ class PythonScriptReader extends ScriptReader {
     constructor(extra_index = 1){
         super("Python Script Reader");
         this.scriptPath = "";
-        this.imgFilePath = "";
-        this.accessImgNameInputGen = "";
-        this.accessImgNameArray = "" || ["casaache"];
-        this.imgName = "";
+        this.filePath = "";
+        this.accessFileNameInputGen = "";
+        this.fileName = "";
         this.exec = "";
         this.extra_index = extra_index;
     }
@@ -3725,81 +3720,40 @@ class PythonScriptReader extends ScriptReader {
         }     
     }
 
-    get accessImgFilePath (){
-        return this.imgFilePath;
+    get accessFileNameInputGen (){
+        return this.fileNameInputGen;
     }
 
-    set accessImgFilePath (imgFilePath){
-        console.log("teste", `file://${imgFilePath}`);
-        // Sobe imagem pelo botão de upload
-        if(imgFilePath){
-            // Guarda o caminho completo em this.imgFilePath
-            this.imgFilePath = imgFilePath;
-            console.log(this.imgFilePath);
-            if (this.imgNameArray != ""){
-                this.imgName = this.imgNameArray;
-                console.log("name", this.imgName);
-            }
-            else {
-                let splitPath = this.imgFilePath.split("/");
-                console.log(splitPath);
-                this.imgName = [splitPath[splitPath.length - 1]];
-                console.log(this.imgName);
-            }
-
-    get accessImgPathInputGen (){
-        return this.imgPathInputGen;
-    }
-
-    set accessImgPathInputGen (imgPathInputGen){
+    set accessFileNameInputGen (fileNameInputGen){
         //Se string ou se gen obj
-        //this.imgPathInputGen = imgPathInputGen;
-
         // Guarda o caminho completo em this.imgFilePath
-        this.imgPathInputGen = imgPathInputGen;
-        // if(this.imgPathInputGen){
-        //     this.imgFilePath = this.imgPathInputGen["lastGenerated" + (this.extra_index > 0 ? this.extra_index : "")];
-        //     console.log(super.generate(this.imgFilePath));
-        //     //this.imgName = super.generate(lastValue);
-        //     let splitPath = super.generate(this.imgFilePath).split("/");
-        //     console.log(splitPath);
-        //     this.imgName = splitPath[splitPath.length - 1];
-        // }
+        this.fileNameInputGen = fileNameInputGen;
+        console.log(this.fileNameInputGen);
+        this.fileName = this.fileNameInputGen.fileName;
+        this.filePath = this.fileNameInputGen.files;
     }
 
     generate() {
 
         return this.lastGenerated = super.generate(
-            this.imgPathInputGen ? this.imgPathInputGen.lastGenerated :
-            this.imgName);
+            this.fileNameInputGen ? this.fileNameInputGen.lastGenerated :
+            this.fileName);
     }
 
     getGenParams() {
         let params = super.getGenParams();
         params.push(
             {
+                shortName: "Random Img",
+                variableName: "accessFileNameInputGen",
+                name: "File Name Gen",
+                type: "Generator"
+            },
+            {
                 shortName: "Script",
                 variableName: "accessScriptPath",
                 name: "Script File",
                 type: "file"
-            },
-            {
-                shortName: "Img Name",
-                variableName: "accessImgNameArray",
-                name: "Image Name Array",
-                type: "array"
-            },
-            {
-                shortName: "Img",
-                variableName: "accessImgFilePath",
-                name: "Image File",
-                type: "file"
-            },
-            {
-                shortName: "Random Img",
-                variableName: "accessImgNameInputGen",
-                name: "Image File Name Gen",
-                type: "Generator"
             },
             {
                 shortName: "i",
@@ -3814,7 +3768,7 @@ class PythonScriptReader extends ScriptReader {
     getModel(){
         let model = super.getModel();
         model.extra_index = this.extra_index;
-        model.imgNameInputGen = this.imgNameInputGen ? this.imgNameInputGen.ID : "";
+        model.imgPathInputGen = this.imgPathInputGen ? this.imgPathInputGen.ID : "";
         return model;
     }
 
@@ -3832,8 +3786,9 @@ class PythonScriptReader extends ScriptReader {
     
     afterGenerate(arrayFileName){
         console.log('afterGenerate:' + arrayFileName);
-
-        if(this.exec){
+        console.log(this.fileName);
+        console.log(this.filePath);
+        if(this.exec != ""){
             console.log('Entrou para matar o processo filho');
             this.exec.kill('SIGKILL');
             //console.log(this.exec);
@@ -3843,17 +3798,22 @@ class PythonScriptReader extends ScriptReader {
         const spawn = require("child_process").spawn;
         (async () => {
             try {
-                // Para gerar imagens de múltiplas imagens de entrada
-                /*this.exec = spawn('python',[this.fileName, this.fileName, this.imgName, nFilesArray], {
-                    killSignal: 'SIGKILL',
-                  });*/
-                // this.imgFilePath: caminho completo da imagem
+                // this.scriptPath: caminho do script python
+                // this.filePath: array com os caminhos completos dos arquivos
                 // arrayFileName[0]: Nome do primeiro arquivo com a extensão (Ex.: casaache.png)
-                // arrayFileName: Array com os nomes repetidos para pegar a quantidade de imagens a serem geradas
-                this.exec = spawn('python',[this.scriptPath, this.imgFilePath, arrayFileName[0], arrayFileName], {
+                // arrayFileName: Array com os nomes para pegar a quantidade de arquivos a serem gerados
+                
+                // Para gerar imagens de múltiplas imagens de entrada
+                console.log(this.filePath[0]);
+                this.exec = spawn('python',[this.scriptPath, this.filePath[0], arrayFileName], {
                     killSignal: 'SIGKILL',
-                });
-                //console.log('Spawn:', this.exec);
+                  });
+               
+                // Para gerar imagens de múltiplas imagens de entrada
+                /*this.exec = spawn('python',[this.scriptPath, this.filePath[0], arrayFileName[0], arrayFileName], {
+                    killSignal: 'SIGKILL',
+                });*/
+
                 this.exec.stdin.end();
 
                 let error = '';
