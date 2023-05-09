@@ -66,7 +66,8 @@ let especialPasteState = 0; //0-Desativado, 1-Cola uma vez, 2-Cola até clicar d
 
 let generating = false; //Avoid more then 1 generation at a time, include local and Distributed generation. 
 
-
+let forceRedrawPreview=false;
+let autoPreview=true;
 let pc;
 
 
@@ -537,6 +538,7 @@ $("html").ready(function() {
     })
 
     $("#reloadPreview").on("click", "", function(e){
+        forceRedrawPreview=true;
         showGenerators();
     });
 
@@ -1812,10 +1814,15 @@ function showGenerators() {
 }
 
 function redrawPreview(){
+
     try{
-        current_sample = datagen[currentDataGen].generateSample();
-        preview(current_sample);
-        ipc.send('change-datasample', current_sample);
+        if(autoPreview || forceRedrawPreview){
+            forceRedrawPreview = false;
+            current_sample = datagen[currentDataGen].generateSample();
+            preview(current_sample);
+            ipc.send('change-datasample', current_sample);
+        }
+        
     }catch (e){
 
         switch (e) {
