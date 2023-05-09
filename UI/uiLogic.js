@@ -368,6 +368,16 @@ function propsConfigs(generator,coluna, new_place){
                 .text("Choose File")
                 .attr("for", "input_"+p.variableName)
 
+            $input.on("change", e => {
+                let fileName = $input.get(0).files[0].path.replace(/\\/g,'/').split('/')
+                fileName = fileName[fileName.length-1];
+                if(fileName.length>17){
+                    fileName = fileName.substring(0,14)+"...";
+                }
+                $labelFile.text(fileName)
+                console.log("valor", fileName)
+            })
+
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input).append($labelFile));    
             
@@ -537,15 +547,29 @@ $("html").ready(function() {
         showModels();
     })
 
+    //The color lines became gray on resizing, so the reload solve the problem.
+    $(window).on("resize", "", () => {
+        showGenerators();
+    });
+
     $("#reloadPreview").on("click", "", function(e){
         forceRedrawPreview=true;
         showGenerators();
     });
 
-    //The color lines became gray on resizing, so the reload solve the problem.
-    $(window).on("resize", "", () => {
-        showGenerators();
+    $("#btnAutoPreview").on("click", "", function(e){
+        if(autoPreview){
+            autoPreview = false;
+            $(this).removeClass("active");
+        }else{
+            autoPreview = true;
+            $(this).addClass("active");
+        }
     });
+    
+
+    
+    
 
     $("#hidePreview").on("click", "", function(e){
         $(".previewPanel").hide();
