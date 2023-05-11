@@ -234,7 +234,6 @@ class Generator{
             ID: this.ID,
             accessOperator: this.accessOperator
         };
-        console.log(attrs);
         attrs.forEach(attr=>model[attr]=this[attr])
         return model;
     }
@@ -427,8 +426,7 @@ class RandomCategorical extends Random {
 
     //TODO: verificar porque não chama o super.generate()
     generate() {
-        //return this.lastGenerated = this.array[Math.floor(Math.random() * this.array.length)];
-        return this.lastGenerated = "casa";
+        return this.lastGenerated = this.array[Math.floor(Math.random() * this.array.length)];
     }
 
     getGenParams() {
@@ -4002,9 +4000,16 @@ DataGen.Utils = {
           .replace(/[/][*][^/*]*[*][/]/g, '') // strip multi-line comments 
           .replace("[objectObject]",'')
           .split('){', 1)[0].replace(/^[^(]*[(]/, '') // extract the parameters  
+          .replace(/=\[([^\]]*)?\]/g, '')
+          .replace(/=\{([^\}]*)?\}/g,'')
           .replace(/=[^,]+/g, '') // strip any ES6 defaults  
-          .split(',').filter(Boolean); // split & filter [""]
-        
+        .split(',')
+        .filter(Boolean)
+        .filter(param => /^[a-zA-Z_$][a-zA-Z_$0-9]*$/g.test(param) );
+           // split & filter [""]
+
+        arr = arr
+
         let aux = func.__proto__;
         if(aux)
             return [...new Set(arr.concat(this.funcArgs(aux)))];
