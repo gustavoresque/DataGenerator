@@ -3170,7 +3170,7 @@ class PythonScriptReader extends ScriptReader {
         let params = super.getGenParams();
         params.push(
             {
-                shortName: "Random Img",
+                shortName: "Random File",
                 variableName: "accessFileNameInputGen",
                 name: "File Name Gen",
                 type: "Generator"

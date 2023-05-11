@@ -374,8 +374,7 @@ function propsConfigs(generator,coluna, new_place){
                 if(fileName.length>17){
                     fileName = fileName.substring(0,14)+"...";
                 }
-                $labelFile.text(fileName)
-                console.log("valor", fileName)
+                $labelFile.text(fileName);
             })
 
             $input.get(0).__node__ = generator;
@@ -411,7 +410,17 @@ function propsConfigs(generator,coluna, new_place){
             let $labelFile = $("<label/>")
                 .addClass("btn btn-mini btn-default")
                 .text("Choose Folder")
-                .attr("for", "input_"+p.variableName)
+                .attr("for", "input_"+p.variableName);
+
+            $input.on("change", e => {
+                let folderName = $input.get(0).files[0].webkitRelativePath.split('/');
+                folderName = folderName[folderName.length-2];
+                if(folderName.length>17){
+                    folderName = folderName.substring(0,14)+"...";
+                }
+                $labelFile.text(folderName);
+            })
+
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input).append($labelFile));
             console.log(generator);
@@ -865,7 +874,6 @@ $("html").ready(function() {
                     let pathName = $input.get(0).files[i].path.replace(/\\/g,'/');
                     dataArray.push(pathName);              
                 }
-                //console.log(dataArray);
                 this.__node__[$input.attr("data-variable")] = dataArray;
             }
             else if($input.attr("data-type") === "auto")
