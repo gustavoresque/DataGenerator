@@ -234,6 +234,7 @@ class Generator{
             ID: this.ID,
             accessOperator: this.accessOperator
         };
+        console.log(attrs);
         attrs.forEach(attr=>model[attr]=this[attr])
         return model;
     }
@@ -426,7 +427,8 @@ class RandomCategorical extends Random {
 
     //TODO: verificar porque não chama o super.generate()
     generate() {
-        return this.lastGenerated = this.array[Math.floor(Math.random() * this.array.length)];
+        //return this.lastGenerated = this.array[Math.floor(Math.random() * this.array.length)];
+        return this.lastGenerated = "casa";
     }
 
     getGenParams() {
