@@ -129,8 +129,8 @@ class Generator{
 
     /**
      * Troca o gerador atual na cadeia pelo gerador passado por parâmentro.
-     * O gerador que foi chamada o método sairá da sua cadeia de geradores.
-     * @param gen O gerador que assumirá o lugar do gerador que foi chamada o método.
+     * O gerador em que foi chamado o método sairá da sua cadeia de geradores.
+     * @param gen O gerador que assumirá o lugar do gerador em que foi chamado o método.
      */
     changeGenerator(gen){
         gen.dataGen = this.dataGen;
