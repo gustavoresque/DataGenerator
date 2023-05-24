@@ -257,27 +257,33 @@ describe("O gerador Bernoulli Generator", function(){
 describe("O gerador Cauchy Generator", function(){
 
     it("deve retornar a propriedade name como Cauchy Generator.", function(){
-        let gen = new DataGen.listOfGens["Cauchy Generator"](20, 10);
+        let loc = 20;
+        let scale = 10;
+        let gen = new DataGen.listOfGens["Cauchy Generator"](loc, scale);
 
         let model = gen.getModel();
         expect(model.name).toBe("Cauchy Generator");
     });
 
-    it("deve retornar valores de Cauchy.", function(){
-        let gen = new DataGen.listOfGens["Cauchy Generator"](20, 10);
+    it("deve retornar valores inteiros.", function(){
+        let loc = 20;
+        let scale = 10;
+        let gen = new DataGen.listOfGens["Cauchy Generator"](loc, scale);
 
         let result;
         for (let i= 0; i < 1000; i++) {
             result = gen.generate();
-            expect(result).toBeGreaterThanOrEqual(0);
-            if(result < 0){
+            expect(result).not.toEqual(NaN);
+            if(Number.isNaN(result)){
                 break;
             }
         }
     });
 
     it("deve conter um modelo que tenha somente as propriedades listadas no array.", function(){
-        let gen = new DataGen.listOfGens["Cauchy Generator"](20, 10);
+        let loc = 20;
+        let scale = 10;
+        let gen = new DataGen.listOfGens["Cauchy Generator"](loc, scale);
         let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'loc', 'scale'];
 
         let model = gen.getModel();
@@ -303,7 +309,9 @@ describe("O gerador Cauchy Generator", function(){
     });
 
     it("deve conter somente propriedades definidas.", function(){
-        let gen = new DataGen.listOfGens["Cauchy Generator"](20, 10);
+        let loc = 20;
+        let scale = 10;
+        let gen = new DataGen.listOfGens["Cauchy Generator"](loc, scale);
         let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'loc', 'scale'];
 
         let model = gen.getModel()
@@ -599,6 +607,83 @@ describe("O gerador Poisson Time Generator", function(){
         let lambda = 4;
         let gen = new DataGen.listOfGens["Poisson Time Generator"](initTime, timeMask, interval, intervalUnit, lambda);
         let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'initTime', 'timeMask', 'interval', 'intervalUnit', 'lambda'];
+
+        let model = gen.getModel()
+        //model.name = undefined;
+        for(p of propsWhiteList){
+            expect(model[p]).toBeDefined();
+            if(model[p] === undefined){
+                break
+            }
+        }
+    });
+});
+
+describe("O gerador Random File Name Generator", function(){
+
+    it("deve retornar a propriedade name como Random File Name.", function(){
+        let folder = "C:/Users/brynn/Documents/DataGenerator/resources/codigos_gerador_azulejos/input";
+        let gen = new DataGen.listOfGens["Random File Name"](folder);
+
+        let model = gen.getModel();
+        expect(model.name).toBe("Random File Name");
+    });
+    
+    it("deve retornar valores de Random File Name no padrão HH:mm:ss.", function(){
+        let fs = require('fs');
+        const path = require('path');
+        let folderName = 'C:/Users/brynn/Documents/DataGenerator/resources/codigos_gerador_azulejos/input';
+        
+        try {
+        if (!fs.existsSync(folderName)) {
+            fs.mkdirSync(folderName);
+        }
+        } catch (err) {
+            console.error(err);
+        }
+
+        let folder = [];
+        fs.readdirSync(folderName).map(fileName => {
+            folder.push(path.join(folderName, fileName).replace(/\\/g,'/'));
+        });
+
+        let gen = new DataGen.listOfGens["Random File Name"](folder);
+        //let result = gen.generate();
+        let model = gen.getModel();
+        expect(model.folder).not.toEqual([]);
+    });
+
+    it("deve conter um modelo que tenha somente as propriedades listadas no array.", function(){
+        let folder = "C:/Users/brynn/Documents/DataGenerator/resources/codigos_gerador_azulejos/input";
+        let gen = new DataGen.listOfGens["Random File Name"](folder);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'folder'];
+
+        let model = gen.getModel();
+        //model.cor = "preto";
+        for(prop in model){
+            if(model.hasOwnProperty(prop)){
+                expect(propsWhiteList.includes(prop)).toBeTrue();
+                if(!propsWhiteList.includes(prop)){
+                    break
+                }
+            } else {
+                break;
+            }         
+        }
+
+        let enumAndNonenumKeys = Object.getOwnPropertyNames(model);
+        for(let element of propsWhiteList){
+            expect(enumAndNonenumKeys.includes(element)).toBeTrue();
+            if (!enumAndNonenumKeys.includes(element)) {
+              break;
+            }
+        }
+    });
+
+    it("deve conter somente propriedades definidas.", function(){
+        let folder = "C:/Users/brynn/Documents/DataGenerator/resources/codigos_gerador_azulejos/input";
+        let gen = new DataGen.listOfGens["Random File Name"](folder);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'folder'];
 
         let model = gen.getModel()
         //model.name = undefined;

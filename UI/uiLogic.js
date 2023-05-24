@@ -369,7 +369,7 @@ function propsConfigs(generator,coluna, new_place){
                 .attr("for", "input_"+p.variableName)
 
             $input.on("change", e => {
-                let fileName = $input.get(0).files[0].path.replace(/\\/g,'/').split('/')
+                let fileName = $input.get(0).files[0].path.replace(/\\/g,'/').split('/');
                 fileName = fileName[fileName.length-1];
                 if(fileName.length>17){
                     fileName = fileName.substring(0,14)+"...";

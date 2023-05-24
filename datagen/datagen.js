@@ -705,7 +705,8 @@ class RandomFileName extends Random{
     }
 
     generate(){
-        this.pathFile = randgen.rlist(this.files);
+        this.files = this.folder;
+        this.pathFile = randgen.rlist(this.files); //pega somente um caminho de forma aleatória
         let splitPath = this.pathFile.split("/");
         this.fileName = splitPath[splitPath.length - 1];
         return this.lastGenerated = super.generate(this.fileName);
@@ -726,8 +727,6 @@ class RandomFileName extends Random{
 
     getModel(){
         let model = super.getModel();
-        model.pathFile = this.pathFile;
-        //model.folder = this.folder;
         return model;
     }
 
