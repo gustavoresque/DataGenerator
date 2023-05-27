@@ -265,7 +265,7 @@ describe("O gerador Cauchy Generator", function(){
         expect(model.name).toBe("Cauchy Generator");
     });
 
-    it("deve retornar valores inteiros.", function(){
+    it("deve retornar números.", function(){
         let loc = 20;
         let scale = 10;
         let gen = new DataGen.listOfGens["Cauchy Generator"](loc, scale);
@@ -684,6 +684,224 @@ describe("O gerador Random File Name Generator", function(){
         let folder = "C:/Users/brynn/Documents/DataGenerator/resources/codigos_gerador_azulejos/input";
         let gen = new DataGen.listOfGens["Random File Name"](folder);
         let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'folder'];
+
+        let model = gen.getModel()
+        //model.name = undefined;
+        for(p of propsWhiteList){
+            expect(model[p]).toBeDefined();
+            if(model[p] === undefined){
+                break
+            }
+        }
+    });
+});
+
+describe("O gerador CubicBezier Generator", function(){
+
+    it("deve retornar a propriedade name como CubicBezier Generator.", function(){
+        let x0 = 0;
+        let y0 = 1;
+        let x1 = 2;
+        let y1 = 2;
+        let x2 = 3;
+        let y2 = 4;
+        let x3 = 5;
+        let y3 = 6;
+        let proportional = true;
+        let gen = new DataGen.listOfGens["CubicBezier Generator"](x0, y0, x1, y1, x2, y2, x3, y3, proportional);
+
+        let model = gen.getModel();
+        expect(model.name).toBe("CubicBezier Generator");
+    });
+    
+    it("deve retornar números.", function(){
+        let x0 = 0;
+        let y0 = 1;
+        let x1 = 2;
+        let y1 = 2;
+        let x2 = 3;
+        let y2 = 4;
+        let x3 = 5;
+        let y3 = 6;
+        let proportional = true;
+        let gen = new DataGen.listOfGens["CubicBezier Generator"](x0, y0, x1, y1, x2, y2, x3, y3, proportional);
+
+        let result;
+        result = gen.generate();
+        expect(result).not.toEqual(NaN);
+    });
+
+    it("deve conter um modelo que tenha somente as propriedades listadas no array.", function(){
+        let x0 = 0;
+        let y0 = 1;
+        let x1 = 2;
+        let y1 = 2;
+        let x2 = 3;
+        let y2 = 4;
+        let x3 = 5;
+        let y3 = 6;
+        let proportional = true;
+        let gen = new DataGen.listOfGens["CubicBezier Generator"](x0, y0, x1, y1, x2, y2, x3, y3, proportional);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'x0', 'y0', 'x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'proportional'];
+     
+        let model = gen.getModel();
+        //model.cor = "preto";
+        for(prop in model){
+            if(model.hasOwnProperty(prop)){
+                expect(propsWhiteList.includes(prop)).toBeTrue();
+                if(!propsWhiteList.includes(prop)){
+                    break
+                }
+            } else {
+                break;
+            }         
+        }
+
+        let enumAndNonenumKeys = Object.getOwnPropertyNames(model);
+        for(let element of propsWhiteList){
+            expect(enumAndNonenumKeys.includes(element)).toBeTrue();
+            if (!enumAndNonenumKeys.includes(element)) {
+              break;
+            }
+        }
+    });
+
+    it("deve conter somente propriedades definidas.", function(){
+        let x0 = 0;
+        let y0 = 1;
+        let x1 = 2;
+        let y1 = 2;
+        let x2 = 3;
+        let y2 = 4;
+        let x3 = 5;
+        let y3 = 6;
+        let proportional = true;
+        let gen = new DataGen.listOfGens["CubicBezier Generator"](x0, y0, x1, y1, x2, y2, x3, y3, proportional);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'x0', 'y0', 'x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'proportional'];
+
+        let model = gen.getModel()
+        //model.name = undefined;
+        for(p of propsWhiteList){
+            expect(model[p]).toBeDefined();
+            if(model[p] === undefined){
+                break
+            }
+        }
+    });
+});
+
+describe("O gerador Path2D Stroke Generator", function(){
+
+    it("deve retornar a propriedade name como Path2D Stroke Generator.", function(){
+        let path = "M10,60 C 20,80 40,80 50,60";
+        let gen = new DataGen.listOfGens["Path2D Stroke Generator"](path);
+
+        let model = gen.getModel();
+        expect(model.name).toBe("Path2D Stroke Generator");
+    });
+    
+    it("deve retornar números.", function(){
+        let path = "M10,60 C 20,80 40,80 50,60";
+        let gen = new DataGen.listOfGens["Path2D Stroke Generator"](path);
+
+        let result;
+        result = gen.generate();
+        expect(result).not.toEqual(NaN);
+    });
+
+    it("deve conter um modelo que tenha somente as propriedades listadas no array.", function(){
+        let path = "M10,60 C 20,80 40,80 50,60";
+        let gen = new DataGen.listOfGens["Path2D Stroke Generator"](path);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'path'];
+
+        let model = gen.getModel();
+        //model.cor = "preto";
+        for(prop in model){
+            if(model.hasOwnProperty(prop)){
+                expect(propsWhiteList.includes(prop)).toBeTrue();
+                if(!propsWhiteList.includes(prop)){
+                    break
+                }
+            } else {
+                break;
+            }         
+        }
+
+        let enumAndNonenumKeys = Object.getOwnPropertyNames(model);
+        for(let element of propsWhiteList){
+            expect(enumAndNonenumKeys.includes(element)).toBeTrue();
+            if (!enumAndNonenumKeys.includes(element)) {
+              break;
+            }
+        }
+    });
+
+    it("deve conter somente propriedades definidas.", function(){
+        let path = "M10,60 C 20,80 40,80 50,60";
+        let gen = new DataGen.listOfGens["Path2D Stroke Generator"](path);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'path'];
+
+        let model = gen.getModel()
+        //model.name = undefined;
+        for(p of propsWhiteList){
+            expect(model[p]).toBeDefined();
+            if(model[p] === undefined){
+                break
+            }
+        }
+    });
+});
+
+describe("O gerador Path2D Fill Generator", function(){
+
+    it("deve retornar a propriedade name como Path2D Fill Generator.", function(){
+        let path = "M10,60 C 20,80 40,80 50,60";
+        let gen = new DataGen.listOfGens["Path2D Fill Generator"](path);
+
+        let model = gen.getModel();
+        expect(model.name).toBe("Path2D Fill Generator");
+    });
+    
+    it("deve retornar números.", function(){
+        let path = "M10,60 C 20,80 40,80 50,60";
+        let gen = new DataGen.listOfGens["Path2D Fill Generator"](path);
+
+        let result;
+        result = gen.generate();
+        expect(result).not.toEqual(NaN);
+    });
+
+    it("deve conter um modelo que tenha somente as propriedades listadas no array.", function(){
+        let path = "M10,60 C 20,80 40,80 50,60";
+        let gen = new DataGen.listOfGens["Path2D Fill Generator"](path);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'path'];
+
+        let model = gen.getModel();
+        //model.cor = "preto";
+        for(prop in model){
+            if(model.hasOwnProperty(prop)){
+                expect(propsWhiteList.includes(prop)).toBeTrue();
+                if(!propsWhiteList.includes(prop)){
+                    break
+                }
+            } else {
+                break;
+            }         
+        }
+
+        let enumAndNonenumKeys = Object.getOwnPropertyNames(model);
+        for(let element of propsWhiteList){
+            expect(enumAndNonenumKeys.includes(element)).toBeTrue();
+            if (!enumAndNonenumKeys.includes(element)) {
+              break;
+            }
+        }
+    });
+
+    it("deve conter somente propriedades definidas.", function(){
+        let path = "M10,60 C 20,80 40,80 50,60";
+        let gen = new DataGen.listOfGens["Path2D Fill Generator"](path);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'path'];
 
         let model = gen.getModel()
         //model.name = undefined;
