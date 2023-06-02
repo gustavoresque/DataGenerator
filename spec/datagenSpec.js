@@ -5,14 +5,21 @@ let DataGen = require("../datagen/datagen.js");
 describe("O gerador Uniform Generator", function(){
 
     it("deve retornar a propriedade name como Uniform Gerator.", function(){
-        let gen = new DataGen.listOfGens["Uniform Generator"](0,50,false);
+        let min = 0;
+        let max = 50;
+        let disc = false;
+        let gen = new DataGen.listOfGens["Uniform Generator"](min, max, disc);
 
         let model = gen.getModel();
         expect(model.name).toBe("Uniform Generator");
     });
 
     it("deve retornar valores entre min e max.", function(){
-        let gen = new DataGen.listOfGens["Uniform Generator"](0,50,false);
+        let min = 0;
+        let max = 50;
+        let disc = false;
+        let gen = new DataGen.listOfGens["Uniform Generator"](min, max, disc);
+
         let result;
         for (let i= 0; i < 1000; i++) {
             result = gen.generate();
@@ -25,7 +32,10 @@ describe("O gerador Uniform Generator", function(){
     });
 
     it("deve conter um modelo que tenha somente as propriedades listadas no array.", function(){
-        let gen = new DataGen.listOfGens["Uniform Generator"](0,50,false);
+        let min = 0;
+        let max = 50;
+        let disc = false;
+        let gen = new DataGen.listOfGens["Uniform Generator"](min, max, disc);
         let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'min', 'max', 'disc'];
 
         let model = gen.getModel();
@@ -51,7 +61,10 @@ describe("O gerador Uniform Generator", function(){
     });
 
     it("deve conter somente propriedades definidas.", function(){
-        let gen = new DataGen.listOfGens["Uniform Generator"](0,50,false);
+        let min = 0;
+        let max = 50;
+        let disc = false;
+        let gen = new DataGen.listOfGens["Uniform Generator"](min, max, disc);
         let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'min', 'max', 'disc'];
 
         let model = gen.getModel()
@@ -902,6 +915,681 @@ describe("O gerador Path2D Fill Generator", function(){
         let path = "M10,60 C 20,80 40,80 50,60";
         let gen = new DataGen.listOfGens["Path2D Fill Generator"](path);
         let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'path'];
+
+        let model = gen.getModel()
+        //model.name = undefined;
+        for(p of propsWhiteList){
+            expect(model[p]).toBeDefined();
+            if(model[p] === undefined){
+                break
+            }
+        }
+    });
+});
+
+describe("O gerador Linear Function", function(){
+
+    it("deve retornar a propriedade name como Linear Function.", function(){
+        let inputIndex = 1;
+        let a = 6;
+        let b = 2;
+        let gen = new DataGen.listOfGens["Linear Function"](inputIndex, a, b);
+
+        let model = gen.getModel();
+        expect(model.name).toBe("Linear Function");
+    });
+    
+    it("deve retornar números.", function(){
+        let inputIndex = 1;
+        let a = 6;
+        let b = 2;
+        let gen = new DataGen.listOfGens["Linear Function"](inputIndex, a, b);
+
+        let result;
+        result = gen.generate();
+        expect(result).not.toEqual(NaN);
+    });
+
+    it("deve conter um modelo que tenha somente as propriedades listadas no array.", function(){
+        let inputIndex = 1;
+        let a = 6;
+        let b = 2;
+        let gen = new DataGen.listOfGens["Linear Function"](inputIndex, a, b);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'a', 'b'];
+
+        let model = gen.getModel();
+        //model.cor = "preto";
+        for(prop in model){
+            if(model.hasOwnProperty(prop)){
+                expect(propsWhiteList.includes(prop)).toBeTrue();
+                if(!propsWhiteList.includes(prop)){
+                    break
+                }
+            } else {
+                break;
+            }         
+        }
+
+        let enumAndNonenumKeys = Object.getOwnPropertyNames(model);
+        for(let element of propsWhiteList){
+            expect(enumAndNonenumKeys.includes(element)).toBeTrue();
+            if (!enumAndNonenumKeys.includes(element)) {
+              break;
+            }
+        }
+    });
+
+    it("deve conter somente propriedades definidas.", function(){
+        let inputIndex = 1;
+        let a = 6;
+        let b = 2;
+        let gen = new DataGen.listOfGens["Linear Function"](inputIndex, a, b);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'a', 'b'];
+
+        let model = gen.getModel()
+        //model.name = undefined;
+        for(p of propsWhiteList){
+            expect(model[p]).toBeDefined();
+            if(model[p] === undefined){
+                break
+            }
+        }
+    });
+});
+
+describe("O gerador Quadratic Function", function(){
+
+    it("deve retornar a propriedade name como Quadratic Function.", function(){
+        let inputIndex = 1;
+        let a = 6;
+        let b = 2;
+        let c = 4;
+        let gen = new DataGen.listOfGens["Quadratic Function"](inputIndex, a, b, c);
+
+        let model = gen.getModel();
+        expect(model.name).toBe("Quadratic Function");
+    });
+    
+    it("deve retornar números.", function(){
+        let inputIndex = null;
+        let a = 6;
+        let b = 2;
+        let c = 4;
+        let gen = new DataGen.listOfGens["Quadratic Function"](inputIndex, a, b, c);
+
+        let result;
+        result = gen.generate();
+        console.log(result);
+        expect(result).not.toEqual(NaN);
+    });
+
+    it("deve conter um modelo que tenha somente as propriedades listadas no array.", function(){
+        let inputIndex = 1;
+        let a = 6;
+        let b = 2;
+        let c = 4;
+        let gen = new DataGen.listOfGens["Quadratic Function"](inputIndex, a, b, c);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'a', 'b', 'c'];
+
+        let model = gen.getModel();
+        //model.cor = "preto";
+        for(prop in model){
+            if(model.hasOwnProperty(prop)){
+                expect(propsWhiteList.includes(prop)).toBeTrue();
+                if(!propsWhiteList.includes(prop)){
+                    break
+                }
+            } else {
+                break;
+            }         
+        }
+
+        let enumAndNonenumKeys = Object.getOwnPropertyNames(model);
+        for(let element of propsWhiteList){
+            expect(enumAndNonenumKeys.includes(element)).toBeTrue();
+            if (!enumAndNonenumKeys.includes(element)) {
+              break;
+            }
+        }
+    });
+
+    it("deve conter somente propriedades definidas.", function(){
+        let inputIndex = 1;
+        let a = 6;
+        let b = 2;
+        let c = 4;
+        let gen = new DataGen.listOfGens["Quadratic Function"](inputIndex, a, b, c);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'a', 'b', 'c'];
+
+        let model = gen.getModel()
+        //model.name = undefined;
+        for(p of propsWhiteList){
+            expect(model[p]).toBeDefined();
+            if(model[p] === undefined){
+                break
+            }
+        }
+    });
+});
+
+describe("O gerador Polynomial Function", function(){
+
+    it("deve retornar a propriedade name como Polynomial Function.", function(){
+        let inputIndex = null;
+        let constants = [1, 2, 6];
+        let gen = new DataGen.listOfGens["Polynomial Function"](inputIndex, constants);
+
+        let model = gen.getModel();
+        expect(model.name).toBe("Polynomial Function");
+    });
+    
+    it("deve retornar números.", function(){
+        let inputIndex = null;
+        let constants = [1, 2, 6];
+        let gen = new DataGen.listOfGens["Polynomial Function"](inputIndex, constants);
+
+        let result;
+        result = gen.generate();
+        console.log(result);
+        expect(result).not.toEqual(NaN);
+    });
+
+    it("deve conter um modelo que tenha somente as propriedades listadas no array.", function(){
+        let inputIndex = null;
+        let constants = [1, 2, 6];
+        let gen = new DataGen.listOfGens["Polynomial Function"](inputIndex, constants);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'constants'];
+
+        let model = gen.getModel();
+        //model.cor = "preto";
+        for(prop in model){
+            if(model.hasOwnProperty(prop)){
+                expect(propsWhiteList.includes(prop)).toBeTrue();
+                if(!propsWhiteList.includes(prop)){
+                    break
+                }
+            } else {
+                break;
+            }         
+        }
+
+        let enumAndNonenumKeys = Object.getOwnPropertyNames(model);
+        for(let element of propsWhiteList){
+            expect(enumAndNonenumKeys.includes(element)).toBeTrue();
+            if (!enumAndNonenumKeys.includes(element)) {
+              break;
+            }
+        }
+    });
+
+    it("deve conter somente propriedades definidas.", function(){
+        let inputIndex = null;
+        let constants = [1, 2, 6];
+        let gen = new DataGen.listOfGens["Polynomial Function"](inputIndex, constants);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'constants'];
+
+        let model = gen.getModel()
+        //model.name = undefined;
+        for(p of propsWhiteList){
+            expect(model[p]).toBeDefined();
+            if(model[p] === undefined){
+                break
+            }
+        }
+    });
+});
+
+describe("O gerador Exponential Function", function(){
+
+    it("deve retornar a propriedade name como Exponential Function.", function(){
+        let inputIndex = null;
+        let a = 1;
+        let b = 2;
+        let gen = new DataGen.listOfGens["Exponential Function"](inputIndex, a, b);
+
+        let model = gen.getModel();
+        expect(model.name).toBe("Exponential Function");
+    });
+    
+    it("deve retornar números.", function(){
+        let inputIndex = null;
+        let a = 1;
+        let b = 2;
+        let gen = new DataGen.listOfGens["Exponential Function"](inputIndex, a, b);
+
+        let result;
+        result = gen.generate();
+        console.log(result);
+        expect(result).not.toEqual(NaN);
+    });
+
+    it("deve conter um modelo que tenha somente as propriedades listadas no array.", function(){
+        let inputIndex = null;
+        let a = 1;
+        let b = 2;
+        let gen = new DataGen.listOfGens["Exponential Function"](inputIndex, a, b);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'a', 'b'];
+
+        let model = gen.getModel();
+        //model.cor = "preto";
+        for(prop in model){
+            if(model.hasOwnProperty(prop)){
+                expect(propsWhiteList.includes(prop)).toBeTrue();
+                if(!propsWhiteList.includes(prop)){
+                    break
+                }
+            } else {
+                break;
+            }         
+        }
+
+        let enumAndNonenumKeys = Object.getOwnPropertyNames(model);
+        for(let element of propsWhiteList){
+            expect(enumAndNonenumKeys.includes(element)).toBeTrue();
+            if (!enumAndNonenumKeys.includes(element)) {
+              break;
+            }
+        }
+    });
+
+    it("deve conter somente propriedades definidas.", function(){
+        let inputIndex = null;
+        let a = 1;
+        let b = 2;
+        let gen = new DataGen.listOfGens["Exponential Function"](inputIndex, a, b);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'a', 'b'];
+
+        let model = gen.getModel()
+        //model.name = undefined;
+        for(p of propsWhiteList){
+            expect(model[p]).toBeDefined();
+            if(model[p] === undefined){
+                break
+            }
+        }
+    });
+});
+
+describe("O gerador Logarithm Function", function(){
+
+    it("deve retornar a propriedade name como Logarithm Function.", function(){
+        let inputIndex = null;
+        let base = Math.E;
+        let gen = new DataGen.listOfGens["Logarithm Function"](inputIndex, base);
+
+        let model = gen.getModel();
+        expect(model.name).toBe("Logarithm Function");
+    });
+    
+    it("deve retornar números.", function(){
+        let inputIndex = null;
+        let base = Math.E;
+        let gen = new DataGen.listOfGens["Logarithm Function"](inputIndex, base);
+
+        let result;
+        result = gen.generate();
+        console.log(result);
+        expect(result).not.toEqual(NaN);
+    });
+
+    it("deve conter um modelo que tenha somente as propriedades listadas no array.", function(){
+        let inputIndex = null;
+        let base = Math.E;
+        let gen = new DataGen.listOfGens["Logarithm Function"](inputIndex, base);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'base'];
+
+        let model = gen.getModel();
+        //model.cor = "preto";
+        for(prop in model){
+            if(model.hasOwnProperty(prop)){
+                expect(propsWhiteList.includes(prop)).toBeTrue();
+                if(!propsWhiteList.includes(prop)){
+                    break
+                }
+            } else {
+                break;
+            }         
+        }
+
+        let enumAndNonenumKeys = Object.getOwnPropertyNames(model);
+        for(let element of propsWhiteList){
+            expect(enumAndNonenumKeys.includes(element)).toBeTrue();
+            if (!enumAndNonenumKeys.includes(element)) {
+              break;
+            }
+        }
+    });
+
+    it("deve conter somente propriedades definidas.", function(){
+        let inputIndex = null;
+        let base = Math.E;
+        let gen = new DataGen.listOfGens["Logarithm Function"](inputIndex, base);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'base'];
+
+        let model = gen.getModel()
+        //model.name = undefined;
+        for(p of propsWhiteList){
+            expect(model[p]).toBeDefined();
+            if(model[p] === undefined){
+                break
+            }
+        }
+    });
+});
+
+describe("O gerador Sinusoidal Function", function(){
+
+    it("deve retornar a propriedade name como Sinusoidal Function.", function(){
+        let inputIndex = null;
+        let a = 1;
+        let b = 2;
+        let c = 4;
+        let gen = new DataGen.listOfGens["Sinusoidal Function"](inputIndex, a, b, c);
+
+        let model = gen.getModel();
+        expect(model.name).toBe("Sinusoidal Function");
+    });
+    
+    it("deve retornar números.", function(){
+        let inputIndex = null;
+        let a = 1;
+        let b = 2;
+        let c = 4;
+        let gen = new DataGen.listOfGens["Sinusoidal Function"](inputIndex, a, b, c);
+
+        let result;
+        result = gen.generate();
+        console.log(result);
+        expect(result).not.toEqual(NaN);
+    });
+
+    it("deve conter um modelo que tenha somente as propriedades listadas no array.", function(){
+        let inputIndex = null;
+        let a = 1;
+        let b = 2;
+        let c = 4;
+        let gen = new DataGen.listOfGens["Sinusoidal Function"](inputIndex, a, b, c);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'a', 'b', 'c'];
+
+        let model = gen.getModel();
+        //model.cor = "preto";
+        for(prop in model){
+            if(model.hasOwnProperty(prop)){
+                expect(propsWhiteList.includes(prop)).toBeTrue();
+                if(!propsWhiteList.includes(prop)){
+                    break
+                }
+            } else {
+                break;
+            }         
+        }
+
+        let enumAndNonenumKeys = Object.getOwnPropertyNames(model);
+        for(let element of propsWhiteList){
+            expect(enumAndNonenumKeys.includes(element)).toBeTrue();
+            if (!enumAndNonenumKeys.includes(element)) {
+              break;
+            }
+        }
+    });
+
+    it("deve conter somente propriedades definidas.", function(){
+        let inputIndex = null;
+        let a = 1;
+        let b = 2;
+        let c = 4;
+        let gen = new DataGen.listOfGens["Sinusoidal Function"](inputIndex, a, b, c);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'a', 'b', 'c'];
+
+        let model = gen.getModel()
+        //model.name = undefined;
+        for(p of propsWhiteList){
+            expect(model[p]).toBeDefined();
+            if(model[p] === undefined){
+                break
+            }
+        }
+    });
+});
+
+describe("O gerador Categorical Function", function(){
+
+    it("deve retornar a propriedade name como Categorical Function.", function(){
+        let min = 0;
+        let max = 50;
+        let disc = false;
+        let gen = new DataGen.listOfGens["Uniform Generator"](min, max, disc);
+
+        let inputIndex = 1;
+        let listOfGenerators = gen;
+        
+        let genSuper = new DataGen.superTypes["SwitchCaseFunction"](inputIndex, listOfGenerators);
+        let params = genSuper.getGenParams();
+        params[1].type = "CategoricalColumn";
+
+        let genAux = new DataGen.listOfGens["Categorical Function"](params);
+
+        let model = genAux.getModel();
+        expect(model.name).toBe("Categorical Function");
+    });
+    
+    it("deve retornar números.", function(){
+        let min = 0;
+        let max = 50;
+        let disc = false;
+        let gen = new DataGen.listOfGens["Uniform Generator"](min, max, disc);
+
+        let inputIndex = 1;
+        let listOfGenerators = gen;
+        
+        let genSuper = new DataGen.superTypes["SwitchCaseFunction"](inputIndex, listOfGenerators);
+        let params = genSuper.getGenParams();
+        params[1].type = "CategoricalColumn";
+
+        let genAux = new DataGen.listOfGens["Categorical Function"](params);
+
+        let result;
+        result = genAux.generate();
+        console.log(result);
+        expect(result).not.toEqual(NaN);
+    });
+
+    it("deve conter um modelo que tenha somente as propriedades listadas no array.", function(){
+        let min = 0;
+        let max = 50;
+        let disc = false;
+        let gen = new DataGen.listOfGens["Uniform Generator"](min, max, disc);
+
+        let inputIndex = 1;
+        let listOfGenerators = gen;
+        
+        let genSuper = new DataGen.superTypes["SwitchCaseFunction"](inputIndex, listOfGenerators);
+        let params = genSuper.getGenParams();
+        params[1].type = "CategoricalColumn";
+
+        let genAux = new DataGen.listOfGens["Categorical Function"](params);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'listOfGenerators'];
+
+        let model = genAux.getModel();
+        
+        //model.cor = "preto";
+        for(prop in model){
+            if(model.hasOwnProperty(prop)){
+                expect(propsWhiteList.includes(prop)).toBeTrue();
+                if(!propsWhiteList.includes(prop)){
+                    break
+                }
+            } else {
+                break;
+            }         
+        }
+
+        let enumAndNonenumKeys = Object.getOwnPropertyNames(model);
+        for(let element of propsWhiteList){
+            expect(enumAndNonenumKeys.includes(element)).toBeTrue();
+            if (!enumAndNonenumKeys.includes(element)) {
+              break;
+            }
+        }
+    });
+
+    it("deve conter somente propriedades definidas.", function(){
+        let min = 0;
+        let max = 50;
+        let disc = false;
+        let gen = new DataGen.listOfGens["Uniform Generator"](min, max, disc);
+
+        let inputIndex = 1;
+        let listOfGenerators = gen;
+        
+        let genSuper = new DataGen.superTypes["SwitchCaseFunction"](inputIndex, listOfGenerators);
+        let params = genSuper.getGenParams();
+        params[1].type = "CategoricalColumn";
+
+        let genAux = new DataGen.listOfGens["Categorical Function"](params);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'listOfGenerators'];
+
+        let model = genAux.getModel();
+        //model.name = undefined;
+        for(p of propsWhiteList){
+            expect(model[p]).toBeDefined();
+            if(model[p] === undefined){
+                break
+            }
+        }
+    });
+});
+
+describe("O gerador Piecewise Function", function(){
+
+    it("deve retornar a propriedade name como Piecewise Function.", function(){
+        let inputIndex = null;
+        let listOfGenerators = [];
+        let intervals = [0];
+        let gen = new DataGen.listOfGens["Piecewise Function"](inputIndex, listOfGenerators, intervals);
+
+        let model = gen.getModel();
+        expect(model.name).toBe("Piecewise Function");
+    });
+    
+    it("deve retornar números.", function(){
+        let inputIndex = null;
+        let listOfGenerators = [];
+        let intervals = [0];
+        let gen = new DataGen.listOfGens["Piecewise Function"](inputIndex, listOfGenerators, intervals);
+
+        let result;
+        result = gen.generate();
+        console.log(result);
+        expect(result).not.toEqual(NaN);
+    });
+
+    it("deve conter um modelo que tenha somente as propriedades listadas no array.", function(){
+        let inputIndex = null;
+        let listOfGenerators = [];
+        let intervals = [0];
+        let gen = new DataGen.listOfGens["Piecewise Function"](inputIndex, listOfGenerators, intervals);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'listOfGenerators', 'intervals'];
+
+        let model = gen.getModel();
+        //model.cor = "preto";
+        for(prop in model){
+            if(model.hasOwnProperty(prop)){
+                expect(propsWhiteList.includes(prop)).toBeTrue();
+                if(!propsWhiteList.includes(prop)){
+                    break
+                }
+            } else {
+                break;
+            }         
+        }
+
+        let enumAndNonenumKeys = Object.getOwnPropertyNames(model);
+        for(let element of propsWhiteList){
+            expect(enumAndNonenumKeys.includes(element)).toBeTrue();
+            if (!enumAndNonenumKeys.includes(element)) {
+              break;
+            }
+        }
+    });
+
+    it("deve conter somente propriedades definidas.", function(){
+        let inputIndex = null;
+        let listOfGenerators = [];
+        let intervals = [0];
+        let gen = new DataGen.listOfGens["Piecewise Function"](inputIndex, listOfGenerators, intervals);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'listOfGenerators', 'intervals'];
+
+        let model = gen.getModel()
+        //model.name = undefined;
+        for(p of propsWhiteList){
+            expect(model[p]).toBeDefined();
+            if(model[p] === undefined){
+                break
+            }
+        }
+    });
+});
+
+describe("O gerador TimeLaps Function", function(){
+
+    it("deve retornar a propriedade name como TimeLaps Function.", function(){
+        let inputIndex = null;
+        let listOfGenerators = [];
+        let laps = [];
+        let gen = new DataGen.listOfGens["TimeLaps Function"](inputIndex, listOfGenerators, laps);
+
+        let model = gen.getModel();
+        expect(model.name).toBe("TimeLaps Function");
+    });
+    
+    it("deve retornar números.", function(){
+        let inputIndex = null;
+        let listOfGenerators = [];
+        let laps = [];
+        let gen = new DataGen.listOfGens["TimeLaps Function"](inputIndex, listOfGenerators, laps);
+
+        let result;
+        result = gen.generate();
+        console.log(result);
+        expect(result).not.toEqual(NaN);
+    });
+
+    it("deve conter um modelo que tenha somente as propriedades listadas no array.", function(){
+        let inputIndex = null;
+        let listOfGenerators = [];
+        let laps = [];
+        let gen = new DataGen.listOfGens["TimeLaps Function"](inputIndex, listOfGenerators, laps);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'listOfGenerators', 'laps'];
+
+        let model = gen.getModel();
+        //model.cor = "preto";
+        for(prop in model){
+            if(model.hasOwnProperty(prop)){
+                expect(propsWhiteList.includes(prop)).toBeTrue();
+                if(!propsWhiteList.includes(prop)){
+                    break
+                }
+            } else {
+                break;
+            }         
+        }
+
+        let enumAndNonenumKeys = Object.getOwnPropertyNames(model);
+        for(let element of propsWhiteList){
+            expect(enumAndNonenumKeys.includes(element)).toBeTrue();
+            if (!enumAndNonenumKeys.includes(element)) {
+              break;
+            }
+        }
+    });
+
+    it("deve conter somente propriedades definidas.", function(){
+        let inputIndex = null;
+        let listOfGenerators = [];
+        let laps = [];
+        let gen = new DataGen.listOfGens["TimeLaps Function"](inputIndex, listOfGenerators, laps);
+        let propsWhiteList = ['name', 'order', 'ID', 'accessOperator', 'inputIndex', 'listOfGenerators', 'laps'];
 
         let model = gen.getModel()
         //model.name = undefined;
