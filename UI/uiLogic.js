@@ -1123,7 +1123,7 @@ function deleteCollumn(){
 }
 
 async function verifyBackupModels() {
-    if(!await access(platformASpath)) throw new Error("No Files")
+    if(!await access(platformASpath)){ console.log("Sem backup models"); return; }
     let files = await readDir(platformASpath);
     // if(files.length === 0) throw new Error("No Files")
     try {
@@ -1842,6 +1842,7 @@ function showGenerators() {
     else
         $("#btnDesenho").attr("disabled", "true");
 
+        
     return active_gen_chip.obj;
 }
 

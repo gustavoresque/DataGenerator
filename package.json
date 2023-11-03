@@ -30,7 +30,7 @@
     "asar": "^0.14.5",
     "cross-spawn": "^6.0.5",
     "csv-write-stream": "^2.0.0",
-    "d3": "^4.13.0",
+    "d3": "4.13.0",
     "electron-packager": "15.2.0",
     "fontawesome-actions": "^0.17.0",
     "jquery": "^3.3.1",

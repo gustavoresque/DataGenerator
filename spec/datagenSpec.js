@@ -648,9 +648,9 @@ describe("O gerador Random File Name Generator", function(){
         let folderName = 'C:/Users/brynn/Documents/DataGenerator/resources/codigos_gerador_azulejos/input';
         
         try {
-        if (!fs.existsSync(folderName)) {
-            fs.mkdirSync(folderName);
-        }
+            if (!fs.existsSync(folderName)) {
+                fs.mkdirSync(folderName);
+            }
         } catch (err) {
             console.error(err);
         }
