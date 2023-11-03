@@ -377,4 +377,7 @@ button.btn[disabled] > img {
     font-weight: 400;
     text-align: justify;
 }
+.md-chip-problem {
+    border: 2px solid #fb1710 !important;
+}
 /*-------------------------------------*/

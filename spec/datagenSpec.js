@@ -4,7 +4,7 @@ let DataGen = require("../datagen/datagen.js");
 
 describe("O gerador Uniform Generator", function(){
 
-    it("deve retornar a propriedade name como Uniform Gerator.", function(){
+    it("deve retornar a propriedade name como Uniform Generator.", function(){
         let min = 0;
         let max = 50;
         let disc = false;

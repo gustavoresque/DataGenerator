@@ -14,6 +14,7 @@ class Generator{
             this.operator = defaultOperator;
         this.order = 0;
         this.ID = "GEN_"+DataGen.Utils.getID();
+        this.problem = [];
     }
 
     addGenerator(gen){
@@ -25,6 +26,10 @@ class Generator{
             gen.parent = this;
             gen.dataGen = this.dataGen;
         }
+    }
+
+    verifyProblem(gen){
+
     }
 
     sumOrder(){
@@ -2171,7 +2176,8 @@ class Function extends Generator{
                 shortName: "Input",
                 variableName: "accessIndex",
                 name: "Input Column (Previous one)",
-                type: "NumericColumn"
+                type: "NumericColumn",
+                attention: "Requires the action of choosing an accessory generator"
             }
         );
         return params;
