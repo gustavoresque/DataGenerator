@@ -1784,7 +1784,6 @@ function showGenerators() {
                 $chip.get(0).ondragstart = dragGenerator;
                 if(gen === activeGenerator[currentDataGen]){
                     active_gen_chip.obj = $chip.addClass("active-md-chip");
-                    active_gen_chip.obj = $chip.addClass("md-chip-problem");
                 }
                 $chip.get(0).__node__ = gen;
                 $tdGen.append($chip);
@@ -1795,8 +1794,6 @@ function showGenerators() {
             .addClass("btnGenerator btnAddGen icon icon-plus-circled")
         ).append($("<span/>")
             .addClass("btnGenerator btnRemoveGen icon icon-trash")
-        ).append($("<span/>")
-            .addClass("btnGenerator btnRemoveGen icon icon-attention md-chip-problem")
         );
     }
 
@@ -1892,7 +1889,6 @@ function configGenProps(){
     //muda a cor do chip para ativo e desativa outro clicado anteriormente.
     $("div.md-chip").removeClass("active-md-chip");
     $(this).addClass("active-md-chip");
-    $(this).addClass("active-md-chip-problem");
 
     let generator = this.__node__;
 
