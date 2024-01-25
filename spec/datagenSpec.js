@@ -1019,7 +1019,6 @@ describe("O gerador Quadratic Function", function(){
 
         let result;
         result = gen.generate();
-        console.log(result);
         expect(result).not.toEqual(NaN);
     });
 
@@ -1090,7 +1089,6 @@ describe("O gerador Polynomial Function", function(){
 
         let result;
         result = gen.generate();
-        console.log(result);
         expect(result).not.toEqual(NaN);
     });
 
@@ -1159,7 +1157,6 @@ describe("O gerador Exponential Function", function(){
 
         let result;
         result = gen.generate();
-        console.log(result);
         expect(result).not.toEqual(NaN);
     });
 
@@ -1228,7 +1225,6 @@ describe("O gerador Logarithm Function", function(){
 
         let result;
         result = gen.generate();
-        console.log(result);
         expect(result).not.toEqual(NaN);
     });
 
@@ -1299,7 +1295,6 @@ describe("O gerador Sinusoidal Function", function(){
 
         let result;
         result = gen.generate();
-        console.log(result);
         expect(result).not.toEqual(NaN);
     });
 
@@ -1390,7 +1385,6 @@ describe("O gerador Categorical Function", function(){
 
         let result;
         result = genAux.generate();
-        console.log(result);
         expect(result).not.toEqual(NaN);
     });
 
@@ -1480,7 +1474,6 @@ describe("O gerador Piecewise Function", function(){
 
         let result;
         result = gen.generate();
-        console.log(result);
         expect(result).not.toEqual(NaN);
     });
 
@@ -1551,7 +1544,6 @@ describe("O gerador TimeLaps Function", function(){
 
         let result;
         result = gen.generate();
-        console.log(result);
         expect(result).not.toEqual(NaN);
     });
 

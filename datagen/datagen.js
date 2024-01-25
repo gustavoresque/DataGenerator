@@ -688,7 +688,6 @@ class RandomFileName extends Random{
     }
 
     set accessFolder(folder){
-        //console.log("teste", `file://${folder}`);
         this.folder = folder
         if(this.folder){
             this.files = this.folder;
@@ -1256,7 +1255,6 @@ class NoRepeat extends Accessory {
     generate() {
         let newValue = super.generate(0);
         if(newValue === undefined || newValue === null) return false
-        console.log(newValue)
         while(this.values.includes(newValue))
             newValue = super.generate(0);
 
@@ -1747,7 +1745,6 @@ class Path2DStrokeGenerator extends Geometric{
                     params = c.substring(1).trim().split(/[,\s]+/);
                     quant = params.length/2;
                     for(let i=0;i<quant;i++){
-                        console.log(lastPoint[0], +params[i*2]);
                         lastPoint[0] += +params[i*2];
                         lastPoint[1] += +params[i*2+1];
                     }
@@ -1788,7 +1785,6 @@ class Path2DStrokeGenerator extends Geometric{
                 case "C":
                     params = c.substring(1).trim().split(/[,\s]+/);
                     quant = params.length/6;
-                    console.log(params, quant);
                     for(let i=0;i<quant;i++){
 
                         if(initX === "none"){
@@ -1829,7 +1825,6 @@ class Path2DStrokeGenerator extends Geometric{
                     break;
 
                 case "z":
-                    console.log("entrou!!!", lastPoint[0], lastPoint[1], initX, initY);
                     this.elements.push(new LineGenerator(lastPoint[0], lastPoint[1], initX, initY));
                     lastPoint[0] = initX;
                     lastPoint[1] = initY;
@@ -1844,7 +1839,6 @@ class Path2DStrokeGenerator extends Geometric{
 
         let sum = 0;
         this.prob = [];
-        console.log(this.elements);
         for(let e of this.elements){
             this.prob.push(e.arclength);
             sum+=e.arclength;
@@ -1977,7 +1971,6 @@ class Path2DFillGenerator extends Geometric{
                         lastp = this.polygons[this.polygons.length-1];
                         lastp = lastp[lastp.length-1];
                         if(lastp){
-                            console.log(lastPoint[0], lastp[0]);
                             if(lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
                                 this.polygons.push([[lastPoint[0], lastPoint[1]]]);
                                 checkBB(lastPoint[0], lastPoint[1]);
@@ -2003,7 +1996,6 @@ class Path2DFillGenerator extends Geometric{
                         lastp = lastp[lastp.length-1];
                         if(lastp) {
                             if (lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
-                                console.log("novo poly:" , [lastPoint[0], lastPoint[1]]);
                                 this.polygons.push([[lastPoint[0], lastPoint[1]]]);
                                 checkBB(lastPoint[0], lastPoint[1]);
                             }
@@ -2087,13 +2079,11 @@ class Path2DFillGenerator extends Geometric{
 
                 case "Z":
                     lastp = this.polygons[this.polygons.length-1];
-                    console.log(lastp[0]);
                     lastPoint[0] = lastp[0][0];
                     lastPoint[1] = lastp[0][1];
                     break;
                 case "z":
                     lastp = this.polygons[this.polygons.length-1];
-                    console.log(lastp[0]);
                     lastPoint[0] = lastp[0][0];
                     lastPoint[1] = lastp[0][1];
                     break;
@@ -2105,7 +2095,6 @@ class Path2DFillGenerator extends Geometric{
             if(poly[0][0] !== poly[poly.length-1][0] || poly[0][1] !== poly[poly.length-1][1]){
                 poly.push([poly[0][0], poly[0][1]]);
             }
-            console.log(poly);
         }
 
         let ystep = (this.boundingBox[3] - this.boundingBox[1])/100;
@@ -2532,7 +2521,6 @@ class PiecewiseFunction extends SwitchCaseFunction{
         for(let interval of this.intervals){
             if(x <= interval){
                 // this.generator = this.listOfGenerators["<= "+interval];
-                console.log(this)
                 return this.listOfGenerators["<= "+interval].generate();
             }
         }
@@ -2786,7 +2774,6 @@ class CustomSequence extends Sequence{
         str += ";";
 
         if (str[str.length-1] === ";"){
-            console.log(str);
             eval(str);
         }
 
@@ -3057,7 +3044,6 @@ class NeuralNetworkGenerator extends NeuralNetwork {
     }
 
     set accessFileName (fileName){
-        console.log("teste", `file://${fileName}`);
         this.fileName = fileName;
         this.tf.loadLayersModel(`file://${fileName}`).then((res)=>{
             this.model = res;
@@ -3065,22 +3051,11 @@ class NeuralNetworkGenerator extends NeuralNetwork {
     }
 
     generate() {
-       
-        console.log( this.count);
-
         try{
             let dados = [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10], [11, 12, 13, 14, 15], [16, 17, 18, 19, 20], [21, 22, 23, 24, 25], [26, 27, 28, 29, 30], [31, 32, 33, 34, 35], [36, 37, 38, 39, 40]];
-            //let dados = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40];
-            //console.log(dados);
-            //let shape = [8, 5];
-            //this.lastGenerated = this.model.predict(this.tf.tensor2d([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10], [11, 12, 13, 14, 15], [16, 17, 18, 19, 20], [21, 22, 23, 24, 25], [26, 27, 28, 29, 30], [31, 32, 33, 34, 35], [36, 37, 38, 39, 40]]))[0];
-            //this.lastGenerated = this.model.predict(this.tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40], [8, 5]))[0];
-            //let dados = [[1], [3], [5], [7], [9], [11], [13], [15]];
             this.lastGenerated = this.model.predict(this.tf.tensor2d(dados))[this.count];
             this.count++;
-            console.log( this.count);
         }catch(e){
-            console.log(e);
             return this.lastGenerated = 0;
         }
         return this.lastGenerated;
@@ -3137,7 +3112,6 @@ class PythonScriptReader extends ScriptReader {
     }
 
     set accessScriptPath (scriptPath){
-        console.log("teste", `file://${scriptPath}`);   
         if(scriptPath){
             this.scriptPath = scriptPath;
         }else{
@@ -3153,13 +3127,11 @@ class PythonScriptReader extends ScriptReader {
         //Se string ou se gen obj
         // Guarda o caminho completo em this.imgFilePath
         this.fileNameInputGen = fileNameInputGen;
-        console.log(this.fileNameInputGen);
         this.fileName = this.fileNameInputGen.fileName;
         this.filePath = this.fileNameInputGen.files;
     }
 
     generate() {
-
         return this.lastGenerated = super.generate(
             this.fileNameInputGen ? this.fileNameInputGen.lastGenerated :
             this.fileName);
@@ -3210,14 +3182,8 @@ class PythonScriptReader extends ScriptReader {
     }
     
     afterGenerate(arrayFileName){
-        console.log('afterGenerate:' + arrayFileName);
-        console.log(this.fileName);
-        console.log(this.filePath);
         if(this.exec != ""){
-            console.log('Entrou para matar o processo filho');
             this.exec.kill('SIGKILL');
-            //console.log(this.exec);
-            console.log('Processo filho morto');
         }           
 
         const spawn = require("child_process").spawn;
@@ -3229,7 +3195,6 @@ class PythonScriptReader extends ScriptReader {
                 // arrayFileName: Array com os nomes para pegar a quantidade de arquivos a serem gerados
                 
                 // Para gerar imagens de múltiplas imagens de entrada
-                console.log(this.filePath[0]);
                 this.exec = spawn('python',[this.scriptPath, this.filePath[0], arrayFileName], {
                     killSignal: 'SIGKILL',
                   });
@@ -3255,14 +3220,7 @@ class PythonScriptReader extends ScriptReader {
                     data += chunk; 
                 }
                 if (data) { 
-                    console.log('Arquivo:', data);
-                    //console.log(this.exec);
                     this.array = JSON.parse(data);
-                    //console.log(this.array);
-                    //console.log(this.array.length);
-                    for (let i = 0; i < this.array.length; i++){
-                        console.log(this.array[i]);
-                    }
                 }
             } catch (e) {
                 console.error('execute error', e);
@@ -3583,20 +3541,17 @@ class DataGen {
             this.memento.index++;
         }
         this.memento.snapshot.push(this.exportModel());
-        //console.log(this.memento,"State");
     }
 
     forward() {
         if(this.memento.index !== this.memento.snapshot.length-1) {
             this.importModel(this.memento.snapshot[++this.memento.index], true);
-            //console.log(this.memento,"Forward");
         }
     }
 
     restore() {
         if(this.memento.index !== 0) {
             this.importModel(this.memento.snapshot[--this.memento.index], true);
-            //console.log(this.memento,"Restore");
         }
     }
 
@@ -3692,7 +3647,6 @@ class DataGen {
             let full_gen = gen.getFullGenerator();
 
             for(let j=0; j<full_gen.length; j++){
-                console.log(full_gen[j].ID, ID);
                 if(full_gen[j].ID === ID)
                     return full_gen[j];
 
@@ -3970,7 +3924,6 @@ DataGen.Utils = {
                         if(source[attr].hasOwnProperty(attr2)) {
                             for (let genObj of source[attr][attr2]) {
                                 //Resolve os filhos
-                                console.log(genObj.name);
                                 let gen1 = new (DataGen.listOfGens[genObj.name])();
     
                                 if (target[attr][attr2]) {

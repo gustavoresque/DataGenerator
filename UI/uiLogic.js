@@ -130,13 +130,11 @@ ipc.on('get-path', function(event, allPath){
         activeGenerator[currentDataGen].path = path;
         activeGenerator[currentDataGen].accessPath = path;
         $('#input_accessPath').val(path);
-        console.log(activeGenerator[currentDataGen]);
         showGenerators();
     }
 });
 
 ipc.on('open-datagen', async function(event, path){
-    console.log(event, path)
     await openModel(path);
     showModels();
     showGenerators();
@@ -301,7 +299,6 @@ ipc.on('change-WebService', function(event, arg){
 });
 
 ipc.on('change-DistributedSystem', function(event, arg){
-    console.log(arg)
     if(arg.hasOwnProperty("dsPort")) {
         datagen[currentDataGen].dsPort = arg["dsPort"]
     }
@@ -390,7 +387,6 @@ function propsConfigs(generator,coluna, new_place){
                 let objs = JSON.parse(msg);
                 $input.val(objs.genID);
                 $input.trigger("change");
-                console.log("Pegou o objeto GEN");
             });
             
 
@@ -423,7 +419,6 @@ function propsConfigs(generator,coluna, new_place){
 
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input).append($labelFile));
-            console.log(generator);
 
         }else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
             let $input;
@@ -641,7 +636,6 @@ $("html").ready(function() {
                     break;
                 }
                 default:
-                    console.log("nenhum");
                     break;
             }
         },
@@ -778,7 +772,6 @@ $("html").ready(function() {
             //if (paths.length === 0){
                 //configs.push(activeGenerator[currentDataGen].getModel());
                 configs.push({name:'Bezier', path: activeGenerator[currentDataGen].getModel().path});
-                console.log(configs);
             /*}else{
                 configs = paths;
             }*/
@@ -853,10 +846,8 @@ $("html").ready(function() {
         let $input = $(this);
         var str = $input.val();
         if(str.substring(0,3) === "GEN"){
-            console.log("Aqui!!!!!!!!!!", $input.val());
             this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].findGenByID($input.val());
         } else {
-            console.log("Não entrou no GEN");
             if($input.attr("data-type") === "number")
             this.__node__[$input.attr("data-variable")] = parseFloat($input.val());
 
@@ -1620,7 +1611,6 @@ async function createClientSocket() {
             //TODO: Avisar que o servidor caiu.
             //Escrever no progress bar
             closeConnection()
-            console.log('DS Connection closed');
         });
         
         async function dd_generate(chunk) {
@@ -1862,7 +1852,6 @@ function redrawPreview(){
             case 'Please, insert a sentence.':
                 setModalPadrao('Error!', "Please, insert a sentence.", "error");
         }
-        console.log(e);
 
     }
 }
@@ -1935,8 +1924,6 @@ function renameModel(i=currentDataGen) {
 
     const id = datagen[i].ID.toLowerCase().replace("_", "").replace(".","")
     let title = $(`#${id}`).text();
-    console.log(id)
-    console.log(title)
     $(`#${id}`).empty();
     $(`#${id}`).append($("<input/>").attr("type", "text").blur(function(){
         const name = $(this).val();
@@ -2268,8 +2255,6 @@ function exportResultsJSON(data){
 
 function createModelFromDataSet(path) {
 
-    console.log(path);
-
     fs.readFile(path, "utf-8", (err, strdata) => {
         if(err){
             setModalPadrao('Error!', "Failed to load the dataSet. Verify if it is UTF-8 encoded.", "error");
@@ -2278,7 +2263,6 @@ function createModelFromDataSet(path) {
         let data = [];
             let columns;
             if(path.endsWith(".csv") || path.endsWith(".tsv")){
-                console.log("Selecionou um CSV", path);
                 let lines;
                 if(strdata.indexOf("\r\n") >= 0){
                     lines = strdata.split("\r\n");
@@ -2306,7 +2290,6 @@ function createModelFromDataSet(path) {
                     }
                 }
             }else if(path.endsWith(".json")){
-                console.log("Selecionou um JSON", path);
                 data = JSON.parse(strdata);
                 columns = [];
                 for(let p in data[0]){
@@ -2314,8 +2297,6 @@ function createModelFromDataSet(path) {
                         columns.push(p);
                 }
             }
-            console.log(data);
-            console.log(columns);
 
             let createdDatagen = new DataGen();
             datagen.push(createdDatagen);
@@ -2387,7 +2368,6 @@ function preview(data2){
     for(let col of datagen[currentDataGen].columns) {
         if(col.name == selectColumnPreview) {
             //TODO: Adicionar um scale para o tempo na visualização.
-            // console.log("TODO: Adicionar um scale para o tempo na visualização.", col.type)
             switch(col.type) {
                 case "Categorical":
                     scaleFunction = d3.scaleOrdinal();
