@@ -961,6 +961,56 @@ class RandomConstantNoiseGenerator extends Accessory{
     }
 }
 
+class RandomFixedNoiseGenerator extends Accessory{
+    constructor(quantity=3, intensity=1){
+        super();
+        this.quantity = quantity;
+        this.intensity = intensity;
+        this.count = 0;
+        this.pos = [];
+    }
+
+    generate(){
+        if (this.pos.indexOf(this.count) > -1){
+            this.lastGenerated = super.generate(0) + (Math.random()+0.001)*this.intensity;
+            this.count++;
+            return this.lastGenerated;
+        }else{
+            this.count++;
+            return super.generate(0);
+        }
+    }
+
+    reset(){
+        this.count = 0;
+        this.pos = [];
+        while(this.pos.length < this.quantity){
+            let r = Math.floor(Math.random() * this.dataGen.n_sample_lines);
+            if(this.pos.indexOf(r) === -1) this.pos.push(r);
+        }
+        super.reset();
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "Quant",
+                variableName: "quantity",
+                name: "Fixed Quantity of Noise",
+                type: "number"
+            },
+            {
+                shortName: "Force",
+                variableName: "intensity",
+                name: "Intensity",
+                type: "number"
+            }
+        );
+        return params;
+    }
+}
+
 class RandomNoiseGenerator extends Accessory{
     constructor(probability=0.3, intensity=1, generator2=new defaultGenerator()){
         super();
@@ -1028,6 +1078,8 @@ class RandomNoiseGenerator extends Accessory{
         return newGen;
     }
 }
+
+
 
 class RangeFilter extends Accessory {
     constructor(begin=0, end=10) {
@@ -3464,6 +3516,7 @@ class DataGen {
             generator: [],
             n_lines: this.n_lines,
             step_lines: this.step_lines,
+            n_sample_lines: this.n_sample_lines,
             columnsCounter: this.columnsCounter,
             save_as: this.save_as,
             header: this.header,
@@ -3496,6 +3549,7 @@ class DataGen {
         this.name = model.name || this.name;
         this.n_lines = model.n_lines || this.n_lines;
         this.step_lines = model.step_lines || this.step_lines;
+        this.n_sample_lines = model.n_sample_lines || this.n_sample_lines;
         this.columnsCounter = model.columnsCounter;
         this.save_as = model.save_as || this.save_as;
         this.header = model.header || this.header;
@@ -3512,10 +3566,12 @@ class DataGen {
                 let selectedGenerator = DataGen.listOfGens[model.generator[i].generator[j].name];
                 if (generator){
                     let newgen = new selectedGenerator();
+                    newgen.dataGen = this;
                     generator.addGenerator(newgen);
                     DataGen.Utils.copyAttrs(model.generator[i].generator[j], newgen, this);
                 }else {
                     generator = new selectedGenerator();
+                    generator.dataGen = this;
                     DataGen.Utils.copyAttrs(model.generator[i].generator[j], generator, this);
                 }
 
@@ -3689,6 +3745,7 @@ DataGen.listOfGens = {
     'Bernoulli Generator': RandomBernoulliGenerator,
     'Cauchy Generator': RandomCauchyGenerator,
     'Noise Generator': RandomNoiseGenerator,
+    'Fixed Quantity Noise': RandomFixedNoiseGenerator,
     'Constant Noise Generator': RandomConstantNoiseGenerator,
     'Random File Name': RandomFileName,
     'Range Filter': RangeFilter,
@@ -3734,6 +3791,7 @@ DataGen.listOfGensHelp = {
     'Cauchy Generator': RandomCauchyGenerator,
     'Noise Generator': RandomNoiseGenerator,
     'Constant Noise Generator': RandomConstantNoiseGenerator,
+    'Fixed Quantity Noise': "Generate a fixed quantity of Noise in data",
     'Range Filter': RangeFilter,
     'Linear Scale': LinearScale,
     'No Repeat': "Generate distinct values.",
