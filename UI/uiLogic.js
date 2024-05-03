@@ -66,7 +66,8 @@ let especialPasteState = 0; //0-Desativado, 1-Cola uma vez, 2-Cola até clicar d
 
 let generating = false; //Avoid more then 1 generation at a time, include local and Distributed generation. 
 
-
+let forceRedrawPreview=false;
+let autoPreview=true;
 let pc;
 
 
@@ -129,13 +130,11 @@ ipc.on('get-path', function(event, allPath){
         activeGenerator[currentDataGen].path = path;
         activeGenerator[currentDataGen].accessPath = path;
         $('#input_accessPath').val(path);
-        console.log(activeGenerator[currentDataGen]);
         showGenerators();
     }
 });
 
 ipc.on('open-datagen', async function(event, path){
-    console.log(event, path)
     await openModel(path);
     showModels();
     showGenerators();
@@ -300,7 +299,6 @@ ipc.on('change-WebService', function(event, arg){
 });
 
 ipc.on('change-DistributedSystem', function(event, arg){
-    console.log(arg)
     if(arg.hasOwnProperty("dsPort")) {
         datagen[currentDataGen].dsPort = arg["dsPort"]
     }
@@ -351,6 +349,76 @@ function propsConfigs(generator,coluna, new_place){
                 .attr("data-type", p.type);
             $input.get(0).__node__ = generator;
             $tr.append($("<td/>").append($input));
+
+        }else if(p.type === "file"){
+            let $input = $("<input/>")
+                .addClass("form-control")
+                .addClass("smallInput")
+                .attr("type","file")
+                .attr("value", generator[p.variableName])
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type)
+                .css("display", "none");
+            let $labelFile = $("<label/>")
+                .addClass("btn btn-mini btn-default")
+                .text("Choose File")
+                .attr("for", "input_"+p.variableName)
+
+            $input.on("change", e => {
+                let fileName = $input.get(0).files[0].path.replace(/\\/g,'/').split('/');
+                fileName = fileName[fileName.length-1];
+                if(fileName.length>17){
+                    fileName = fileName.substring(0,14)+"...";
+                }
+                $labelFile.text(fileName);
+            })
+
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input).append($labelFile));    
+            
+            let genSel = generator[p.variableName];
+            $input.val(genSel ? genSel.ID : "");
+            $input.on("drop", function(evt){
+                evt.preventDefault();
+                evt.stopPropagation();
+
+                let msg = evt.originalEvent.dataTransfer.getData("text");
+                let objs = JSON.parse(msg);
+                $input.val(objs.genID);
+                $input.trigger("change");
+            });
+            
+
+        }else if(p.type === "folder"){
+            let $input = $("<input/>")
+                .addClass("form-control")
+                .addClass("smallInput")
+                .attr("type","file")
+                .attr("value", generator[p.variableName])
+                .attr("id", "input_"+p.variableName)
+                .attr("data-variable", p.variableName)
+                .attr("data-type", p.type)
+                .prop("webkitdirectory", true)
+                .prop("directory", true)
+                .prop("multiple", true)
+                .css("display", "none");
+            let $labelFile = $("<label/>")
+                .addClass("btn btn-mini btn-default")
+                .text("Choose Folder")
+                .attr("for", "input_"+p.variableName);
+
+            $input.on("change", e => {
+                let folderName = $input.get(0).files[0].webkitRelativePath.split('/');
+                folderName = folderName[folderName.length-2];
+                if(folderName.length>17){
+                    folderName = folderName.substring(0,14)+"...";
+                }
+                $labelFile.text(folderName);
+            })
+
+            $input.get(0).__node__ = generator;
+            $tr.append($("<td/>").append($input).append($labelFile));
 
         }else if(p.type === "auto" || p.type === "string" || p.type === "Generator") {
             let $input;
@@ -483,14 +551,29 @@ $("html").ready(function() {
         showModels();
     })
 
-    $("#reloadPreview").on("click", "", function(e){
-        showGenerators();
-    });
-
     //The color lines became gray on resizing, so the reload solve the problem.
     $(window).on("resize", "", () => {
         showGenerators();
     });
+
+    $("#reloadPreview").on("click", "", function(e){
+        forceRedrawPreview=true;
+        showGenerators();
+    });
+
+    $("#btnAutoPreview").on("click", "", function(e){
+        if(autoPreview){
+            autoPreview = false;
+            $(this).removeClass("active");
+        }else{
+            autoPreview = true;
+            $(this).addClass("active");
+        }
+    });
+    
+
+    
+    
 
     $("#hidePreview").on("click", "", function(e){
         $(".previewPanel").hide();
@@ -553,7 +636,6 @@ $("html").ready(function() {
                     break;
                 }
                 default:
-                    console.log("nenhum");
                     break;
             }
         },
@@ -690,7 +772,6 @@ $("html").ready(function() {
             //if (paths.length === 0){
                 //configs.push(activeGenerator[currentDataGen].getModel());
                 configs.push({name:'Bezier', path: activeGenerator[currentDataGen].getModel().path});
-                console.log(configs);
             /*}else{
                 configs = paths;
             }*/
@@ -763,39 +844,59 @@ $("html").ready(function() {
 
     $("#generatorPropertiesForm").on("change", "input,select", function(){
         let $input = $(this);
-        if($input.attr("data-type") === "number")
+        var str = $input.val();
+        if(str.substring(0,3) === "GEN"){
+            this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].findGenByID($input.val());
+        } else {
+            if($input.attr("data-type") === "number")
             this.__node__[$input.attr("data-variable")] = parseFloat($input.val());
 
-        else if($input.attr("data-type") === "string")
-            this.__node__[$input.attr("data-variable")] = $input.val();
+            else if($input.attr("data-type") === "string")
+                this.__node__[$input.attr("data-variable")] = $input.val();
 
-        else if($input.attr("data-type") === "auto")
-            this.__node__[$input.attr("data-variable")] = isNaN(parseFloat($input.val())) ? $input.val() : parseFloat($input.val());
+            else if($input.attr("data-type") === "file" && $input.get(0).files[0]){
+                this.__node__[$input.attr("data-variable")] = $input.get(0).files[0].path.replace(/\\/g,'/');
+            }
 
-        else if($input.attr("data-type") === "options")
-            this.__node__[$input.attr("data-variable")] = $input.val();
+            else if($input.attr("data-type") === "folder" && $input.get(0).files[0]){
+                let files = $input.get(0).files;
+                let dataArray = [];
+                for (let i=0; i<files.length; i++) {
+                    let pathName = $input.get(0).files[i].path.replace(/\\/g,'/');
+                    dataArray.push(pathName);              
+                }
+                this.__node__[$input.attr("data-variable")] = dataArray;
+            }
+            else if($input.attr("data-type") === "auto")
+                this.__node__[$input.attr("data-variable")] = isNaN(parseFloat($input.val())) ? $input.val() : parseFloat($input.val());
 
-        else if($input.attr("data-type") === "array")
-            this.__node__[$input.attr("data-variable")] = $input.val().split(",");
+            else if($input.attr("data-type") === "options")
+                this.__node__[$input.attr("data-variable")] = $input.val();
 
-        else if($input.attr("data-type") === "boolean")
-            this.__node__[$input.attr("data-variable")] = $input.get(0).checked;
+            else if($input.attr("data-type") === "array")
+                this.__node__[$input.attr("data-variable")] = $input.val().split(",");
 
-        else if($input.attr("data-type") === "Generator") {
-            console.log("Aqui!!!!!!!!!!", $input.val());
-            this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].findGenByID($input.val());
-        }
+            else if($input.attr("data-type") === "boolean")
+                this.__node__[$input.attr("data-variable")] = $input.get(0).checked;
 
-        else if($input.attr("data-type").indexOf("Column") >= 0) {
-            this.__node__[$input.attr("data-variable")] = parseInt($input.val());
+            /*else if($input.attr("data-type") === "Generator") {
+                console.log("Aqui!!!!!!!!!!", $input.val());
+                this.__node__[$input.attr("data-variable")] = datagen[currentDataGen].findGenByID($input.val());
+            }*/
+
+            else if($input.attr("data-type").indexOf("Column") >= 0) {
+                this.__node__[$input.attr("data-variable")] = parseInt($input.val());
             // this.__node__.inputGenIndex = parseInt($input.val());
-            this.__node__.reset();
-        }else if($input.attr("data-type") === "numarray"){
-            let arr = $input.val().split(",");
-            for(let i=0; i<arr.length; i++)
-                arr[i] = +arr[i];
-            this.__node__[$input.attr("data-variable")] = arr;
+                this.__node__.reset();
+            }else if($input.attr("data-type") === "numarray"){
+                let arr = $input.val().split(",");
+                for(let i=0; i<arr.length; i++)
+                    arr[i] = +arr[i];
+                this.__node__[$input.attr("data-variable")] = arr;
+            }
         }
+        
+        
         datagen[currentDataGen].resetAll();
         setTimeout(()=>{ showGenerators(); }, 500);
         hasChanged();
@@ -927,7 +1028,6 @@ $("html").ready(function() {
     });
 
     $("#tableCollumn").on("change", "input.checkboxSelectColumn", function(){
-        console.log("Testando um dois tres");
         let col = $(this).parent().parent().get(0).__node__;
         let i = collumnsSelected.indexOf(col);
         if ($(this).is(':checked')){
@@ -1014,7 +1114,7 @@ function deleteCollumn(){
 }
 
 async function verifyBackupModels() {
-    if(!await access(platformASpath)) throw new Error("No Files")
+    if(!await access(platformASpath)){ console.log("Sem backup models"); return; }
     let files = await readDir(platformASpath);
     // if(files.length === 0) throw new Error("No Files")
     try {
@@ -1511,7 +1611,6 @@ async function createClientSocket() {
             //TODO: Avisar que o servidor caiu.
             //Escrever no progress bar
             closeConnection()
-            console.log('DS Connection closed');
         });
         
         async function dd_generate(chunk) {
@@ -1645,7 +1744,6 @@ function showGenerators() {
                 $chip.get(0).ondragstart = dragGenerator;
                 if(gen === activeGenerator[currentDataGen])
                     active_gen_chip.obj = $chip.addClass("active-md-chip");
-
                 $chip.get(0).__node__ = gen;
                 $tdGen.append($chip);
 
@@ -1674,8 +1772,9 @@ function showGenerators() {
                     .text(gen.order + "-" + gen.constructor.displayName)
                     .attr("draggable","true");
                 $chip.get(0).ondragstart = dragGenerator;
-                if(gen === activeGenerator[currentDataGen])
+                if(gen === activeGenerator[currentDataGen]){
                     active_gen_chip.obj = $chip.addClass("active-md-chip");
+                }
                 $chip.get(0).__node__ = gen;
                 $tdGen.append($chip);
             }
@@ -1733,21 +1832,26 @@ function showGenerators() {
     else
         $("#btnDesenho").attr("disabled", "true");
 
+        
     return active_gen_chip.obj;
 }
 
 function redrawPreview(){
+
     try{
-        current_sample = datagen[currentDataGen].generateSample();
-        preview(current_sample);
-        ipc.send('change-datasample', current_sample);
+        if(autoPreview || forceRedrawPreview){
+            forceRedrawPreview = false;
+            current_sample = datagen[currentDataGen].generateSample();
+            preview(current_sample);
+            ipc.send('change-datasample', current_sample);
+        }
+        
     }catch (e){
 
         switch (e) {
             case 'Please, insert a sentence.':
                 setModalPadrao('Error!', "Please, insert a sentence.", "error");
         }
-        console.log(e);
 
     }
 }
@@ -1820,8 +1924,6 @@ function renameModel(i=currentDataGen) {
 
     const id = datagen[i].ID.toLowerCase().replace("_", "").replace(".","")
     let title = $(`#${id}`).text();
-    console.log(id)
-    console.log(title)
     $(`#${id}`).empty();
     $(`#${id}`).append($("<input/>").attr("type", "text").blur(function(){
         const name = $(this).val();
@@ -2153,8 +2255,6 @@ function exportResultsJSON(data){
 
 function createModelFromDataSet(path) {
 
-    console.log(path);
-
     fs.readFile(path, "utf-8", (err, strdata) => {
         if(err){
             setModalPadrao('Error!', "Failed to load the dataSet. Verify if it is UTF-8 encoded.", "error");
@@ -2163,7 +2263,6 @@ function createModelFromDataSet(path) {
         let data = [];
             let columns;
             if(path.endsWith(".csv") || path.endsWith(".tsv")){
-                console.log("Selecionou um CSV", path);
                 let lines;
                 if(strdata.indexOf("\r\n") >= 0){
                     lines = strdata.split("\r\n");
@@ -2191,7 +2290,6 @@ function createModelFromDataSet(path) {
                     }
                 }
             }else if(path.endsWith(".json")){
-                console.log("Selecionou um JSON", path);
                 data = JSON.parse(strdata);
                 columns = [];
                 for(let p in data[0]){
@@ -2199,8 +2297,6 @@ function createModelFromDataSet(path) {
                         columns.push(p);
                 }
             }
-            console.log(data);
-            console.log(columns);
 
             let createdDatagen = new DataGen();
             datagen.push(createdDatagen);
@@ -2272,7 +2368,6 @@ function preview(data2){
     for(let col of datagen[currentDataGen].columns) {
         if(col.name == selectColumnPreview) {
             //TODO: Adicionar um scale para o tempo na visualização.
-            // console.log("TODO: Adicionar um scale para o tempo na visualização.", col.type)
             switch(col.type) {
                 case "Categorical":
                     scaleFunction = d3.scaleOrdinal();
@@ -2393,7 +2488,7 @@ function preview(data2){
     */
 
 }
-
+//TODO: Refatorar lista de supertipos, deixar essa lista somente dentro do datagen.js 
 function configureMenuOfGens(){
     let types = DataGen.listOfSuperTypesMenu;
     let menuObj = {};
@@ -2414,3 +2509,20 @@ function configureMenuOfGens(){
     }
     return menuObj;
 }
+
+//Substitui o botão submit para envio
+/*$("#selectGeneratorType").click(function(){
+    $("#fileupload").trigger("click");
+    //"Neural Network Generator";
+});
+
+$("fileupload").change(function(){
+    uploadFile(("upload-json"), ("upload-weights"));
+});
+
+function uploadFile(input_file_1, input_file_2){
+    var file = [];
+    file[0] = input_file_1[0].files[0];
+    file[1] = input_file_2[0].files[0];
+    return file;
+}*/

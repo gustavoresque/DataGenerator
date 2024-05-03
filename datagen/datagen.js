@@ -129,8 +129,8 @@ class Generator{
 
     /**
      * Troca o gerador atual na cadeia pelo gerador passado por parâmentro.
-     * O gerador que foi chamada o método sairá da sua cadeia de geradores.
-     * @param gen O gerador que assumirá o lugar do gerador que foi chamada o método.
+     * O gerador em que foi chamado o método sairá da sua cadeia de geradores.
+     * @param gen O gerador que assumirá o lugar do gerador em que foi chamado o método.
      */
     changeGenerator(gen){
         gen.dataGen = this.dataGen;
@@ -253,6 +253,11 @@ class Generator{
 
     getEstimatedRange(){
 
+    }
+
+    afterGenerate(){
+        if(this.generator)
+            this.generator.afterGenerate();
     }
 }
 
@@ -669,6 +674,71 @@ class PoissonTimeGenerator extends Random{
     }
 }
 
+class RandomFileName extends Random{
+
+    constructor(folder=""){
+        super("Random File Name");
+        this.accessFolder = folder;
+        this.files = [];
+        this.pathFile = "";
+    }
+
+    get accessFolder(){
+        return this.folder;
+    }
+
+    set accessFolder(folder){
+        this.folder = folder
+        if(this.folder){
+            this.files = this.folder;
+        }else{
+            this.files = ["None"];
+        }
+        //TODO: refactor -> jogar para o main
+        /*if(this.folder){
+            let fs = require('fs');
+            this.files = fs.readdirSync(this.folder);
+        }else{
+            this.files = ["None"]
+        }*/
+    }
+
+    generate(){
+        this.files = this.folder;
+        this.pathFile = randgen.rlist(this.files); //pega somente um caminho de forma aleatória
+        let splitPath = this.pathFile.split("/");
+        this.fileName = splitPath[splitPath.length - 1];
+        return this.lastGenerated = super.generate(this.fileName);
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "Folder",
+                variableName: "accessFolder",
+                name: "Folder",
+                type: "folder"
+            }
+        );
+        return params;
+    }
+
+    getModel(){
+        let model = super.getModel();
+        return model;
+    }
+
+    copy(){
+        let newGen = new RandomFileName(this.folder);
+        super.copy(newGen);
+        return newGen;
+    }
+}
+
+
+
+
 
 
 class Accessory extends Generator{
@@ -891,6 +961,56 @@ class RandomConstantNoiseGenerator extends Accessory{
     }
 }
 
+class RandomFixedNoiseGenerator extends Accessory{
+    constructor(quantity=3, intensity=1){
+        super();
+        this.quantity = quantity;
+        this.intensity = intensity;
+        this.count = 0;
+        this.pos = [];
+    }
+
+    generate(){
+        if (this.pos.indexOf(this.count) > -1){
+            this.lastGenerated = super.generate(0) + (Math.random()+0.001)*this.intensity;
+            this.count++;
+            return this.lastGenerated;
+        }else{
+            this.count++;
+            return super.generate(0);
+        }
+    }
+
+    reset(){
+        this.count = 0;
+        this.pos = [];
+        while(this.pos.length < this.quantity){
+            let r = Math.floor(Math.random() * this.dataGen.n_sample_lines);
+            if(this.pos.indexOf(r) === -1) this.pos.push(r);
+        }
+        super.reset();
+    }
+
+    getGenParams(){
+        let params = super.getGenParams();
+        params.push(
+            {
+                shortName: "Quant",
+                variableName: "quantity",
+                name: "Fixed Quantity of Noise",
+                type: "number"
+            },
+            {
+                shortName: "Force",
+                variableName: "intensity",
+                name: "Intensity",
+                type: "number"
+            }
+        );
+        return params;
+    }
+}
+
 class RandomNoiseGenerator extends Accessory{
     constructor(probability=0.3, intensity=1, generator2=new defaultGenerator()){
         super();
@@ -958,6 +1078,8 @@ class RandomNoiseGenerator extends Accessory{
         return newGen;
     }
 }
+
+
 
 class RangeFilter extends Accessory {
     constructor(begin=0, end=10) {
@@ -1054,7 +1176,7 @@ class Normalization extends Accessory{
     generate() {
         return this.lastGenerated = (super.generate(0)-this.mean)/this.std;
     }
-    
+
     getGenParams() {
         let params = super.getGenParams();
         params.push(
@@ -1065,7 +1187,7 @@ class Normalization extends Accessory{
                 type: "number"
             },
             {
-                shortName: "StD",
+                shortName: "Std",
                 variableName: "std",
                 name: "Standard Deviation",
                 type: "number"
@@ -1185,7 +1307,6 @@ class NoRepeat extends Accessory {
     generate() {
         let newValue = super.generate(0);
         if(newValue === undefined || newValue === null) return false
-        console.log(newValue)
         while(this.values.includes(newValue))
             newValue = super.generate(0);
 
@@ -1248,8 +1369,8 @@ class GetExtraValue extends Accessory{
     get accessSrcGen(){
         return this.srcGen;
     }
-    set accessSrcGen(ID){
-        this.srcGen = ID;
+    set accessSrcGen(gen){
+        this.srcGen = gen;
     }
 
     getModel(){
@@ -1258,7 +1379,6 @@ class GetExtraValue extends Accessory{
         return model;
     }
 }
-
 
 
 class Geometric extends Generator{
@@ -1677,7 +1797,6 @@ class Path2DStrokeGenerator extends Geometric{
                     params = c.substring(1).trim().split(/[,\s]+/);
                     quant = params.length/2;
                     for(let i=0;i<quant;i++){
-                        console.log(lastPoint[0], +params[i*2]);
                         lastPoint[0] += +params[i*2];
                         lastPoint[1] += +params[i*2+1];
                     }
@@ -1718,7 +1837,6 @@ class Path2DStrokeGenerator extends Geometric{
                 case "C":
                     params = c.substring(1).trim().split(/[,\s]+/);
                     quant = params.length/6;
-                    console.log(params, quant);
                     for(let i=0;i<quant;i++){
 
                         if(initX === "none"){
@@ -1759,7 +1877,6 @@ class Path2DStrokeGenerator extends Geometric{
                     break;
 
                 case "z":
-                    console.log("entrou!!!", lastPoint[0], lastPoint[1], initX, initY);
                     this.elements.push(new LineGenerator(lastPoint[0], lastPoint[1], initX, initY));
                     lastPoint[0] = initX;
                     lastPoint[1] = initY;
@@ -1774,7 +1891,6 @@ class Path2DStrokeGenerator extends Geometric{
 
         let sum = 0;
         this.prob = [];
-        console.log(this.elements);
         for(let e of this.elements){
             this.prob.push(e.arclength);
             sum+=e.arclength;
@@ -1907,7 +2023,6 @@ class Path2DFillGenerator extends Geometric{
                         lastp = this.polygons[this.polygons.length-1];
                         lastp = lastp[lastp.length-1];
                         if(lastp){
-                            console.log(lastPoint[0], lastp[0]);
                             if(lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
                                 this.polygons.push([[lastPoint[0], lastPoint[1]]]);
                                 checkBB(lastPoint[0], lastPoint[1]);
@@ -1933,7 +2048,6 @@ class Path2DFillGenerator extends Geometric{
                         lastp = lastp[lastp.length-1];
                         if(lastp) {
                             if (lastPoint[0] !== lastp[0] || lastPoint[1] !== lastp[1]) {
-                                console.log("novo poly:" , [lastPoint[0], lastPoint[1]]);
                                 this.polygons.push([[lastPoint[0], lastPoint[1]]]);
                                 checkBB(lastPoint[0], lastPoint[1]);
                             }
@@ -2017,13 +2131,11 @@ class Path2DFillGenerator extends Geometric{
 
                 case "Z":
                     lastp = this.polygons[this.polygons.length-1];
-                    console.log(lastp[0]);
                     lastPoint[0] = lastp[0][0];
                     lastPoint[1] = lastp[0][1];
                     break;
                 case "z":
                     lastp = this.polygons[this.polygons.length-1];
-                    console.log(lastp[0]);
                     lastPoint[0] = lastp[0][0];
                     lastPoint[1] = lastp[0][1];
                     break;
@@ -2035,7 +2147,6 @@ class Path2DFillGenerator extends Geometric{
             if(poly[0][0] !== poly[poly.length-1][0] || poly[0][1] !== poly[poly.length-1][1]){
                 poly.push([poly[0][0], poly[0][1]]);
             }
-            console.log(poly);
         }
 
         let ystep = (this.boundingBox[3] - this.boundingBox[1])/100;
@@ -2412,6 +2523,8 @@ class SwitchCaseFunction extends Function{
 
 }
 
+
+
 class CategoricalFunction extends SwitchCaseFunction{
 
     getGenParams() {
@@ -2460,7 +2573,6 @@ class PiecewiseFunction extends SwitchCaseFunction{
         for(let interval of this.intervals){
             if(x <= interval){
                 // this.generator = this.listOfGenerators["<= "+interval];
-                console.log(this)
                 return this.listOfGenerators["<= "+interval].generate();
             }
         }
@@ -2555,8 +2667,6 @@ class TimeLapsFunction extends SwitchCaseFunction{
         return params;
     }
 }
-
-
 
 
 class Sequence extends Generator{
@@ -2716,7 +2826,6 @@ class CustomSequence extends Sequence{
         str += ";";
 
         if (str[str.length-1] === ";"){
-            console.log(str);
             eval(str);
         }
 
@@ -2815,8 +2924,6 @@ class FixedTimeGenerator extends Sequence{
         return "Time";
     }
 }
-
-
 
 
 class RealDataWrapper extends Generator {
@@ -2968,7 +3075,213 @@ class RealDataWrapper extends Generator {
 
 }
 
+//Experimental
+// class NeuralNetwork extends Generator{
+//     constructor(name){
+//         super(name);
+//     }
+// }
 
+// class NeuralNetworkGenerator extends NeuralNetwork {
+
+//     constructor(data = [5]) {
+//         super("Neural Network Generator");
+//         this.data = data;
+//         this.fileName = ""
+//         this.count = 0;
+//         this.tf = require('@tensorflow/tfjs');
+//     }
+
+//     get accessFileName (){
+//         return this.fileName;
+//     }
+
+//     set accessFileName (fileName){
+//         this.fileName = fileName;
+//         this.tf.loadLayersModel(`file://${fileName}`).then((res)=>{
+//             this.model = res;
+//         });
+//     }
+
+//     generate() {
+//         try{
+//             let dados = [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10], [11, 12, 13, 14, 15], [16, 17, 18, 19, 20], [21, 22, 23, 24, 25], [26, 27, 28, 29, 30], [31, 32, 33, 34, 35], [36, 37, 38, 39, 40]];
+//             this.lastGenerated = this.model.predict(this.tf.tensor2d(dados))[this.count];
+//             this.count++;
+//         }catch(e){
+//             return this.lastGenerated = 0;
+//         }
+//         return this.lastGenerated;
+//     }
+
+//     getGenParams() {
+//         let params = super.getGenParams();
+//         params.push(
+//             {
+//                 shortName: "File",
+//                 variableName: "accessFileName",
+//                 name: "TF Model File",
+//                 type: "file"
+//             }
+//         );
+//         return params;
+//     }
+
+//     getModel(){
+//         let model = super.getModel();
+//         return model;
+//     }
+
+//     copy(){
+//         let newGen = new NeuralNetworkGenerator(this.data);
+//         if (this.generator){
+//             newGen.addGenerator(this.generator.copy(), this.order);
+//         }
+//         return newGen;
+//     }
+
+// }
+
+// class ScriptReader extends Generator{
+//     constructor(name){
+//         super(name);
+//     }
+// }
+
+// class PythonScriptReader extends ScriptReader {
+
+//     constructor(extra_index = 1){
+//         super("Python Script Reader");
+//         this.scriptPath = "";
+//         this.filePath = "";
+//         this.accessFileNameInputGen = "";
+//         this.fileName = "";
+//         this.exec = "";
+//         this.extra_index = extra_index;
+//     }
+
+//         get accessScriptPath (){
+//         return this.scriptPath;
+//     }
+
+//     set accessScriptPath (scriptPath){
+//         if(scriptPath){
+//             this.scriptPath = scriptPath;
+//         }else{
+//             this.scriptPath = ["None"];
+//         }     
+//     }
+
+//     get accessFileNameInputGen (){
+//         return this.fileNameInputGen;
+//     }
+
+//     set accessFileNameInputGen (fileNameInputGen){
+//         //Se string ou se gen obj
+//         // Guarda o caminho completo em this.imgFilePath
+//         this.fileNameInputGen = fileNameInputGen;
+//         this.fileName = this.fileNameInputGen.fileName;
+//         this.filePath = this.fileNameInputGen.files;
+//     }
+
+//     generate() {
+//         return this.lastGenerated = super.generate(
+//             this.fileNameInputGen ? this.fileNameInputGen.lastGenerated :
+//             this.fileName);
+//     }
+
+//     getGenParams() {
+//         let params = super.getGenParams();
+//         params.push(
+//             {
+//                 shortName: "Random File",
+//                 variableName: "accessFileNameInputGen",
+//                 name: "File Name Gen",
+//                 type: "Generator"
+//             },
+//             {
+//                 shortName: "Script",
+//                 variableName: "accessScriptPath",
+//                 name: "Script File",
+//                 type: "file"
+//             },
+//             {
+//                 shortName: "i",
+//                 variableName: "extra_index",
+//                 name: "Index of Extra Value",
+//                 type: "number"
+//             }
+//         );
+//         return params;
+//     }
+
+//     getModel(){
+//         let model = super.getModel();
+//         model.extra_index = this.extra_index;
+//         model.imgPathInputGen = this.imgPathInputGen ? this.imgPathInputGen.ID : "";
+//         return model;
+//     }
+
+//     getReturnedType(){
+//         return "Categorical";
+//     }
+
+//     copy(){
+//         let newGen = new PythonScriptReader(this.array);
+//         if (this.generator){
+//             newGen.addGenerator(this.generator.copy(), this.order);
+//         }
+//         return newGen;
+//     }
+    
+//     afterGenerate(arrayFileName){
+//         if(this.exec != ""){
+//             this.exec.kill('SIGKILL');
+//         }           
+
+//         const spawn = require("child_process").spawn;
+//         (async () => {
+//             try {
+//                 // this.scriptPath: caminho do script python
+//                 // this.filePath: array com os caminhos completos dos arquivos
+//                 // arrayFileName[0]: Nome do primeiro arquivo com a extensão (Ex.: casaache.png)
+//                 // arrayFileName: Array com os nomes para pegar a quantidade de arquivos a serem gerados
+                
+//                 // Para gerar imagens de múltiplas imagens de entrada
+//                 this.exec = spawn('python',[this.scriptPath, this.filePath[0], arrayFileName], {
+//                     killSignal: 'SIGKILL',
+//                   });
+               
+//                 // Para gerar imagens de múltiplas imagens de entrada
+//                 /*this.exec = spawn('python',[this.scriptPath, this.filePath[0], arrayFileName[0], arrayFileName], {
+//                     killSignal: 'SIGKILL',
+//                 });*/
+
+//                 this.exec.stdin.end();
+
+//                 let error = '';
+//                 for await (const chunk of this.exec.stderr) {
+//                     error += chunk;
+//                 }
+//                 if (error) {
+//                     console.error('error', error);
+//                     return;
+//                 }
+
+//                 let data = '';
+//                 for await (const chunk of this.exec.stdout) {
+//                     data += chunk; 
+//                 }
+//                 if (data) { 
+//                     this.array = JSON.parse(data);
+//                 }
+//             } catch (e) {
+//                 console.error('execute error', e);
+//             }
+//         })();                   
+//         super.afterGenerate();
+//     }
+// }
 
 Generator.Operators = {
     "sum": (a,b) => { return a+b; },
@@ -3010,9 +3323,9 @@ class DataGen {
     constructor (name = "Model", column_name="Dimension 1") {
         //adicionar a version => const { version } = require('./package.json');
         this.name = name;
-        this.n_lines = 100; // Quantidade de linhas na geração
+        this.n_lines = 20; // Quantidade de linhas na geração
         this.step_lines = 10000; // TODO: Revisar o propósito disso...
-        this.n_sample_lines = 100;
+        this.n_sample_lines = 20;
         this.save_as = "csv";
         this.header = true;
         this.header_type = true;
@@ -3175,17 +3488,20 @@ class DataGen {
             
         for (let i = 0; i < numberLines; i++){
             data.push( this.save_as === "json" && !this.header ? [] : {});
-            for (let j = 0; j < this.columns.length; j++){
-                if(this.columns[j].display) {
+            for (let col of this.columns){
+                if(col.display) {
                     if(this.save_as === "json" && !this.header){
-                        data[i].push(this.columns[j].generator.generate());
+                        data[i].push(col.generator.generate());
                     } else {
-                        data[i][this.columns[j].name] = this.columns[j].generator.generate();
+                        data[i][col.name] = col.generator.generate();
                     }
                 }
             }
         }
         this.resetAll();
+        for(let col of this.columns){
+            col.generator.afterGenerate(data.map(v => v[col.name]))
+        }
         return data;
     }
 
@@ -3201,6 +3517,7 @@ class DataGen {
             generator: [],
             n_lines: this.n_lines,
             step_lines: this.step_lines,
+            n_sample_lines: this.n_sample_lines,
             columnsCounter: this.columnsCounter,
             save_as: this.save_as,
             header: this.header,
@@ -3233,6 +3550,7 @@ class DataGen {
         this.name = model.name || this.name;
         this.n_lines = model.n_lines || this.n_lines;
         this.step_lines = model.step_lines || this.step_lines;
+        this.n_sample_lines = model.n_sample_lines || this.n_sample_lines;
         this.columnsCounter = model.columnsCounter;
         this.save_as = model.save_as || this.save_as;
         this.header = model.header || this.header;
@@ -3249,10 +3567,12 @@ class DataGen {
                 let selectedGenerator = DataGen.listOfGens[model.generator[i].generator[j].name];
                 if (generator){
                     let newgen = new selectedGenerator();
+                    newgen.dataGen = this;
                     generator.addGenerator(newgen);
                     DataGen.Utils.copyAttrs(model.generator[i].generator[j], newgen, this);
                 }else {
                     generator = new selectedGenerator();
+                    generator.dataGen = this;
                     DataGen.Utils.copyAttrs(model.generator[i].generator[j], generator, this);
                 }
 
@@ -3278,20 +3598,17 @@ class DataGen {
             this.memento.index++;
         }
         this.memento.snapshot.push(this.exportModel());
-        //console.log(this.memento,"State");
     }
 
     forward() {
         if(this.memento.index !== this.memento.snapshot.length-1) {
             this.importModel(this.memento.snapshot[++this.memento.index], true);
-            //console.log(this.memento,"Forward");
         }
     }
 
     restore() {
         if(this.memento.index !== 0) {
             this.importModel(this.memento.snapshot[--this.memento.index], true);
-            //console.log(this.memento,"Restore");
         }
     }
 
@@ -3387,7 +3704,6 @@ class DataGen {
             let full_gen = gen.getFullGenerator();
 
             for(let j=0; j<full_gen.length; j++){
-                console.log(full_gen[j].ID, ID);
                 if(full_gen[j].ID === ID)
                     return full_gen[j];
 
@@ -3421,6 +3737,8 @@ DataGen.listOfGens = {
     'MNAR': MNAR,
     'Counter Generator': CounterGenerator,
     'Fixed Time Generator': FixedTimeGenerator,
+    // 'Neural Network Generator': NeuralNetworkGenerator, // Experimental
+    // 'Python Script Reader': PythonScriptReader, // Experimental
     'Poisson Time Generator': PoissonTimeGenerator,
     'Uniform Generator': RandomUniformGenerator,
     'Gaussian Generator': RandomGaussianGenerator,
@@ -3428,10 +3746,12 @@ DataGen.listOfGens = {
     'Bernoulli Generator': RandomBernoulliGenerator,
     'Cauchy Generator': RandomCauchyGenerator,
     'Noise Generator': RandomNoiseGenerator,
+    'Fixed Quantity Noise': RandomFixedNoiseGenerator,
     'Constant Noise Generator': RandomConstantNoiseGenerator,
+    'Random File Name': RandomFileName,
     'Range Filter': RangeFilter,
     'Linear Scale': LinearScale,
-    'Normalization': Normalization,
+    'Normalization':  Normalization,
     'No Repeat': NoRepeat,
     'MinMax': MinMax,
     'NumberFormat': NumberFormat,
@@ -3472,9 +3792,9 @@ DataGen.listOfGensHelp = {
     'Cauchy Generator': RandomCauchyGenerator,
     'Noise Generator': RandomNoiseGenerator,
     'Constant Noise Generator': RandomConstantNoiseGenerator,
+    'Fixed Quantity Noise': "Generate a fixed quantity of Noise in data",
     'Range Filter': RangeFilter,
     'Linear Scale': LinearScale,
-    'Normalization': "Aplica uma normalização nos dados.",
     'No Repeat': "Generate distinct values.",
     'MinMax': MinMax,
     "Number Format": "Format the number from generators",
@@ -3527,7 +3847,9 @@ DataGen.superTypes = {
     Random,
     Accessory,
     Geometric,
-    Column
+    Column//,
+    // NeuralNetwork, // Experimental
+    // ScriptReader, // Experimental
 };
 
 DataGen.listOfSuperTypesMenu = [
@@ -3535,7 +3857,9 @@ DataGen.listOfSuperTypesMenu = [
     "Random",
     "Function",
     "Accessory",
-    "Geometric"
+    "Geometric"//,
+    // "NeuralNetwork", // Experimental
+   // "ScriptReader" // Experimental
 ];
 
 DataGen.Utils = {
@@ -3659,7 +3983,6 @@ DataGen.Utils = {
                         if(source[attr].hasOwnProperty(attr2)) {
                             for (let genObj of source[attr][attr2]) {
                                 //Resolve os filhos
-                                console.log(genObj.name);
                                 let gen1 = new (DataGen.listOfGens[genObj.name])();
     
                                 if (target[attr][attr2]) {
@@ -3688,9 +4011,16 @@ DataGen.Utils = {
           .replace(/[/][*][^/*]*[*][/]/g, '') // strip multi-line comments 
           .replace("[objectObject]",'')
           .split('){', 1)[0].replace(/^[^(]*[(]/, '') // extract the parameters  
+          .replace(/=\[([^\]]*)?\]/g, '')
+          .replace(/=\{([^\}]*)?\}/g,'')
           .replace(/=[^,]+/g, '') // strip any ES6 defaults  
-          .split(',').filter(Boolean); // split & filter [""]
-        
+        .split(',')
+        .filter(Boolean)
+        .filter(param => /^[a-zA-Z_$][a-zA-Z_$0-9]*$/g.test(param) );
+           // split & filter [""]
+
+        arr = arr
+
         let aux = func.__proto__;
         if(aux)
             return [...new Set(arr.concat(this.funcArgs(aux)))];
