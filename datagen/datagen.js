@@ -3075,212 +3075,213 @@ class RealDataWrapper extends Generator {
 
 }
 
-class NeuralNetwork extends Generator{
-    constructor(name){
-        super(name);
-    }
-}
+//Experimental
+// class NeuralNetwork extends Generator{
+//     constructor(name){
+//         super(name);
+//     }
+// }
 
-class NeuralNetworkGenerator extends NeuralNetwork {
+// class NeuralNetworkGenerator extends NeuralNetwork {
 
-    constructor(data = [5]) {
-        super("Neural Network Generator");
-        this.data = data;
-        this.fileName = ""
-        this.count = 0;
-        this.tf = require('@tensorflow/tfjs');
-    }
+//     constructor(data = [5]) {
+//         super("Neural Network Generator");
+//         this.data = data;
+//         this.fileName = ""
+//         this.count = 0;
+//         this.tf = require('@tensorflow/tfjs');
+//     }
 
-    get accessFileName (){
-        return this.fileName;
-    }
+//     get accessFileName (){
+//         return this.fileName;
+//     }
 
-    set accessFileName (fileName){
-        this.fileName = fileName;
-        this.tf.loadLayersModel(`file://${fileName}`).then((res)=>{
-            this.model = res;
-        });
-    }
+//     set accessFileName (fileName){
+//         this.fileName = fileName;
+//         this.tf.loadLayersModel(`file://${fileName}`).then((res)=>{
+//             this.model = res;
+//         });
+//     }
 
-    generate() {
-        try{
-            let dados = [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10], [11, 12, 13, 14, 15], [16, 17, 18, 19, 20], [21, 22, 23, 24, 25], [26, 27, 28, 29, 30], [31, 32, 33, 34, 35], [36, 37, 38, 39, 40]];
-            this.lastGenerated = this.model.predict(this.tf.tensor2d(dados))[this.count];
-            this.count++;
-        }catch(e){
-            return this.lastGenerated = 0;
-        }
-        return this.lastGenerated;
-    }
+//     generate() {
+//         try{
+//             let dados = [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10], [11, 12, 13, 14, 15], [16, 17, 18, 19, 20], [21, 22, 23, 24, 25], [26, 27, 28, 29, 30], [31, 32, 33, 34, 35], [36, 37, 38, 39, 40]];
+//             this.lastGenerated = this.model.predict(this.tf.tensor2d(dados))[this.count];
+//             this.count++;
+//         }catch(e){
+//             return this.lastGenerated = 0;
+//         }
+//         return this.lastGenerated;
+//     }
 
-    getGenParams() {
-        let params = super.getGenParams();
-        params.push(
-            {
-                shortName: "File",
-                variableName: "accessFileName",
-                name: "TF Model File",
-                type: "file"
-            }
-        );
-        return params;
-    }
+//     getGenParams() {
+//         let params = super.getGenParams();
+//         params.push(
+//             {
+//                 shortName: "File",
+//                 variableName: "accessFileName",
+//                 name: "TF Model File",
+//                 type: "file"
+//             }
+//         );
+//         return params;
+//     }
 
-    getModel(){
-        let model = super.getModel();
-        return model;
-    }
+//     getModel(){
+//         let model = super.getModel();
+//         return model;
+//     }
 
-    copy(){
-        let newGen = new NeuralNetworkGenerator(this.data);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
-        return newGen;
-    }
+//     copy(){
+//         let newGen = new NeuralNetworkGenerator(this.data);
+//         if (this.generator){
+//             newGen.addGenerator(this.generator.copy(), this.order);
+//         }
+//         return newGen;
+//     }
 
-}
+// }
 
-class ScriptReader extends Generator{
-    constructor(name){
-        super(name);
-    }
-}
+// class ScriptReader extends Generator{
+//     constructor(name){
+//         super(name);
+//     }
+// }
 
-class PythonScriptReader extends ScriptReader {
+// class PythonScriptReader extends ScriptReader {
 
-    constructor(extra_index = 1){
-        super("Python Script Reader");
-        this.scriptPath = "";
-        this.filePath = "";
-        this.accessFileNameInputGen = "";
-        this.fileName = "";
-        this.exec = "";
-        this.extra_index = extra_index;
-    }
+//     constructor(extra_index = 1){
+//         super("Python Script Reader");
+//         this.scriptPath = "";
+//         this.filePath = "";
+//         this.accessFileNameInputGen = "";
+//         this.fileName = "";
+//         this.exec = "";
+//         this.extra_index = extra_index;
+//     }
 
-        get accessScriptPath (){
-        return this.scriptPath;
-    }
+//         get accessScriptPath (){
+//         return this.scriptPath;
+//     }
 
-    set accessScriptPath (scriptPath){
-        if(scriptPath){
-            this.scriptPath = scriptPath;
-        }else{
-            this.scriptPath = ["None"];
-        }     
-    }
+//     set accessScriptPath (scriptPath){
+//         if(scriptPath){
+//             this.scriptPath = scriptPath;
+//         }else{
+//             this.scriptPath = ["None"];
+//         }     
+//     }
 
-    get accessFileNameInputGen (){
-        return this.fileNameInputGen;
-    }
+//     get accessFileNameInputGen (){
+//         return this.fileNameInputGen;
+//     }
 
-    set accessFileNameInputGen (fileNameInputGen){
-        //Se string ou se gen obj
-        // Guarda o caminho completo em this.imgFilePath
-        this.fileNameInputGen = fileNameInputGen;
-        this.fileName = this.fileNameInputGen.fileName;
-        this.filePath = this.fileNameInputGen.files;
-    }
+//     set accessFileNameInputGen (fileNameInputGen){
+//         //Se string ou se gen obj
+//         // Guarda o caminho completo em this.imgFilePath
+//         this.fileNameInputGen = fileNameInputGen;
+//         this.fileName = this.fileNameInputGen.fileName;
+//         this.filePath = this.fileNameInputGen.files;
+//     }
 
-    generate() {
-        return this.lastGenerated = super.generate(
-            this.fileNameInputGen ? this.fileNameInputGen.lastGenerated :
-            this.fileName);
-    }
+//     generate() {
+//         return this.lastGenerated = super.generate(
+//             this.fileNameInputGen ? this.fileNameInputGen.lastGenerated :
+//             this.fileName);
+//     }
 
-    getGenParams() {
-        let params = super.getGenParams();
-        params.push(
-            {
-                shortName: "Random File",
-                variableName: "accessFileNameInputGen",
-                name: "File Name Gen",
-                type: "Generator"
-            },
-            {
-                shortName: "Script",
-                variableName: "accessScriptPath",
-                name: "Script File",
-                type: "file"
-            },
-            {
-                shortName: "i",
-                variableName: "extra_index",
-                name: "Index of Extra Value",
-                type: "number"
-            }
-        );
-        return params;
-    }
+//     getGenParams() {
+//         let params = super.getGenParams();
+//         params.push(
+//             {
+//                 shortName: "Random File",
+//                 variableName: "accessFileNameInputGen",
+//                 name: "File Name Gen",
+//                 type: "Generator"
+//             },
+//             {
+//                 shortName: "Script",
+//                 variableName: "accessScriptPath",
+//                 name: "Script File",
+//                 type: "file"
+//             },
+//             {
+//                 shortName: "i",
+//                 variableName: "extra_index",
+//                 name: "Index of Extra Value",
+//                 type: "number"
+//             }
+//         );
+//         return params;
+//     }
 
-    getModel(){
-        let model = super.getModel();
-        model.extra_index = this.extra_index;
-        model.imgPathInputGen = this.imgPathInputGen ? this.imgPathInputGen.ID : "";
-        return model;
-    }
+//     getModel(){
+//         let model = super.getModel();
+//         model.extra_index = this.extra_index;
+//         model.imgPathInputGen = this.imgPathInputGen ? this.imgPathInputGen.ID : "";
+//         return model;
+//     }
 
-    getReturnedType(){
-        return "Categorical";
-    }
+//     getReturnedType(){
+//         return "Categorical";
+//     }
 
-    copy(){
-        let newGen = new PythonScriptReader(this.array);
-        if (this.generator){
-            newGen.addGenerator(this.generator.copy(), this.order);
-        }
-        return newGen;
-    }
+//     copy(){
+//         let newGen = new PythonScriptReader(this.array);
+//         if (this.generator){
+//             newGen.addGenerator(this.generator.copy(), this.order);
+//         }
+//         return newGen;
+//     }
     
-    afterGenerate(arrayFileName){
-        if(this.exec != ""){
-            this.exec.kill('SIGKILL');
-        }           
+//     afterGenerate(arrayFileName){
+//         if(this.exec != ""){
+//             this.exec.kill('SIGKILL');
+//         }           
 
-        const spawn = require("child_process").spawn;
-        (async () => {
-            try {
-                // this.scriptPath: caminho do script python
-                // this.filePath: array com os caminhos completos dos arquivos
-                // arrayFileName[0]: Nome do primeiro arquivo com a extensão (Ex.: casaache.png)
-                // arrayFileName: Array com os nomes para pegar a quantidade de arquivos a serem gerados
+//         const spawn = require("child_process").spawn;
+//         (async () => {
+//             try {
+//                 // this.scriptPath: caminho do script python
+//                 // this.filePath: array com os caminhos completos dos arquivos
+//                 // arrayFileName[0]: Nome do primeiro arquivo com a extensão (Ex.: casaache.png)
+//                 // arrayFileName: Array com os nomes para pegar a quantidade de arquivos a serem gerados
                 
-                // Para gerar imagens de múltiplas imagens de entrada
-                this.exec = spawn('python',[this.scriptPath, this.filePath[0], arrayFileName], {
-                    killSignal: 'SIGKILL',
-                  });
+//                 // Para gerar imagens de múltiplas imagens de entrada
+//                 this.exec = spawn('python',[this.scriptPath, this.filePath[0], arrayFileName], {
+//                     killSignal: 'SIGKILL',
+//                   });
                
-                // Para gerar imagens de múltiplas imagens de entrada
-                /*this.exec = spawn('python',[this.scriptPath, this.filePath[0], arrayFileName[0], arrayFileName], {
-                    killSignal: 'SIGKILL',
-                });*/
+//                 // Para gerar imagens de múltiplas imagens de entrada
+//                 /*this.exec = spawn('python',[this.scriptPath, this.filePath[0], arrayFileName[0], arrayFileName], {
+//                     killSignal: 'SIGKILL',
+//                 });*/
 
-                this.exec.stdin.end();
+//                 this.exec.stdin.end();
 
-                let error = '';
-                for await (const chunk of this.exec.stderr) {
-                    error += chunk;
-                }
-                if (error) {
-                    console.error('error', error);
-                    return;
-                }
+//                 let error = '';
+//                 for await (const chunk of this.exec.stderr) {
+//                     error += chunk;
+//                 }
+//                 if (error) {
+//                     console.error('error', error);
+//                     return;
+//                 }
 
-                let data = '';
-                for await (const chunk of this.exec.stdout) {
-                    data += chunk; 
-                }
-                if (data) { 
-                    this.array = JSON.parse(data);
-                }
-            } catch (e) {
-                console.error('execute error', e);
-            }
-        })();                   
-        super.afterGenerate();
-    }
-}
+//                 let data = '';
+//                 for await (const chunk of this.exec.stdout) {
+//                     data += chunk; 
+//                 }
+//                 if (data) { 
+//                     this.array = JSON.parse(data);
+//                 }
+//             } catch (e) {
+//                 console.error('execute error', e);
+//             }
+//         })();                   
+//         super.afterGenerate();
+//     }
+// }
 
 Generator.Operators = {
     "sum": (a,b) => { return a+b; },
@@ -3736,8 +3737,8 @@ DataGen.listOfGens = {
     'MNAR': MNAR,
     'Counter Generator': CounterGenerator,
     'Fixed Time Generator': FixedTimeGenerator,
-    'Neural Network Generator': NeuralNetworkGenerator,
-    'Python Script Reader': PythonScriptReader,
+    // 'Neural Network Generator': NeuralNetworkGenerator, // Experimental
+    // 'Python Script Reader': PythonScriptReader, // Experimental
     'Poisson Time Generator': PoissonTimeGenerator,
     'Uniform Generator': RandomUniformGenerator,
     'Gaussian Generator': RandomGaussianGenerator,
@@ -3846,9 +3847,9 @@ DataGen.superTypes = {
     Random,
     Accessory,
     Geometric,
-    Column,
-    NeuralNetwork,
-    ScriptReader,
+    Column//,
+    // NeuralNetwork, // Experimental
+    // ScriptReader, // Experimental
 };
 
 DataGen.listOfSuperTypesMenu = [
@@ -3856,9 +3857,9 @@ DataGen.listOfSuperTypesMenu = [
     "Random",
     "Function",
     "Accessory",
-    "Geometric",
-    "NeuralNetwork", 
-    "ScriptReader"
+    "Geometric"//,
+    // "NeuralNetwork", // Experimental
+   // "ScriptReader" // Experimental
 ];
 
 DataGen.Utils = {

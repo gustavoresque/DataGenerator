@@ -5,4 +5,3 @@ package-lock.json
 release-builds/*
 .DS_Store
 /.project
-resources/codigos_gerador_azulejos/*
